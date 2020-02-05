@@ -36,10 +36,6 @@ repositories {
     mavenCentral()
     jcenter()
 }
-publishing.repositories.maven{
-    url 'https://pkgs.dev.azure.com/azure-toolkits/Java/_packaging/azure-toolkits-maven/maven/v1'
-    name 'azure-toolkits-maven'
-}
 dependencies {
     implementation 'commons-io:commons-io:2.6'
     implementation 'org.apache.commons:commons-exec:1.3'
