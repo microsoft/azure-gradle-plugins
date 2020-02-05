@@ -5,7 +5,6 @@
  */
 package com.microsoft.azure.plugin.functions.gradle.util;
 
-import com.microsoft.azure.common.exceptions.AzureExecutionException;
 import com.microsoft.azure.common.function.utils.CommandUtils;
 import com.microsoft.azure.common.logging.Log;
 import com.microsoft.azure.maven.common.utils.TextUtils;
@@ -23,7 +22,7 @@ public class FunctionCliResolver {
     private static final String RUNTIME_NOT_FOUND = "Azure Functions Core Tools not found. " +
             "Please go to https://aka.ms/azfunc-install to install Azure Functions Core Tools first.";
 
-    public static String resolveFunc() throws AzureExecutionException, IOException, InterruptedException {
+    public static String resolveFunc() throws IOException, InterruptedException {
         final boolean isWindows = CommandUtils.isWindows();
         final List<File> funCmdFiles = resolvePathForCommand("func", isWindows);
         File result = null;
@@ -89,9 +88,8 @@ public class FunctionCliResolver {
     }
 
     private static List<File> resolvePathForCommand(final String command, final boolean isWindows)
-            throws AzureExecutionException, IOException, InterruptedException {
+            throws IOException, InterruptedException {
         return extractFileFromOutput(executeMultipleLineOutput((isWindows ? "where " : "which ") + command, isWindows));
-
     }
 
     private static List<File> extractFileFromOutput(final String[] outputStrings) {
@@ -112,7 +110,7 @@ public class FunctionCliResolver {
     }
 
     private static String[] executeMultipleLineOutput(final String cmd, final boolean isWindows)
-            throws AzureExecutionException, IOException, InterruptedException {
+            throws IOException, InterruptedException {
         final String[] cmds = isWindows ? new String[] { "cmd.exe", "/c", cmd } : new String[] { "bash", "-c", cmd };
         final Process p = Runtime.getRuntime().exec(cmds);
         final int exitCode = p.waitFor();
