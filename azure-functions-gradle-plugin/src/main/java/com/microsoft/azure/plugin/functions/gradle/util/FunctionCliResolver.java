@@ -47,14 +47,11 @@ public class FunctionCliResolver {
             }
 
             if (result != null) {
-                break;
+                return  result.getAbsolutePath();
             }
         }
-        if (result == null) {
-            Log.warn(TextUtils.red(RUNTIME_NOT_FOUND));
-            return null;
-        }
-        return result.getAbsolutePath();
+        Log.warn(TextUtils.red(RUNTIME_NOT_FOUND));
+        return null;
     }
 
     private static File resolveFuncForWindows(final File canonicalFile) {
