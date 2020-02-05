@@ -129,7 +129,6 @@ public class GradleFunctionContext implements IAppServiceContext {
         }
 
         return functionsExtension.getDeployment().getType();
-
     }
 
     public String getLocalDebugConfig() {
