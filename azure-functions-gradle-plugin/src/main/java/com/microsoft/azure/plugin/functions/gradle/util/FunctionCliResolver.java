@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for
  * license information.
  */
-package com.microsoft.azure.plugin.functions.gradle.handler;
+package com.microsoft.azure.plugin.functions.gradle.util;
 
 import com.microsoft.azure.common.exceptions.AzureExecutionException;
 import com.microsoft.azure.common.function.utils.CommandUtils;
@@ -66,7 +66,7 @@ public class FunctionCliResolver {
                             .normalize().toFile();
                     result = findFuncExecInFolder(libFolder, isWindows);
                     if (result != null) {
-                         break;
+                        break;
                     }
                 }
             }
