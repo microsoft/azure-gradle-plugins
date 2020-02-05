@@ -47,7 +47,7 @@ public class FunctionCliResolver {
             }
 
             if (result != null) {
-                return  result.getAbsolutePath();
+                return result.getAbsolutePath();
             }
         }
         Log.warn(TextUtils.red(RUNTIME_NOT_FOUND));
