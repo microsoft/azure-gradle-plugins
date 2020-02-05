@@ -31,46 +31,45 @@ public class FunctionCliResolver {
             if (!canonicalFile.exists()) {
                 continue;
             }
-
+            // when `func core tools` is manually installed and func is available at PATH
+            // use canonical path to locate the real installation path
             result = findFuncExecInFolder(canonicalFile.getParentFile(), isWindows);
+            if (result == null) {
+                if (isWindows) {
+                    result = resolveFuncForWindows(canonicalFile);
+                } else {
+                    // in linux/mac, when the way of `npm install azure-functions-core-tools`, the canonicalFile will point to `main.js`
+                    if (canonicalFile.getName().equals("main.js")) {
+                        result = findFuncExecInFolder(Paths.get(canonicalFile.getParent(), "..", "bin").normalize().toFile(),
+                                isWindows);
+                    }
+                }
+            }
+
             if (result != null) {
                 break;
             }
-
-            if (canonicalFile.getName().equals("main.js")) {
-                result = findFuncExecInFolder(Paths.get(canonicalFile.getParent(), "..", "bin").normalize().toFile(),
-                        isWindows);
-                if (result != null) {
-                    break;
-                }
-            }
-
-            if (isWindows) {
-                if (canonicalFile.getName().equalsIgnoreCase("func.cmd")) {
-                    result = findFuncExecInFolder(
-                            Paths.get(canonicalFile.getParent(), "node_modules", "azure-functions-core-tools", "bin")
-                                    .toFile(),
-                            isWindows);
-                    if (result != null) {
-                        break;
-                    }
-                } else {
-                    // check choco install
-                    final File libFolder = Paths
-                            .get(canonicalFile.getParent(), "..", "lib", "azure-functions-core-tools", "tools")
-                            .normalize().toFile();
-                    result = findFuncExecInFolder(libFolder, isWindows);
-                    if (result != null) {
-                        break;
-                    }
-                }
-            }
         }
-        if (result == null || !result.exists()) {
+        if (result == null) {
             Log.warn(TextUtils.red(RUNTIME_NOT_FOUND));
             return null;
         }
         return result.getAbsolutePath();
+    }
+
+    private static File resolveFuncForWindows(final File canonicalFile) {
+        if (canonicalFile.getName().equalsIgnoreCase("func.cmd")) {
+            return findFuncExecInFolder(
+                    Paths.get(canonicalFile.getParent(), "node_modules", "azure-functions-core-tools", "bin")
+                            .toFile(),
+                    true);
+        } else {
+            // check chocolate install
+            final File libFolder = Paths
+                    .get(canonicalFile.getParent(), "..", "lib", "azure-functions-core-tools", "tools")
+                    .normalize().toFile();
+            return findFuncExecInFolder(libFolder, true);
+        }
     }
 
     private static File findFuncExecInFolder(final File folder, final boolean windows) {
