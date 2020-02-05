@@ -188,7 +188,6 @@ public class AzureFunctionsExtension {
     }
 
     public void setAppSettings(Closure closure) {
-
         this.appSettings = new HashMap<>();
         project.configure(appSettings, closure);
     }
