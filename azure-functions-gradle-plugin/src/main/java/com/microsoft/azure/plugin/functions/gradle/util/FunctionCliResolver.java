@@ -27,10 +27,6 @@ public class FunctionCliResolver {
         final List<File> funCmdFiles = resolvePathForCommand("func", isWindows);
         File result = null;
         for (final File file : funCmdFiles) {
-            if (new File(file.getParentFile(), "func.dll").exists()) {
-                result = file;
-                break;
-            }
             final File canonicalFile = file.getCanonicalFile();
             if (!canonicalFile.exists()) {
                 continue;
