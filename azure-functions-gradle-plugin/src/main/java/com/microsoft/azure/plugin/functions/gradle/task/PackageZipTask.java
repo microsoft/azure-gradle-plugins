@@ -6,6 +6,7 @@
 package com.microsoft.azure.plugin.functions.gradle.task;
 
 import com.microsoft.azure.common.exceptions.AzureExecutionException;
+import com.microsoft.azure.common.logging.Log;
 import com.microsoft.azure.plugin.functions.gradle.AzureFunctionsExtension;
 import com.microsoft.azure.plugin.functions.gradle.GradleFunctionContext;
 import com.microsoft.azure.plugin.functions.gradle.handler.PackageHandler;
@@ -47,6 +48,7 @@ public class PackageZipTask extends DefaultTask implements IFunctionTask {
             final File zipFile = new File(ctx.getDeploymentStagingDirectoryPath() + ".zip");
             ZipUtil.pack(new File(ctx.getDeploymentStagingDirectoryPath()), zipFile);
             ZipUtil.removeEntry(zipFile, PackageHandler.LOCAL_SETTINGS_JSON);
+            Log.prompt("Build zip from staging folder successfully: " + zipFile.getAbsolutePath());
         } catch (AzureExecutionException e) {
             throw new GradleException(PACKAGE_ZIP_FAILURE + e.getMessage(), e);
         }
