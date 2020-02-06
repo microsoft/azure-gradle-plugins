@@ -5,11 +5,11 @@
  */
 package com.microsoft.azure.plugin.functions.gradle.task;
 
-import org.apache.commons.io.FileUtils;
 import com.microsoft.azure.plugin.functions.gradle.AzureFunctionsExtension;
 import com.microsoft.azure.plugin.functions.gradle.GradleFunctionContext;
 import com.microsoft.azure.plugin.functions.gradle.handler.PackageHandler;
 
+import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.TaskAction;
