@@ -5,6 +5,7 @@
  */
 package com.microsoft.azure.plugin.functions.gradle;
 
+import com.microsoft.azure.plugin.functions.gradle.task.LocalRunTask;
 import com.microsoft.azure.plugin.functions.gradle.task.PackageTask;
 
 import org.gradle.api.Plugin;
@@ -29,10 +30,18 @@ public class AzureFunctionsPlugin implements Plugin<Project> {
             task.setFunctionsExtension(extension);
         });
 
+        final TaskProvider<LocalRunTask> runTask = tasks.register("azureFunctionsRun", LocalRunTask.class, task -> {
+            task.setGroup("AzureFunctions");
+            task.setDescription("Builds a local folder structure ready to run on azure functions environemnt.");
+            task.setFunctionsExtension(extension);
+        });
+
         project.afterEvaluate(projectAfterEvaluation -> {
             final List<TaskProvider<?>> dependsOnTask = new ArrayList<>();
             dependsOnTask.add(projectAfterEvaluation.getTasks().named("jar"));
             packageTask.configure(task -> task.dependsOn(dependsOnTask));
+
+            runTask.configure(task -> task.dependsOn(packageTask));
         });
 
     }
