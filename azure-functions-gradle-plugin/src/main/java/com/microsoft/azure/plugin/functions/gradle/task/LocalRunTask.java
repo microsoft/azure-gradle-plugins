@@ -25,6 +25,8 @@ import java.io.IOException;
 
 public class LocalRunTask extends Exec implements IFunctionTask {
 
+    private static final String JDWP_DEBUG_PREFIX = "-agentlib:jdwp=";
+
     private static final String RUN_FUNCTIONS_FAILURE = "Failed to run Azure Functions. Please checkout console output.";
 
     @Nullable
@@ -78,9 +80,9 @@ public class LocalRunTask extends Exec implements IFunctionTask {
     }
 
     private static String getEnableDebugJvmArgument(String debugConfig) {
-        if (debugConfig.contains("-agentlib:jdwp=")) {
+        if (debugConfig.contains(JDWP_DEBUG_PREFIX)) {
             return debugConfig;
         }
-        return "-agentlib:jdwp=" + debugConfig;
+        return JDWP_DEBUG_PREFIX + debugConfig;
     }
 }

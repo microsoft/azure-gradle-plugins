@@ -154,7 +154,7 @@ public class PackageHandler {
      */
     private List<URL> getDependencyArtifactUrls() {
         final List<URL> urlList = new ArrayList<>();
-        for (final Path jarFilePath : project.getProjectDepencencies()) {
+        for (final Path jarFilePath : project.getProjectDependencies()) {
             final File f = jarFilePath.toFile();
             try {
                 urlList.add(f.toURI().toURL());
@@ -260,7 +260,7 @@ public class PackageHandler {
             FileUtils.cleanDirectory(libFolder);
         }
 
-        for (final Path jarFilePath : project.getProjectDepencencies()) {
+        for (final Path jarFilePath : project.getProjectDependencies()) {
             if (!jarFilePath.getFileName().toString().startsWith("azure-functions-java-library-")) {
                 FileUtils.copyFileToDirectory(jarFilePath.toFile(), libFolder);
             }
