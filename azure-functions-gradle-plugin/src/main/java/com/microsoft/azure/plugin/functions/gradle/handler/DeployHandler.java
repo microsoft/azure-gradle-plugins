@@ -56,8 +56,6 @@ import static com.microsoft.azure.common.appservice.DeploymentType.RUN_FROM_ZIP;
  * Functions doesn't exist, it will be created.
  */
 public class DeployHandler {
-    private static final String JDK_VERSION_ERROR = "Azure Functions only support JDK 8, which is lower than local " +
-        "JDK version %s";
     private static final String FUNCTIONS_WORKER_RUNTIME_NAME = "FUNCTIONS_WORKER_RUNTIME";
     private static final String FUNCTIONS_WORKER_RUNTIME_VALUE = "java";
     private static final String SET_FUNCTIONS_WORKER_RUNTIME = "Set function worker runtime to java";
@@ -96,9 +94,7 @@ public class DeployHandler {
     }
 
     public void execute() throws AzureExecutionException {
-        checkJavaVersion();
-        createOrUpdateFunctionApp();
-        final FunctionApp app = getFunctionApp();
+        final FunctionApp app = createOrUpdateFunctionApp();
         if (app == null) {
             throw new AzureExecutionException(
                     String.format("Failed to get the function app with name: %s", ctx.getAppName()));
@@ -110,32 +106,26 @@ public class DeployHandler {
         Log.prompt(String.format(DEPLOY_FINISH, ctx.getAppName()));
     }
 
-    private static void checkJavaVersion() {
-        final String javaVersion = System.getProperty("java.version");
-        if (!javaVersion.startsWith("1.8")) {
-            Log.error(String.format(JDK_VERSION_ERROR, javaVersion));
-        }
-    }
-
-    private void createOrUpdateFunctionApp() throws AzureExecutionException {
+    private FunctionApp createOrUpdateFunctionApp() throws AzureExecutionException {
         final FunctionApp app = getFunctionApp();
         if (app == null) {
-            createFunctionApp();
+            return createFunctionApp();
         } else {
-            updateFunctionApp(app);
+            return updateFunctionApp(app);
         }
     }
 
-    private void createFunctionApp() throws AzureExecutionException {
+    private FunctionApp createFunctionApp() throws AzureExecutionException {
         Log.prompt(FUNCTION_APP_CREATE_START);
         final FunctionRuntimeHandler runtimeHandler = getFunctionRuntimeHandler();
         final WithCreate withCreate = runtimeHandler.defineAppWithRuntime();
         configureAppSettings(withCreate::withAppSettings, getAppSettingsWithDefaultValue());
-        withCreate.withJavaVersion(DEFAULT_JAVA_VERSION).withWebContainer(null).create();
+        final FunctionApp appCreated = withCreate.withJavaVersion(DEFAULT_JAVA_VERSION).withWebContainer(null).create();
         Log.prompt(String.format(FUNCTION_APP_CREATED, ctx.getAppName()));
+        return appCreated;
     }
 
-    private void updateFunctionApp(final FunctionApp app) throws AzureExecutionException {
+    private FunctionApp updateFunctionApp(final FunctionApp app) throws AzureExecutionException {
         Log.prompt(FUNCTION_APP_UPDATE);
         // Work around of https://github.com/Azure/azure-sdk-for-java/issues/1755
         app.inner().withTags(null);
@@ -144,8 +134,9 @@ public class DeployHandler {
         final Update update = runtimeHandler.updateAppRuntime(app);
         checkHostJavaVersion(app, update); // Check Java Version of Server
         configureAppSettings(update::withAppSettings, getAppSettingsWithDefaultValue());
-        update.apply();
+        final FunctionApp appUpdated = update.apply();
         Log.prompt(FUNCTION_APP_UPDATE_DONE + ctx.getAppName());
+        return appUpdated;
     }
 
     private void checkHostJavaVersion(final FunctionApp app, final Update update) {

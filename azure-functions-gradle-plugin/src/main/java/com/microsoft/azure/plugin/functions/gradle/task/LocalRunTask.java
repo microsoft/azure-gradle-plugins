@@ -47,6 +47,7 @@ public class LocalRunTask extends Exec implements IFunctionTask {
     @Override
     public void exec() {
         try {
+            checkJavaVersion();
             final GradleFunctionContext ctx = new GradleFunctionContext(getProject(), this.getFunctionsExtension());
             final String cliExec = FunctionCliResolver.resolveFunc();
             if (StringUtils.isEmpty(cliExec)) {
