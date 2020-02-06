@@ -6,6 +6,7 @@
 package com.microsoft.azure.plugin.functions.gradle.handler;
 
 import com.google.common.base.Preconditions;
+import com.microsoft.azure.PagedList;
 import com.microsoft.azure.common.Utils;
 import com.microsoft.azure.common.appservice.DeployTargetType;
 import com.microsoft.azure.common.appservice.DeploymentType;
@@ -96,9 +97,8 @@ public class DeployHandler {
 
     public void execute() throws AzureExecutionException {
         checkJavaVersion();
-        createOrUpdateFunctionApp();
+        final FunctionApp app = createOrUpdateFunctionApp();
 
-        final FunctionApp app = getFunctionApp();
         if (app == null) {
             throw new AzureExecutionException(
                     String.format("Failed to get the function app with name: %s", ctx.getAppName()));
@@ -120,13 +120,14 @@ public class DeployHandler {
         }
     }
 
-    private void createOrUpdateFunctionApp() throws AzureExecutionException {
+    private FunctionApp createOrUpdateFunctionApp() throws AzureExecutionException {
         final FunctionApp app = getFunctionApp();
         if (app == null) {
             createFunctionApp();
         } else {
             updateFunctionApp(app);
         }
+        return app;
     }
 
     private void createFunctionApp() throws AzureExecutionException {
@@ -228,15 +229,9 @@ public class DeployHandler {
         return AppServiceUtils.getPricingTierFromString(ctx.getPricingTier()) != null;
     }
 
-    public FunctionApp getFunctionApp() {
-        try {
-            return ctx.getAzureClient().appServices().functionApps().getByResourceGroup(ctx.getResourceGroup(),
-                    ctx.getAppName());
-        } catch (Exception ex) {
-            Log.debug(ex);
-            // Swallow exception for non-existing Azure Functions
-        }
-        return null;
+    public FunctionApp getFunctionApp() throws AzureExecutionException {
+        final PagedList<FunctionApp> functionList = ctx.getAzureClient().appServices().functionApps().list();
+        return AppServiceUtils.findAppServiceInPagedList(functionList, ctx.getResourceGroup(), ctx.getAppName());
     }
 
     public FunctionExtensionVersion getFunctionExtensionVersion() throws AzureExecutionException {
@@ -255,7 +250,6 @@ public class DeployHandler {
 
     private void setDefaultAppSetting(Map<String, String> result, String settingName, String settingIsEmptyMessage,
             String settingValue) {
-
         final String setting = result.get(settingName);
         if (StringUtils.isEmpty(setting)) {
             Log.prompt(settingIsEmptyMessage);
@@ -265,7 +259,6 @@ public class DeployHandler {
 
     private void overrideDefaultAppSetting(Map<String, String> result, String settingName, String settingIsEmptyMessage,
             String settingValue, String changeSettingMessage) {
-
         final String setting = result.get(settingName);
         if (StringUtils.isEmpty(setting)) {
             Log.prompt(settingIsEmptyMessage);
