@@ -39,8 +39,8 @@ target/
 # macOS
 .DS_Store
 
-# mvnw
-!.mvn/wrapper/maven-wrapper.jar
+# gradle-wrapper
+!gradle-wrapper.jar
 
 # integration test
 */src/it/*/bin
