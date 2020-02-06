@@ -5,7 +5,7 @@
  */
 package com.microsoft.azure.plugin.functions.gradle.task;
 
-import com.microsoft.applicationinsights.core.dependencies.apachecommons.io.FileUtils;
+import org.apache.commons.io.FileUtils;
 import com.microsoft.azure.plugin.functions.gradle.AzureFunctionsExtension;
 import com.microsoft.azure.plugin.functions.gradle.GradleFunctionContext;
 import com.microsoft.azure.plugin.functions.gradle.handler.PackageHandler;
@@ -34,7 +34,7 @@ public class PackageTask extends DefaultTask implements IFunctionTask {
     }
 
     @TaskAction
-    public void deploy() throws Exception {
+    public void build() throws Exception {
         try {
             final GradleFunctionContext ctx = new GradleFunctionContext(getProject(), this.getFunctionsExtension());
             final File stagingFolder = new File(ctx.getDeploymentStagingDirectoryPath());
