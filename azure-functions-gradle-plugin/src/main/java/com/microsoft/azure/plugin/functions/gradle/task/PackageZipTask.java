@@ -9,20 +9,25 @@ import com.microsoft.azure.common.exceptions.AzureExecutionException;
 import com.microsoft.azure.plugin.functions.gradle.AzureFunctionsExtension;
 import com.microsoft.azure.plugin.functions.gradle.GradleFunctionContext;
 import com.microsoft.azure.plugin.functions.gradle.handler.PackageHandler;
+import com.microsoft.azure.plugin.functions.gradle.util.FunctionUtils;
 
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.TaskAction;
+import org.zeroturnaround.zip.ZipUtil;
 
 import javax.annotation.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
-public class PackageTask extends DefaultTask implements IFunctionTask {
-    private static final String PACKAGE_FAILURE = "Cannot package functions due to error: ";
+public class PackageZipTask extends DefaultTask implements IFunctionTask {
+    private static final String PACKAGE_ZIP_FAILURE = "Cannot build zip for azure functions due to error: ";
+
     @Nullable
     private AzureFunctionsExtension functionsExtension;
 
@@ -38,21 +43,15 @@ public class PackageTask extends DefaultTask implements IFunctionTask {
     }
 
     @TaskAction
-    public void build() throws GradleException {
+    public void buildZip() throws GradleException, IOException {
         try {
             final GradleFunctionContext ctx = new GradleFunctionContext(getProject(), this.getFunctionsExtension());
-            final File stagingFolder = new File(ctx.getDeploymentStagingDirectoryPath());
-            // package task will start from a empty staging folder
-            if (stagingFolder.exists()) {
-                FileUtils.cleanDirectory(stagingFolder);
-            } else {
-                stagingFolder.mkdirs();
-            }
-            final PackageHandler packageHandler = new PackageHandler(ctx.getProject(), ctx.getDeploymentStagingDirectoryPath());
-            packageHandler.execute();
-        } catch (AzureExecutionException | IOException e) {
-            throw new GradleException(PACKAGE_FAILURE + e.getMessage(), e);
+            FunctionUtils.checkStagingDirectory(ctx.getDeploymentStagingDirectoryPath());
+            final File zipFile = new File(ctx.getDeploymentStagingDirectoryPath() + ".zip");
+            ZipUtil.pack(new File(ctx.getDeploymentStagingDirectoryPath()), zipFile);
+            ZipUtil.removeEntry(zipFile, PackageHandler.LOCAL_SETTINGS_JSON);
+        } catch (AzureExecutionException e) {
+            throw new GradleException(PACKAGE_ZIP_FAILURE + e.getMessage(), e);
         }
     }
-
 }
