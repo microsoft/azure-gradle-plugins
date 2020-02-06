@@ -11,7 +11,6 @@ import com.microsoft.azure.plugin.functions.gradle.GradleFunctionContext;
 import com.microsoft.azure.plugin.functions.gradle.handler.PackageHandler;
 import com.microsoft.azure.plugin.functions.gradle.util.FunctionUtils;
 
-import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.tasks.Nested;
@@ -22,8 +21,6 @@ import javax.annotation.Nullable;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 public class PackageZipTask extends DefaultTask implements IFunctionTask {
     private static final String PACKAGE_ZIP_FAILURE = "Cannot build zip for azure functions due to error: ";
