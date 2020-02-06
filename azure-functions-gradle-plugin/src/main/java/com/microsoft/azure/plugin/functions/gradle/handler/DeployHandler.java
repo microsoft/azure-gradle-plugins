@@ -97,19 +97,16 @@ public class DeployHandler {
 
     public void execute() throws AzureExecutionException {
         checkJavaVersion();
-        final FunctionApp app = createOrUpdateFunctionApp();
-
+        createOrUpdateFunctionApp();
+        final FunctionApp app = getFunctionApp();
         if (app == null) {
             throw new AzureExecutionException(
                     String.format("Failed to get the function app with name: %s", ctx.getAppName()));
         }
 
         final DeployTarget deployTarget = new DeployTarget(app, DeployTargetType.FUNCTION);
-
         Log.prompt(DEPLOY_START);
-
         getArtifactHandler().publish(deployTarget);
-
         Log.prompt(String.format(DEPLOY_FINISH, ctx.getAppName()));
     }
 
@@ -120,14 +117,13 @@ public class DeployHandler {
         }
     }
 
-    private FunctionApp createOrUpdateFunctionApp() throws AzureExecutionException {
+    private void createOrUpdateFunctionApp() throws AzureExecutionException {
         final FunctionApp app = getFunctionApp();
         if (app == null) {
             createFunctionApp();
         } else {
             updateFunctionApp(app);
         }
-        return app;
     }
 
     private void createFunctionApp() throws AzureExecutionException {
