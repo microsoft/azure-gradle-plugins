@@ -30,11 +30,25 @@ apply plugin: 'com.gradle.plugin-publish'
 apply plugin: 'maven-publish'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
+apply plugin: 'checkstyle'
+
+checkstyle {
+    toolVersion '8.23';
+    // Whether or not to allow the build to continue if there are warnings.
+    ignoreFailures = false
+
+    // Whether or not rule violations are to be displayed on the console.
+    showViolations = true
+}
 
 repositories {
     mavenLocal()
     mavenCentral()
     jcenter()
+    maven {
+      url 'https://pkgs.dev.azure.com/azure-toolkits/Java/_packaging/azure-toolkits-maven/maven/v1'
+      name 'azure-temp-pipeline'
+    }
 }
 dependencies {
     implementation 'commons-io:commons-io:2.6'
