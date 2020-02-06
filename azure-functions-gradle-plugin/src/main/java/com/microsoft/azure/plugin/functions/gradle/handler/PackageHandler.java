@@ -14,7 +14,6 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.base.Preconditions;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.microsoft.applicationinsights.core.dependencies.apachecommons.lang3.StringUtils;
 import com.microsoft.azure.common.exceptions.AzureExecutionException;
 import com.microsoft.azure.common.function.bindings.BindingEnum;
 import com.microsoft.azure.common.function.configurations.FunctionConfiguration;
@@ -29,6 +28,7 @@ import com.microsoft.azure.common.project.IProject;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.input.BOMInputStream;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -47,23 +47,24 @@ import java.util.Scanner;
 import java.util.Set;
 
 public class PackageHandler {
-    private static final String SEARCH_FUNCTIONS = "Step 1 of 7: Searching for Azure Functions entry points";
+    private static final String SEARCH_FUNCTIONS = "Step 1 of 8: Searching for Azure Functions entry points";
     private static final String FOUND_FUNCTIONS = " Azure Functions entry point(s) found.";
     private static final String NO_FUNCTIONS = "Azure Functions entry point not found, plugin will exit.";
-    private static final String GENERATE_CONFIG = "Step 2 of 7: Generating Azure Functions configurations";
+    private static final String GENERATE_CONFIG = "Step 2 of 8: Generating Azure Functions configurations";
     private static final String GENERATE_SKIP = "No Azure Functions found. Skip configuration generation.";
     private static final String GENERATE_DONE = "Generation done.";
-    private static final String VALIDATE_CONFIG = "Step 3 of 7: Validating generated configurations";
+    private static final String VALIDATE_CONFIG = "Step 3 of 8: Validating generated configurations";
     private static final String VALIDATE_SKIP = "No configurations found. Skip validation.";
     private static final String VALIDATE_DONE = "Validation done.";
-    private static final String SAVE_HOST_JSON = "Step 4 of 7: Saving host.json";
-    private static final String SAVE_FUNCTION_JSONS = "Step 5 of 7: Saving configurations to function.json";
+    private static final String SAVE_HOST_JSON = "Step 4 of 8: Saving host.json";
+    private static final String SAVE_LOCAL_SETTINGS_JSON = "Step 5 of 8: Saving local.settings.json";
+    private static final String SAVE_FUNCTION_JSONS = "Step 6 of 8: Saving configurations to function.json";
     private static final String SAVE_SKIP = "No configurations found. Skip save.";
     private static final String SAVE_FUNCTION_JSON = "Starting processing function: ";
     private static final String SAVE_SUCCESS = "Successfully saved to ";
-    private static final String COPY_JARS = "Step 6 of 7: Copying JARs to staging directory";
+    private static final String COPY_JARS = "Step 7 of 8: Copying JARs to staging directory: ";
     private static final String COPY_SUCCESS = "Copied successfully.";
-    private static final String INSTALL_EXTENSIONS = "Step 7 of 7: Installing function extensions if needed";
+    private static final String INSTALL_EXTENSIONS = "Step 8 of 8: Installing function extensions if needed";
     private static final String SKIP_INSTALL_EXTENSIONS_HTTP = "Skip install Function extension for HTTP Trigger Functions";
     private static final String INSTALL_EXTENSIONS_FINISH = "Function extension installation done.";
     private static final String BUILD_SUCCESS = "Successfully built Azure Functions.";
@@ -101,11 +102,11 @@ public class PackageHandler {
 
         validateFunctionConfigurations(configMap);
 
-        final ObjectWriter objectWriter = getObjectWriter();
+        copyHostJsonFile();
 
-        copyHostJsonFile(objectWriter);
+        copyLocalSettingJsonFile();
 
-        writeFunctionJsonFiles(objectWriter, configMap);
+        writeFunctionJsonFiles(getObjectWriter(), configMap);
 
         copyJarsToStageDirectory();
 
@@ -218,13 +219,18 @@ public class PackageHandler {
         Log.prompt(SAVE_SUCCESS + functionJsonFile.getAbsolutePath());
     }
 
-    protected void copyHostJsonFile(final ObjectWriter objectWriter) throws IOException {
+    private void copyHostJsonFile() throws IOException {
         Log.prompt("");
         Log.prompt(SAVE_HOST_JSON);
         final File hostJsonFile = Paths.get(this.deploymentStagingDirectoryPath, HOST_JSON).toFile();
         FileUtils.copyFile(new File(project.getBaseDirectory().toFile(), HOST_JSON), hostJsonFile);
         Log.prompt(SAVE_SUCCESS + hostJsonFile.getAbsolutePath());
 
+    }
+
+    private void copyLocalSettingJsonFile() throws IOException {
+        Log.prompt("");
+        Log.prompt(SAVE_LOCAL_SETTINGS_JSON);
         final File localSettingJsonFile = Paths.get(this.deploymentStagingDirectoryPath, LOCAL_SETTINGS_JSON)
                 .toFile();
         FileUtils.copyFile(new File(project.getBaseDirectory().toFile(), LOCAL_SETTINGS_JSON), localSettingJsonFile);
@@ -304,12 +310,11 @@ public class PackageHandler {
     }
 
     private JsonObject readHostJson() {
-        final JsonParser parser = new JsonParser();
         final File hostJson = new File(project.getBaseDirectory().toFile(), HOST_JSON);
         try (final FileInputStream fis = new FileInputStream(hostJson);
                 final Scanner scanner = new Scanner(new BOMInputStream(fis))) {
             final String jsonRaw = scanner.useDelimiter("\\Z").next();
-            return parser.parse(jsonRaw).getAsJsonObject();
+            return JsonParser.parseString(jsonRaw).getAsJsonObject();
         } catch (IOException e) {
             return null;
         }
