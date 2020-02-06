@@ -45,9 +45,8 @@ repositories {
     mavenLocal()
     mavenCentral()
     jcenter()
-    maven {
-      url 'https://pkgs.dev.azure.com/azure-toolkits/Java/_packaging/azure-toolkits-maven/maven/v1'
-      name 'azure-temp-pipeline'
+    maven{
+        url 'https://oss.sonatype.org/content/repositories/snapshots/'
     }
 }
 dependencies {
