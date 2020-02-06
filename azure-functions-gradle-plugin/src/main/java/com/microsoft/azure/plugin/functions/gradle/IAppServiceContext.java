@@ -33,7 +33,7 @@ public interface IAppServiceContext {
 
     String getAppServicePlanName();
 
-    Map<String, Object> getAppSettings();
+    Map<String, String> getAppSettings();
 
     AuthConfiguration getAuth();
 
