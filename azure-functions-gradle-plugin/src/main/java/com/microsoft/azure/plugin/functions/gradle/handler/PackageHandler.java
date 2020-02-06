@@ -47,6 +47,8 @@ import java.util.Scanner;
 import java.util.Set;
 
 public class PackageHandler {
+    public static final String HOST_JSON = "host.json";
+    public static final String LOCAL_SETTINGS_JSON = "local.settings.json";
     private static final String SEARCH_FUNCTIONS = "Step 1 of 8: Searching for Azure Functions entry points";
     private static final String FOUND_FUNCTIONS = " Azure Functions entry point(s) found.";
     private static final String NO_FUNCTIONS = "Azure Functions entry point not found, plugin will exit.";
@@ -69,8 +71,6 @@ public class PackageHandler {
     private static final String INSTALL_EXTENSIONS_FINISH = "Function extension installation done.";
     private static final String BUILD_SUCCESS = "Successfully built Azure Functions.";
     private static final String FUNCTION_JSON = "function.json";
-    private static final String HOST_JSON = "host.json";
-    private static final String LOCAL_SETTINGS_JSON = "local.settings.json";
     private static final String EXTENSION_BUNDLE = "extensionBundle";
 
     private static final BindingEnum[] FUNCTION_WITHOUT_FUNCTION_EXTENSION = { BindingEnum.HttpOutput,
