@@ -151,12 +151,12 @@ public class GradleFunctionContext implements IAppServiceContext {
         if (azure == null) {
             final GradleAuthConfiguration auth = functionsExtension.getAuthentication();
             try {
-                azure = AzureClientFactory.getAzureClient(auth.getType(), auth, this.getSubscription());
+                azure = AzureClientFactory.getAzureClient(auth != null ? auth.getType() : null, auth, this.getSubscription());
             } catch (AzureLoginFailureException e) {
                 throw new AzureExecutionException(e.getMessage(), e);
             }
             if (azure == null) {
-                if (StringUtils.isNotBlank(auth.getType())) {
+                if (auth != null && StringUtils.isNotBlank(auth.getType())) {
                     throw new AzureExecutionException(String.format("Failed to authenticate with Azure using type %s. Please check your configuration.",
                         auth.getType()));
                 } else {
