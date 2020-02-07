@@ -1,5 +1,5 @@
 # Gradle Plugins for Azure Services
-This repository contains all Gradle plugins for Microsoft Azure services. A complete list of all plugins is shown as below. Visit our [Wiki](https://github.com/microsoft/azure-gradle-plugins/wiki) for detailed documentation.
+This repository contains all Gradle plugins for Microsoft Azure services.
 
 Gradle Plugin | Maven Central Version | Build Status
 ---|---|---
