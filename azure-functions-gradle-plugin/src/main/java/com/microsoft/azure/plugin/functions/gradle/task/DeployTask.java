@@ -10,6 +10,7 @@ import com.microsoft.azure.common.logging.Log;
 import com.microsoft.azure.plugin.functions.gradle.AzureFunctionsExtension;
 import com.microsoft.azure.plugin.functions.gradle.GradleFunctionContext;
 import com.microsoft.azure.plugin.functions.gradle.handler.DeployHandler;
+import com.microsoft.azure.plugin.functions.gradle.telemetry.TelemetryAgent;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
@@ -39,12 +40,15 @@ public class DeployTask extends DefaultTask implements IFunctionTask {
     @TaskAction
     public void deploy() throws GradleException {
         try {
+            TelemetryAgent.instance.trackTaskStart(this.getClass());
             checkJavaVersion();
             final GradleFunctionContext ctx = new GradleFunctionContext(getProject(), this.getFunctionsExtension());
             final DeployHandler deployHandler = new DeployHandler(ctx);
             deployHandler.execute();
+            TelemetryAgent.instance.trackTaskSuccess(this.getClass());
         } catch (final AzureExecutionException e) {
             Log.error(e);
+            TelemetryAgent.instance.traceException(this.getClass(), e);
             throw new GradleException(DEPLOY_FAILURE + e.getMessage(), e);
         }
     }

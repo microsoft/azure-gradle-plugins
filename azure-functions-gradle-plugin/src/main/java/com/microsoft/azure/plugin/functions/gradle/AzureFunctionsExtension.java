@@ -25,6 +25,9 @@ import java.util.Map;
 public class AzureFunctionsExtension {
 
     @Nullable
+    private Boolean allowTelemetry;
+
+    @Nullable
     private String localDebug;
 
     @Nullable
@@ -59,7 +62,7 @@ public class AzureFunctionsExtension {
     @Nullable
     private GradleRuntimeConfiguration runtime;
 
-    private Map<String, String> appSettings;
+    private Map<String, Object> appSettings;
 
     private final Project project;
 
@@ -134,7 +137,7 @@ public class AzureFunctionsExtension {
 
     @Input
     @Optional
-    public Map<String, String> getAppSettings() {
+    public Map<String, Object> getAppSettings() {
         return appSettings;
     }
 
@@ -142,6 +145,16 @@ public class AzureFunctionsExtension {
     @Optional
     public GradleRuntimeConfiguration getRuntime() {
         return runtime;
+    }
+
+    @Input
+    @Optional
+    public Boolean getAllowTelemetry() {
+        return allowTelemetry;
+    }
+
+    public void setAllowTelemetry(Boolean allowTelemetry) {
+        this.allowTelemetry = allowTelemetry;
     }
 
     public void setResourceGroup(String resourceGroup) {

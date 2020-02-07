@@ -22,6 +22,9 @@ import java.io.File;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
 
 public class GradleFunctionContext implements IAppServiceContext {
     private static final String GRADLE_PLUGIN_POSTFIX = "-gradle-plugin";
@@ -106,10 +109,13 @@ public class GradleFunctionContext implements IAppServiceContext {
     }
 
     @Override
-    public Map getAppSettings() {
+    public Map<String, String> getAppSettings() {
         if (appSettings == null) {
             // we need to cache app settings since gradle will always return a new app settings.
-            appSettings = functionsExtension.getAppSettings() != null ? new HashMap<>(functionsExtension.getAppSettings()) : new HashMap<>();
+            final Map<String, Object> map = functionsExtension.getAppSettings() != null ? functionsExtension.getAppSettings() : new HashMap<>();
+            // convert <string, object> map to <string, string> map
+            appSettings = map.entrySet().stream()
+                    .collect(Collectors.toMap(Map.Entry::getKey, e -> Objects.toString(e.getValue(), null)));
         }
         return appSettings;
     }

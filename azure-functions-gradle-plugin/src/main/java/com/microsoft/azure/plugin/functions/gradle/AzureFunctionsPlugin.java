@@ -9,6 +9,7 @@ import com.microsoft.azure.plugin.functions.gradle.task.DeployTask;
 import com.microsoft.azure.plugin.functions.gradle.task.LocalRunTask;
 import com.microsoft.azure.plugin.functions.gradle.task.PackageTask;
 import com.microsoft.azure.plugin.functions.gradle.task.PackageZipTask;
+import com.microsoft.azure.plugin.functions.gradle.telemetry.TelemetryAgent;
 
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
@@ -16,10 +17,17 @@ import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
 
 public class AzureFunctionsPlugin implements Plugin<Project> {
+    public static final String GRADLE_FUNCTION_PLUGIN_NAME = "azurefunctions";
+
     @Override
     public void apply(final Project project) {
-        final AzureFunctionsExtension extension = project.getExtensions().create("azurefunctions",
+        final AzureFunctionsExtension extension = project.getExtensions().create(GRADLE_FUNCTION_PLUGIN_NAME,
                 AzureFunctionsExtension.class, project);
+        TelemetryAgent.instance.showPrivacyStatement();
+        if (extension.getAllowTelemetry() != null) {
+            TelemetryAgent.instance.setAllowTelemetry(extension.getAllowTelemetry());
+        }
+        TelemetryAgent.instance.initTelemetry();
 
         final TaskContainer tasks = project.getTasks();
 
@@ -53,6 +61,5 @@ public class AzureFunctionsPlugin implements Plugin<Project> {
             runTask.configure(task -> task.dependsOn(packageTask));
             deployTask.configure(task -> task.dependsOn(packageTask));
         });
-
     }
 }

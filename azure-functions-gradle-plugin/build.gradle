@@ -21,6 +21,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+import org.gradle.api.tasks.options.Option
+
 plugins {
     id "net.linguica.maven-settings" version "0.5"
     id 'com.gradle.plugin-publish' version "0.10.1" apply false
@@ -75,4 +77,24 @@ gradlePlugin {
             implementationClass = project.pluginImplementationClass
         }
     }
+}
+
+
+class PrepareResourceTask extends DefaultTask {
+    @Option(option = "release", description = "whether this build is a relase build.")
+    Boolean release;
+    
+    Project currentProject
+
+    @TaskAction
+    void prepare() {
+        new File(currentProject.projectDir, "src/main/resources/version.txt").text = "Version: $currentProject.version"
+        def text = new File(currentProject.projectDir, "src/main/resources/ApplicationInsightsTemplate.xml").text
+        text = text.replaceAll("\\{AI_KEY}", (release != null && release) ? "435bdea7-d399-49ee-8d2d-b2792aa060d2" : "fda156f5-2eb8-48ab-8a3c-3e06b3c64b49")
+        new File(currentProject.projectDir, "src/main/resources/ApplicationInsights.xml").text = text;
+    }
+}
+
+task prepareResources(type: PrepareResourceTask) {
+    currentProject = project
 }
