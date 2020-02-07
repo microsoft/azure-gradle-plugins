@@ -39,6 +39,7 @@ public class DeployTask extends DefaultTask implements IFunctionTask {
     @TaskAction
     public void deploy() throws GradleException {
         try {
+            checkJavaVersion();
             final GradleFunctionContext ctx = new GradleFunctionContext(getProject(), this.getFunctionsExtension());
             final DeployHandler deployHandler = new DeployHandler(ctx);
             deployHandler.execute();
