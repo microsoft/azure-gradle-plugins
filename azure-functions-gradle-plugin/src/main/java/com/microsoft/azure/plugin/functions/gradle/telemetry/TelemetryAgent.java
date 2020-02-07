@@ -11,6 +11,7 @@ import com.microsoft.azure.maven.common.telemetry.GetHashMac;
 import com.microsoft.azure.plugin.functions.gradle.AzureFunctionsPlugin;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -35,6 +36,7 @@ public class TelemetryAgent implements TelemetryConfiguration {
     private static final String TELEMETRY_NOT_ALLOWED = "TelemetryNotAllowed";
     private static final String AUTH_TYPE_KEY = "authType";
     private static final String AUTH_METHOD_KEY = "authMethod";
+    private static final String FAILURE_REASON = "failureReason";
 
     private static final String CONFIGURATION_PATH = Paths.get(System.getProperty("user.home"),
             ".azure", "gradleplugins.properties").toString();
@@ -120,12 +122,44 @@ public class TelemetryAgent implements TelemetryConfiguration {
         }
     }
 
+    public void trackEvent(final String eventName, final Map<String, String> customProperties) {
+        if (this.allowTelemetry) {
+            telemetryProxy.trackEvent(eventName, customProperties);
+        }
+    }
+
     public void showPrivacyStatement() {
         final Properties prop = new Properties();
         if (isFirstRun(prop)) {
             Log.prompt(PRIVACY_STATEMENT);
             updateConfigurationFile(prop);
         }
+    }
+
+    public void trackTaskSkip(Class taskClass) {
+        trackEvent(taskClass.getSimpleName() + ".skip");
+    }
+
+    public void trackTaskStart(Class taskClass) {
+        trackEvent(taskClass.getSimpleName() + ".start");
+    }
+
+    public void trackTaskSuccess(Class taskClass) {
+        trackEvent(taskClass.getSimpleName() + ".success");
+    }
+
+    public void trackTaskFailure(Class taskClass, final String message) {
+        final HashMap<String, String> failureReason = new HashMap<>();
+        failureReason.put(FAILURE_REASON, message);
+        trackEvent(taskClass.getSimpleName() + ".failure", failureReason);
+    }
+
+    public void traceException(Class taskClass, final Exception exception) {
+        String message = exception.getMessage();
+        if (StringUtils.isEmpty(message)) {
+            message = exception.toString();
+        }
+        trackTaskFailure(taskClass, message);
     }
 
     private boolean isFirstRun(Properties prop) {
