@@ -69,7 +69,7 @@ azurefunctions {
 ## Usage
 
 ### Package Staging folder
-Use this task to package your staging folder:
+Use the script below to  to package your staging folder:
 
 ```shell
 gradle azureFunctionsPackage
@@ -80,8 +80,10 @@ or package the staging folder with a zip file:
 gradle azureFunctionsPackageZip
 ```
 ### Run Azure Functions locally
+Use the script below to run the function locally, if you want to debug your functions, please add `localDebug = "transport=dt_socket,server=y,suspend=n,address=5005"` to the `azurefunctions` section of your build.gradle.
+
 ```shell
-gradle azureFunctionsPackageZip
+gradle azureFunctionsRun
 ```
 ### Deploy Azure Functions to Azure Cloud
 ```shell
