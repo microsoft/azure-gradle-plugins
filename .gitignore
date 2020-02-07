@@ -67,3 +67,6 @@ build/
 
 .gradle/
 .settings/
+
+version.txt
+ApplicationInsights.xml
