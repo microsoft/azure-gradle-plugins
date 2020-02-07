@@ -76,7 +76,7 @@ gradle azureFunctionsDeploy
 ```
 
 ## Common Questions
-**Q: How to do when reporting "Cannot run functions locally due to error: Azure Functions Core Tools can not be found.""**
+**Q: How to do when reporting "Cannot run functions locally due to error: Azure Functions Core Tools can not be found."**
 
 **A:** You can install Azure Functions Core Tools at: https://aka.ms/azfunc-install
 ## Feedback and Questions
