@@ -80,8 +80,8 @@ gradlePlugin {
 task prepareResources()  {
     doLast {
         new File(projectDir, "src/main/resources/version.txt").text = "Version: $version"
-		def text = new File(projectDir, "src/main/resources/ApplicationInsightsTemplate.xml").text
-		text = text.replaceAll("\\{AI_KEY}", project.version.endsWith("SNAPSHOT") ? "fda156f5-2eb8-48ab-8a3c-3e06b3c64b49" : "435bdea7-d399-49ee-8d2d-b2792aa060d2")
-		new File(projectDir, "src/main/resources/ApplicationInsights.xml").text = text;
+        def text = new File(projectDir, "src/main/resources/ApplicationInsightsTemplate.xml").text
+        text = text.replaceAll("\\{AI_KEY}", project.version.endsWith("SNAPSHOT") ? "fda156f5-2eb8-48ab-8a3c-3e06b3c64b49" : "435bdea7-d399-49ee-8d2d-b2792aa060d2")
+        new File(projectDir, "src/main/resources/ApplicationInsights.xml").text = text;
     }
 }
