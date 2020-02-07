@@ -16,6 +16,7 @@ import com.microsoft.azure.plugin.functions.gradle.configuration.auth.AzureClien
 import com.microsoft.azure.plugin.functions.gradle.configuration.auth.GradleAuthConfiguration;
 import com.microsoft.azure.plugin.functions.gradle.util.GradleProjectUtils;
 
+import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.Project;
 
 import java.io.File;
@@ -148,11 +149,19 @@ public class GradleFunctionContext implements IAppServiceContext {
     @Override
     public Azure getAzureClient() throws AzureExecutionException {
         if (azure == null) {
+            final GradleAuthConfiguration auth = functionsExtension.getAuthentication();
             try {
-                final GradleAuthConfiguration auth = functionsExtension.getAuthentication();
                 azure = AzureClientFactory.getAzureClient(auth.getType(), auth, this.getSubscription());
             } catch (AzureLoginFailureException e) {
                 throw new AzureExecutionException(e.getMessage(), e);
+            }
+            if (azure == null) {
+                if (StringUtils.isNotBlank(auth.getType())) {
+                    throw new AzureExecutionException(String.format("Failed to authenticate with Azure using type %s. Please check your configuration.",
+                        auth.getType()));
+                } else {
+                    throw new AzureExecutionException("Failed to authenticate with Azure. Please check your configuration.");
+                }
             }
         }
         return azure;
