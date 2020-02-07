@@ -21,6 +21,7 @@ import com.microsoft.azure.common.logging.Log;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.management.Azure.Authenticated;
 import com.microsoft.azure.management.resources.Subscription;
+import com.microsoft.azure.plugin.functions.gradle.telemetry.TelemetryAgent;
 
 import org.apache.commons.io.input.BOMInputStream;
 import org.apache.commons.lang3.StringUtils;
@@ -49,11 +50,17 @@ public class AzureClientFactory {
 
     public static Azure getAzureClient(String type, AuthConfiguration auth, String subscriptionId)
             throws AzureLoginFailureException {
+        final TelemetryAgent telemetry = TelemetryAgent.instance;
         try {
+            telemetry.setAuthType(type);
             final AzureEnvironment environment = AzureEnvironment.AZURE;
             final AzureTokenWrapper azureTokenWrapper = getAuthTypeEnum(type).getAzureToken(auth, environment);
+            if (azureTokenWrapper != null) {
+                telemetry.setAuthMethod(azureTokenWrapper.getAuthMethod().name());
+            }
             return azureTokenWrapper == null ? null : getAzureClientInner(azureTokenWrapper, subscriptionId);
         } catch (IOException e) {
+            telemetry.trackEvent(TelemetryAgent.AUTH_INIT_FAILURE);
             throw new AzureLoginFailureException(e.getMessage());
         }
 
@@ -62,7 +69,7 @@ public class AzureClientFactory {
     private static Azure getAzureClientInner(AzureTokenWrapper azureTokenCredentials, String subscriptionId) throws IOException, AzureLoginFailureException {
         Preconditions.checkNotNull(azureTokenCredentials, "The parameter 'azureTokenCredentials' cannot be null.");
         Log.prompt(azureTokenCredentials.getCredentialDescription());
-        final Authenticated authenticated = Azure.configure().authenticate(azureTokenCredentials);
+        final Authenticated authenticated = Azure.configure().withUserAgent(TelemetryAgent.instance.getUserAgent()).authenticate(azureTokenCredentials);
         // For cloud shell, use subscription in profile as the default subscription.
         if (StringUtils.isEmpty(subscriptionId) && isInCloudShell()) {
             subscriptionId = getSubscriptionOfCloudShell();
