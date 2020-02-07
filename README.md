@@ -3,7 +3,7 @@ This repository contains all Gradle plugins for Microsoft Azure services. A comp
 
 Gradle Plugin | Maven Central Version | Build Status
 ---|---|---
-[Gradle Plugin for Azure Functions](./azure-functions-gradle-plugin/README.md) | [![Maven Central](https://img.shields.io/maven-central/v/com.microsoft.azure/azure-functions-maven-plugin.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.microsoft.azure%22%20AND%20a%3A%22azure-functions-maven-plugin%22) | [![AppVeyor Function Plugin](https://ci.appveyor.com/api/projects/status/5jti4qwh0j4ekh72/branch/develop?svg=true)](https://ci.appveyor.com/project/xscript/azure-gradle-plugins-vvy0i)
+[Gradle Plugin for Azure Functions](./azure-functions-gradle-plugin/README.md) | [![Maven Central](https://img.shields.io/maven-central/v/com.microsoft.azure/azure-functions-gradle-plugin.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.microsoft.azure%22%20AND%20a%3A%22azure-functions-maven-plugin%22) | [![AppVeyor Function Plugin](https://ci.appveyor.com/api/projects/status/5jti4qwh0j4ekh72/branch/develop?svg=true)](https://ci.appveyor.com/project/xscript/azure-gradle-plugins-vvy0i)
 
 ## Feedback and Questions
 To report bugs or request new features, file issues on [Issues](https://github.com/microsoft/azure-gradle-plugins/issues). Or, ask questions on [Stack Overflow with tag azure-java-tools](https://stackoverflow.com/questions/tagged/azure-java-tools).
