@@ -21,3 +21,52 @@
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
+
+# Build output
+target/
+
+*.factorypath
+
+# IDE
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.checkstyle
+.vscode/
+
+# macOS
+.DS_Store
+
+# gradle-wrapper
+!gradle-wrapper.jar
+
+# integration test
+*/src/it/*/bin
+
+jacoco.exec
+bin/
+
+# Build output
+target/
+
+# macOS
+.DS_Store
+
+# mvnw
+!.mvn/wrapper/maven-wrapper.jar
+
+# integration test
+*/src/it/*/bin
+
+jacoco.exec
+bin/
+
+build/
+
+.gradle/
+.settings/
+
+version.txt
+ApplicationInsights.xml
