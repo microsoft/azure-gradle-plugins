@@ -16,7 +16,6 @@ public class FunctionUtils {
     private static final String STAGE_DIR_NOT_FOUND =
             "Stage directory not found. Please run 'gradle azureFunctionsPackage first.";
     private static final String HOST_JSON_NOT_FOUND = "File 'host.json' cannot be found at staging directory.";
-    private static final String LOCAL_SETTINGS_JSON_NOT_FOUND = "File 'local.settings.json' cannot be found at staging directory.";
 
     public static void checkStagingDirectory(String stagingFolder) throws AzureExecutionException {
         final File file = new File(stagingFolder);
@@ -27,11 +26,6 @@ public class FunctionUtils {
         final File hostJson = new File(file, PackageHandler.HOST_JSON);
         if (!hostJson.exists() || !hostJson.isFile()) {
             throw new AzureExecutionException(HOST_JSON_NOT_FOUND);
-        }
-
-        final File localSettingsJson = new File(file, PackageHandler.LOCAL_SETTINGS_JSON);
-        if (!localSettingsJson.exists() || !localSettingsJson.isFile()) {
-            throw new AzureExecutionException(LOCAL_SETTINGS_JSON_NOT_FOUND);
         }
     }
 }
