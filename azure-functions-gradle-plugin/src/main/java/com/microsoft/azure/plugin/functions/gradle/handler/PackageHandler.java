@@ -224,9 +224,10 @@ public class PackageHandler {
     private void copyHostJsonFile() throws IOException {
         Log.prompt("");
         Log.prompt(SAVE_HOST_JSON);
+        final File sourceHostJsonFile = new File(project.getBaseDirectory().toFile(), HOST_JSON);
         final File hostJsonFile = Paths.get(this.deploymentStagingDirectoryPath, HOST_JSON).toFile();
-        if (hostJsonFile.exists()) {
-            FileUtils.copyFile(new File(project.getBaseDirectory().toFile(), HOST_JSON), hostJsonFile);
+        if (sourceHostJsonFile.exists()) {
+            FileUtils.copyFile(sourceHostJsonFile, hostJsonFile);
         } else {
             FileUtils.write(hostJsonFile, "{}", Charset.defaultCharset());
         }
@@ -238,12 +239,12 @@ public class PackageHandler {
     private void copyLocalSettingJsonFile() throws IOException {
         Log.prompt("");
         Log.prompt(SAVE_LOCAL_SETTINGS_JSON);
-        final File localSettingJsonFile = Paths.get(this.deploymentStagingDirectoryPath, LOCAL_SETTINGS_JSON)
+        final File localSettingJsonTargetFile = Paths.get(this.deploymentStagingDirectoryPath, LOCAL_SETTINGS_JSON)
                 .toFile();
-
-        if (localSettingJsonFile.exists()) {
-            FileUtils.copyFile(new File(project.getBaseDirectory().toFile(), LOCAL_SETTINGS_JSON), localSettingJsonFile);
-            Log.prompt(SAVE_SUCCESS + localSettingJsonFile.getAbsolutePath());
+        final File localSettingJsonSrcFile = new File(project.getBaseDirectory().toFile(), LOCAL_SETTINGS_JSON);
+        if (localSettingJsonSrcFile.exists()) {
+            FileUtils.copyFile(localSettingJsonSrcFile, localSettingJsonTargetFile);
+            Log.prompt(SAVE_SUCCESS + localSettingJsonTargetFile.getAbsolutePath());
         } else {
             Log.prompt(SKIP_LOCAL_SETTINGS_JSON);
         }
