@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -72,6 +73,8 @@ public class PackageHandler {
     private static final String BUILD_SUCCESS = "Successfully built Azure Functions.";
     private static final String FUNCTION_JSON = "function.json";
     private static final String EXTENSION_BUNDLE = "extensionBundle";
+
+    private static final String SKIP_LOCAL_SETTINGS_JSON = "File 'local.settings.json' is not found. Skip saving.";
 
     private static final BindingEnum[] FUNCTION_WITHOUT_FUNCTION_EXTENSION = { BindingEnum.HttpOutput,
         BindingEnum.HttpTrigger };
@@ -221,8 +224,14 @@ public class PackageHandler {
     private void copyHostJsonFile() throws IOException {
         Log.prompt("");
         Log.prompt(SAVE_HOST_JSON);
+        final File sourceHostJsonFile = new File(project.getBaseDirectory().toFile(), HOST_JSON);
         final File hostJsonFile = Paths.get(this.deploymentStagingDirectoryPath, HOST_JSON).toFile();
-        FileUtils.copyFile(new File(project.getBaseDirectory().toFile(), HOST_JSON), hostJsonFile);
+        if (sourceHostJsonFile.exists()) {
+            FileUtils.copyFile(sourceHostJsonFile, hostJsonFile);
+        } else {
+            FileUtils.write(hostJsonFile, "{}", Charset.defaultCharset());
+        }
+
         Log.prompt(SAVE_SUCCESS + hostJsonFile.getAbsolutePath());
 
     }
@@ -230,11 +239,15 @@ public class PackageHandler {
     private void copyLocalSettingJsonFile() throws IOException {
         Log.prompt("");
         Log.prompt(SAVE_LOCAL_SETTINGS_JSON);
-        final File localSettingJsonFile = Paths.get(this.deploymentStagingDirectoryPath, LOCAL_SETTINGS_JSON)
+        final File localSettingJsonTargetFile = Paths.get(this.deploymentStagingDirectoryPath, LOCAL_SETTINGS_JSON)
                 .toFile();
-        FileUtils.copyFile(new File(project.getBaseDirectory().toFile(), LOCAL_SETTINGS_JSON), localSettingJsonFile);
-
-        Log.prompt(SAVE_SUCCESS + localSettingJsonFile.getAbsolutePath());
+        final File localSettingJsonSrcFile = new File(project.getBaseDirectory().toFile(), LOCAL_SETTINGS_JSON);
+        if (localSettingJsonSrcFile.exists()) {
+            FileUtils.copyFile(localSettingJsonSrcFile, localSettingJsonTargetFile);
+            Log.prompt(SAVE_SUCCESS + localSettingJsonTargetFile.getAbsolutePath());
+        } else {
+            Log.prompt(SKIP_LOCAL_SETTINGS_JSON);
+        }
     }
 
     private void writeObjectToFile(final ObjectWriter objectWriter, final Object object, final File targetFile)
