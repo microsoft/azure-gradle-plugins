@@ -94,8 +94,7 @@ public class PackageHandler {
         final Set<Method> methods = findAnnotatedMethods(annotationHandler);
 
         if (methods.size() == 0) {
-            Log.prompt(NO_FUNCTIONS);
-            return;
+            throw new AzureExecutionException(NO_FUNCTIONS);
         }
 
         final Map<String, FunctionConfiguration> configMap = getFunctionConfigurations(annotationHandler, methods);
