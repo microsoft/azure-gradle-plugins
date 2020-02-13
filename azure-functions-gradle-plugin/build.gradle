@@ -35,7 +35,7 @@ apply plugin: 'idea'
 apply plugin: 'checkstyle'
 
 checkstyle {
-    toolVersion '8.23';
+    toolVersion '8.29';
     // Whether or not to allow the build to continue if there are warnings.
     ignoreFailures = false
 
@@ -46,7 +46,7 @@ checkstyle {
 repositories {
     mavenLocal()
     mavenCentral()
-    jcenter()
+    jcenter()    
     maven {
         url 'https://oss.sonatype.org/content/repositories/snapshots/'
     }
