@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -49,6 +50,8 @@ import java.util.Set;
 public class PackageHandler {
     public static final String HOST_JSON = "host.json";
     public static final String LOCAL_SETTINGS_JSON = "local.settings.json";
+    private static final String EMPTY_JSON = "{}";
+    private static final String DEFAULT_LOCAL_SETTINGS_JSON = "{ \"IsEncrypted\": false, \"Values\": { \"FUNCTIONS_WORKER_RUNTIME\": \"java\" } }";
     private static final String SEARCH_FUNCTIONS = "Step 1 of 8: Searching for Azure Functions entry points";
     private static final String FOUND_FUNCTIONS = " Azure Functions entry point(s) found.";
     private static final String NO_FUNCTIONS = "Azure Functions entry point not found, plugin will exit.";
@@ -72,7 +75,6 @@ public class PackageHandler {
     private static final String BUILD_SUCCESS = "Successfully built Azure Functions.";
     private static final String FUNCTION_JSON = "function.json";
     private static final String EXTENSION_BUNDLE = "extensionBundle";
-
     private static final BindingEnum[] FUNCTION_WITHOUT_FUNCTION_EXTENSION = { BindingEnum.HttpOutput,
         BindingEnum.HttpTrigger };
     private static final String EXTENSION_BUNDLE_ID = "Microsoft.Azure.Functions.ExtensionBundle";
@@ -221,20 +223,28 @@ public class PackageHandler {
     private void copyHostJsonFile() throws IOException {
         Log.prompt("");
         Log.prompt(SAVE_HOST_JSON);
+        final File sourceHostJsonFile = new File(project.getBaseDirectory().toFile(), HOST_JSON);
         final File hostJsonFile = Paths.get(this.deploymentStagingDirectoryPath, HOST_JSON).toFile();
-        FileUtils.copyFile(new File(project.getBaseDirectory().toFile(), HOST_JSON), hostJsonFile);
+        copyFilesWithDefaultContent(sourceHostJsonFile, hostJsonFile, EMPTY_JSON);
         Log.prompt(SAVE_SUCCESS + hostJsonFile.getAbsolutePath());
-
     }
 
     private void copyLocalSettingJsonFile() throws IOException {
         Log.prompt("");
         Log.prompt(SAVE_LOCAL_SETTINGS_JSON);
-        final File localSettingJsonFile = Paths.get(this.deploymentStagingDirectoryPath, LOCAL_SETTINGS_JSON)
+        final File localSettingJsonTargetFile = Paths.get(this.deploymentStagingDirectoryPath, LOCAL_SETTINGS_JSON)
                 .toFile();
-        FileUtils.copyFile(new File(project.getBaseDirectory().toFile(), LOCAL_SETTINGS_JSON), localSettingJsonFile);
+        final File localSettingJsonSrcFile = new File(project.getBaseDirectory().toFile(), LOCAL_SETTINGS_JSON);
+        copyFilesWithDefaultContent(localSettingJsonSrcFile, localSettingJsonTargetFile, DEFAULT_LOCAL_SETTINGS_JSON);
+        Log.prompt(SAVE_SUCCESS + localSettingJsonTargetFile.getAbsolutePath());
+    }
 
-        Log.prompt(SAVE_SUCCESS + localSettingJsonFile.getAbsolutePath());
+    private static void copyFilesWithDefaultContent(File src, File dest, String defaultContent) throws IOException {
+        if (src.exists()) {
+            FileUtils.copyFile(src, dest);
+        } else {
+            FileUtils.write(src, defaultContent, Charset.defaultCharset());
+        }
     }
 
     private void writeObjectToFile(final ObjectWriter objectWriter, final Object object, final File targetFile)
