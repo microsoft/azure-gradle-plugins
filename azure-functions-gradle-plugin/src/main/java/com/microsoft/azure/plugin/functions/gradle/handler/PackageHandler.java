@@ -50,6 +50,8 @@ import java.util.Set;
 public class PackageHandler {
     public static final String HOST_JSON = "host.json";
     public static final String LOCAL_SETTINGS_JSON = "local.settings.json";
+    private static final String EMPTY_JSON = "{}";
+    private static final String DEFAULT_LOCAL_SETTINGS_JSON = "{ \"IsEncrypted\": false, \"Values\": { \"FUNCTIONS_WORKER_RUNTIME\": \"java\" } }";
     private static final String SEARCH_FUNCTIONS = "Step 1 of 8: Searching for Azure Functions entry points";
     private static final String FOUND_FUNCTIONS = " Azure Functions entry point(s) found.";
     private static final String NO_FUNCTIONS = "Azure Functions entry point not found, plugin will exit.";
@@ -73,9 +75,6 @@ public class PackageHandler {
     private static final String BUILD_SUCCESS = "Successfully built Azure Functions.";
     private static final String FUNCTION_JSON = "function.json";
     private static final String EXTENSION_BUNDLE = "extensionBundle";
-
-    private static final String SKIP_LOCAL_SETTINGS_JSON = "File 'local.settings.json' is not found. Skip saving.";
-
     private static final BindingEnum[] FUNCTION_WITHOUT_FUNCTION_EXTENSION = { BindingEnum.HttpOutput,
         BindingEnum.HttpTrigger };
     private static final String EXTENSION_BUNDLE_ID = "Microsoft.Azure.Functions.ExtensionBundle";
@@ -229,7 +228,7 @@ public class PackageHandler {
         if (sourceHostJsonFile.exists()) {
             FileUtils.copyFile(sourceHostJsonFile, hostJsonFile);
         } else {
-            FileUtils.write(hostJsonFile, "{}", Charset.defaultCharset());
+            FileUtils.write(hostJsonFile, EMPTY_JSON, Charset.defaultCharset());
         }
 
         Log.prompt(SAVE_SUCCESS + hostJsonFile.getAbsolutePath());
@@ -244,10 +243,10 @@ public class PackageHandler {
         final File localSettingJsonSrcFile = new File(project.getBaseDirectory().toFile(), LOCAL_SETTINGS_JSON);
         if (localSettingJsonSrcFile.exists()) {
             FileUtils.copyFile(localSettingJsonSrcFile, localSettingJsonTargetFile);
-            Log.prompt(SAVE_SUCCESS + localSettingJsonTargetFile.getAbsolutePath());
         } else {
-            Log.prompt(SKIP_LOCAL_SETTINGS_JSON);
+            FileUtils.write(localSettingJsonTargetFile, DEFAULT_LOCAL_SETTINGS_JSON, Charset.defaultCharset());
         }
+        Log.prompt(SAVE_SUCCESS + localSettingJsonTargetFile.getAbsolutePath());
     }
 
     private void writeObjectToFile(final ObjectWriter objectWriter, final Object object, final File targetFile)
