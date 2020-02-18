@@ -13,6 +13,7 @@ import com.microsoft.azure.plugin.functions.gradle.telemetry.TelemetryAgent;
 import com.microsoft.azure.plugin.functions.gradle.util.FunctionCliResolver;
 import com.microsoft.azure.plugin.functions.gradle.util.FunctionUtils;
 
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.GradleException;
 import org.gradle.api.tasks.Exec;
@@ -72,7 +73,7 @@ public class LocalRunTask extends Exec implements IFunctionTask {
             final String stagingFolder = ctx.getDeploymentStagingDirectoryPath();
             FunctionUtils.checkStagingDirectory(stagingFolder);
 
-            if ((enableDebug != null && enableDebug.booleanValue()) || StringUtils.isNotEmpty(ctx.getLocalDebugConfig())) {
+            if (BooleanUtils.isTrue(this.enableDebug) || StringUtils.isNotEmpty(ctx.getLocalDebugConfig())) {
                 this.commandLine(cliExec, "host", "start", "--language-worker", "--",
                         getDebugJvmArgument(ctx.getLocalDebugConfig()));
             } else {
