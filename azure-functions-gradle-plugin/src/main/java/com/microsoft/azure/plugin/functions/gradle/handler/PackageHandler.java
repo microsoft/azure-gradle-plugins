@@ -243,7 +243,7 @@ public class PackageHandler {
         if (src.exists()) {
             FileUtils.copyFile(src, dest);
         } else {
-            FileUtils.write(src, defaultContent, Charset.defaultCharset());
+            FileUtils.write(dest, defaultContent, Charset.defaultCharset());
         }
     }
 
