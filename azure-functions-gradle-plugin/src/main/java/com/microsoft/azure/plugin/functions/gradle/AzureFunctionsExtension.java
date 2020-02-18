@@ -31,9 +31,6 @@ public class AzureFunctionsExtension {
     private String localDebug;
 
     @Nullable
-    private Boolean enableDebug;
-
-    @Nullable
     private String subscription;
 
     @Nullable
@@ -80,12 +77,6 @@ public class AzureFunctionsExtension {
     @Optional
     public String getResourceGroup() {
         return resourceGroup;
-    }
-
-    @Input
-    @Optional
-    public Boolean getEnableDebug() {
-        return enableDebug;
     }
 
     @Input
@@ -208,9 +199,4 @@ public class AzureFunctionsExtension {
     public void setLocalDebug(String localDebug) {
         this.localDebug = localDebug;
     }
-
-    public void setEnableDebug(Boolean enableDebug) {
-        this.enableDebug = enableDebug;
-    }
-
 }

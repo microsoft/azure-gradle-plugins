@@ -13,11 +13,13 @@ import com.microsoft.azure.plugin.functions.gradle.telemetry.TelemetryAgent;
 import com.microsoft.azure.plugin.functions.gradle.util.FunctionCliResolver;
 import com.microsoft.azure.plugin.functions.gradle.util.FunctionUtils;
 
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.GradleException;
 import org.gradle.api.tasks.Exec;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.options.Option;
 
 import javax.annotation.Nullable;
 
@@ -30,7 +32,12 @@ public class LocalRunTask extends Exec implements IFunctionTask {
 
     private static final String JDWP_DEBUG_PREFIX = "-agentlib:jdwp=";
 
+    private static final String DEFAULT_DEBUG_CONFIG = "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005";
+
     private static final String RUN_FUNCTIONS_FAILURE = "Failed to run Azure Functions. Please checkout console output.";
+
+    @Option(option = "enableDebug", description = "Enable debug when running functions")
+    private Boolean enableDebug;
 
     @Nullable
     private AzureFunctionsExtension functionsExtension;
@@ -44,6 +51,10 @@ public class LocalRunTask extends Exec implements IFunctionTask {
     @Nullable
     public AzureFunctionsExtension getFunctionsExtension() {
         return functionsExtension;
+    }
+
+    public void setEnableDebug(Boolean enableDebug) {
+        this.enableDebug = enableDebug;
     }
 
     @TaskAction
@@ -62,9 +73,9 @@ public class LocalRunTask extends Exec implements IFunctionTask {
             final String stagingFolder = ctx.getDeploymentStagingDirectoryPath();
             FunctionUtils.checkStagingDirectory(stagingFolder);
 
-            if (StringUtils.isNotEmpty(ctx.getLocalDebugConfig())) {
+            if (BooleanUtils.isTrue(this.enableDebug) || StringUtils.isNotEmpty(ctx.getLocalDebugConfig())) {
                 this.commandLine(cliExec, "host", "start", "--language-worker", "--",
-                        getEnableDebugJvmArgument(ctx.getLocalDebugConfig()));
+                        getDebugJvmArgument(ctx.getLocalDebugConfig()));
             } else {
                 this.commandLine(cliExec, "host", "start");
             }
@@ -87,7 +98,10 @@ public class LocalRunTask extends Exec implements IFunctionTask {
 
     }
 
-    private static String getEnableDebugJvmArgument(String debugConfig) {
+    private static String getDebugJvmArgument(String debugConfig) {
+        if (StringUtils.isBlank(debugConfig)) {
+            return DEFAULT_DEBUG_CONFIG;
+        }
         if (debugConfig.contains(JDWP_DEBUG_PREFIX)) {
             return debugConfig;
         }

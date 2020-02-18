@@ -142,10 +142,6 @@ public class GradleFunctionContext implements IAppServiceContext {
         return this.functionsExtension.getLocalDebug();
     }
 
-    public boolean isLocalDebugEnabled() {
-        return this.functionsExtension.getEnableDebug() != null && this.functionsExtension.getEnableDebug().booleanValue();
-    }
-
     @Override
     public Azure getAzureClient() throws AzureExecutionException {
         if (azure == null) {
