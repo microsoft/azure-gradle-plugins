@@ -25,7 +25,7 @@ import org.gradle.api.tasks.options.Option
 
 plugins {
     id "net.linguica.maven-settings" version "0.5"
-    id 'com.gradle.plugin-publish' version "0.10.1" apply false
+    id "com.gradle.plugin-publish" version "0.10.1"
 }
 apply plugin: 'java-gradle-plugin'
 apply plugin: 'com.gradle.plugin-publish'
@@ -47,9 +47,6 @@ repositories {
     mavenLocal()
     mavenCentral()
     jcenter()    
-    maven {
-        url 'https://oss.sonatype.org/content/repositories/snapshots/'
-    }
 }
 dependencies {
     implementation 'commons-io:commons-io:2.6'
@@ -63,7 +60,7 @@ dependencies {
     implementation 'com.github.zafarkhaja:java-semver:0.9.0'
     implementation 'com.microsoft.azure:azure:1.28.0'
     implementation 'com.microsoft.azure:azure-auth-helper:0.1.0'
-    implementation 'com.microsoft.azure:azure-tools-common:0.1.0-SNAPSHOT'
+    implementation 'com.microsoft.azure:azure-tools-common:0.1.0'
     implementation 'com.microsoft.azure:azure-auth-helper:0.1.0'
     implementation 'org.fusesource.jansi:jansi:1.18'
     testImplementation "junit:junit:4.12"
@@ -72,7 +69,7 @@ dependencies {
 
 gradlePlugin {
     plugins {
-        "${project.pluginShortName}Plugin" {
+        "${project.pluginDisplayName}" {
             id                  = project.pluginId
             implementationClass = project.pluginImplementationClass
         }
@@ -97,4 +94,20 @@ class PrepareResourceTask extends DefaultTask {
 
 task prepareResources(type: PrepareResourceTask) {
     currentProject = project
+}
+
+
+pluginBundle {
+    website = 'https://github.com/microsoft/azure-gradle-plugins/wiki'
+    vcsUrl = 'https://github.com/microsoft/azure-gradle-plugins'
+
+    plugins {
+        "${project.pluginDisplayName}" {
+            id = project.pluginId
+            displayName = 'Azure Functions Plugin for Gradle'
+            version = project.version
+            description = 'Azure Functions Plugin for gradle'
+            tags = ['microsoft', 'azure', 'functions', 'cloud', 'serverless', 'deploy']
+        }
+    }
 }
