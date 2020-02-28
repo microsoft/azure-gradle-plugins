@@ -69,7 +69,7 @@ dependencies {
 
 gradlePlugin {
     plugins {
-        "${project.pluginShortName}Plugin" {
+        "${project.pluginDisplayName}" {
             id                  = project.pluginId
             implementationClass = project.pluginImplementationClass
         }
@@ -98,15 +98,16 @@ task prepareResources(type: PrepareResourceTask) {
 
 
 pluginBundle {
-  website = 'https://github.com/microsoft/azure-gradle-plugins/wiki'
-  vcsUrl = 'https://github.com/microsoft/azure-gradle-plugins'
-  description = 'Azure Functions Plugin for gradle'
-  tags = ['microsoft', 'azure', 'functions', 'cloud', 'serverless', 'deploy']
+    website = 'https://github.com/microsoft/azure-gradle-plugins/wiki'
+    vcsUrl = 'https://github.com/microsoft/azure-gradle-plugins'
 
-  plugins {
-    greetingsPlugin {
-        id = project.pluginId
-        displayName = 'Azure Functions Plugin for Gradle'
+    plugins {
+        "${project.pluginDisplayName}" {
+            id = project.pluginId
+            displayName = 'Azure Functions Plugin for Gradle'
+            version = project.version
+            description = 'Azure Functions Plugin for gradle'
+            tags = ['microsoft', 'azure', 'functions', 'cloud', 'serverless', 'deploy']
+        }
     }
-  }
 }
