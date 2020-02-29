@@ -21,23 +21,9 @@ Gradle | 4.10 and above
 ## Setup
 In your Gradle Java project, add the plugin to your `build.gradle`:
 ```groovy
-buildscript {
-  repositories {
-    mavenCentral()
-    maven {
-        url 'https://oss.sonatype.org/content/repositories/snapshots/'
-    }
-    maven {
-      url 'https://pkgs.dev.azure.com/azure-toolkits/Java/_packaging/azure-toolkits-maven/maven/v1'
-      name 'azure-toolkits-maven'
-    }
-  }
-  dependencies {
-    classpath "com.microsoft.azure:azure-functions-gradle-plugin:1.0.0-SNAPSHOT"
-  }
+plugins {
+  id "com.microsoft.azure.azurefunctions" version "1.0.0-RC"
 }
-
-apply plugin: "com.microsoft.azure.azurefunctions"
 ```
 
 ## Configuration
