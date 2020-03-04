@@ -26,6 +26,7 @@ steps:
     publishJUnitResults: true
     testResultsFiles: '**/TEST-*.xml'
     tasks: 'prepareResources build publishPlugins --release'
-- task: CmdLine@3
+- task: CmdLine@2
   inputs:
-    script: 'rm -f $HOME/.gradle/gradle.encrypted.properties'
+    script: |
+      rm -f $HOME/.gradle/gradle.encrypted.properties
