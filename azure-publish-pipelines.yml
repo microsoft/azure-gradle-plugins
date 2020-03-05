@@ -25,7 +25,7 @@ steps:
     jdkArchitectureOption: 'x64'
     publishJUnitResults: true
     testResultsFiles: '**/TEST-*.xml'
-    tasks: 'prepareResources build publishPlugins --release'
+    tasks: 'prepareReleaseResources build publishPlugins'
 - task: CmdLine@2
   inputs:
     script: |
