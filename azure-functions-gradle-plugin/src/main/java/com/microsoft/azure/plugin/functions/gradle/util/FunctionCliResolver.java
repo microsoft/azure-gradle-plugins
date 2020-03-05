@@ -91,7 +91,7 @@ public class FunctionCliResolver {
                 continue;
             }
 
-            final File file = new File(outputLine.replaceAll("\\r|\\n", ""));
+            final File file = new File(outputLine.replaceAll("\\r|\\n", "").trim());
             if (!file.exists() || !file.isFile()) {
                 continue;
             }
@@ -109,6 +109,6 @@ public class FunctionCliResolver {
         if (exitCode != 0) {
             return new String[0];
         }
-        return StringUtils.split(IOUtils.toString(p.getInputStream(), "utf8"));
+        return StringUtils.split(IOUtils.toString(p.getInputStream(), "utf8"), "\n");
     }
 }
