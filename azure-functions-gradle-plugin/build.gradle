@@ -26,6 +26,7 @@ import org.gradle.api.tasks.options.Option
 plugins {
     id "net.linguica.maven-settings" version "0.5"
     id "com.gradle.plugin-publish" version "0.10.1"
+    id "nu.studer.credentials" version "2.1"
 }
 apply plugin: 'java-gradle-plugin'
 apply plugin: 'com.gradle.plugin-publish'
@@ -96,6 +97,10 @@ task prepareResources(type: PrepareResourceTask) {
     currentProject = project
 }
 
+task prepareReleaseResources(type: PrepareResourceTask) {
+    currentProject = project
+    release = true
+}
 
 pluginBundle {
     website = 'https://github.com/microsoft/azure-gradle-plugins/wiki'
@@ -111,3 +116,18 @@ pluginBundle {
         }
     }
 }
+
+task setupPluginPublishSecret {
+    doLast {
+        def key = credentials['gradle.publish.key']
+        def secret = credentials['gradle.publish.secret']
+        if( !key || !secret) {
+            throw new RuntimeException("gradlePublishKey and/or gradlePublishSecret are not defined")
+        }
+
+        System.properties.setProperty("gradle.publish.key", key)
+        System.properties.setProperty("gradle.publish.secret", secret)
+    }
+}
+
+tasks.publishPlugins.dependsOn tasks.setupPluginPublishSecret
