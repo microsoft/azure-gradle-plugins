@@ -3,7 +3,7 @@ This repository contains all Microsoft Azure plugins for Gradle.
 
 Azure Plugin | Gradle Central Version | Build Status
 ---|---|---
-[Azure Functions Plugin for Gradle](./azure-functions-gradle-plugin/README.md) | [![Gradle Plugin Portal](https://img.shields.io/badge/gradle%20plugin-v1.0.0-blue.svg)](https://plugins.gradle.org/plugin/com.microsoft.azure.azurefunctions) | [![AppVeyor Function Plugin](https://ci.appveyor.com/api/projects/status/5jti4qwh0j4ekh72/branch/develop?svg=true)](https://ci.appveyor.com/project/xscript/azure-gradle-plugins-vvy0i)
+[Azure Functions Plugin for Gradle](./azure-functions-gradle-plugin/README.md) | [![Gradle Plugin Portal](https://img.shields.io/badge/gradle%20plugin-v1.0.0-blue.svg)](https://plugins.gradle.org/plugin/com.microsoft.azure.azurefunctions) | [![Build Status](https://dev.azure.com/mseng/VSJava/_apis/build/status/Azure-Gradle-Plugin/VSCJava-Release-Azure-Gradle-Plugin?branchName=andy-fixpath)](https://dev.azure.com/mseng/VSJava/_build/latest?definitionId=9965&branchName=andy-fixpath)
 
 ## Feedback and Questions
 To report bugs or request new features, file issues on [Issues](https://github.com/microsoft/azure-gradle-plugins/issues). Or, ask questions on [Stack Overflow with tag azure-java-tools](https://stackoverflow.com/questions/tagged/azure-java-tools).
