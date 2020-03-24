@@ -17,11 +17,12 @@ import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
 
 public class AzureFunctionsPlugin implements Plugin<Project> {
-    public static final String GRADLE_FUNCTION_PLUGIN_NAME = "azurefunctions";
+    public static final String GRADLE_PLUGIN_NAME = "azure-functions-gradle-plugin";
+    private static final String GRADLE_FUNCTION_EXTENSION = "azurefunctions";
 
     @Override
     public void apply(final Project project) {
-        final AzureFunctionsExtension extension = project.getExtensions().create(GRADLE_FUNCTION_PLUGIN_NAME,
+        final AzureFunctionsExtension extension = project.getExtensions().create(GRADLE_FUNCTION_EXTENSION,
                 AzureFunctionsExtension.class, project);
         TelemetryAgent.instance.showPrivacyStatement();
         if (extension.getAllowTelemetry() != null) {

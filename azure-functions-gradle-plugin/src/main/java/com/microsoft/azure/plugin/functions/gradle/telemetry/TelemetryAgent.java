@@ -74,9 +74,9 @@ public class TelemetryAgent implements TelemetryConfiguration {
 
     public String getUserAgent() {
         return this.allowTelemetry ?
-            String.format("%s/%s %s:%s %s:%s", AzureFunctionsPlugin.GRADLE_FUNCTION_PLUGIN_NAME, pluginVersion,
+            String.format("%s/%s %s:%s %s:%s", AzureFunctionsPlugin.GRADLE_PLUGIN_NAME, pluginVersion,
                         INSTALLATION_ID_KEY, installationId, SESSION_ID_KEY, sessionId)
-                : String.format("%s/%s", AzureFunctionsPlugin.GRADLE_FUNCTION_PLUGIN_NAME, pluginVersion);
+                : String.format("%s/%s", AzureFunctionsPlugin.GRADLE_PLUGIN_NAME, pluginVersion);
     }
 
     public void initTelemetry() {
@@ -95,7 +95,7 @@ public class TelemetryAgent implements TelemetryConfiguration {
     public Map<String, String> getTelemetryProperties() {
         final Map<String, String> map = new HashMap<>();
         map.put(INSTALLATION_ID_KEY, installationId);
-        map.put(PLUGIN_NAME_KEY, AzureFunctionsPlugin.GRADLE_FUNCTION_PLUGIN_NAME);
+        map.put(PLUGIN_NAME_KEY, AzureFunctionsPlugin.GRADLE_PLUGIN_NAME);
         map.put(PLUGIN_VERSION_KEY, getPluginVersion());
         map.put(SUBSCRIPTION_ID_KEY, subscriptionId);
         map.put(SESSION_ID_KEY, sessionId);
