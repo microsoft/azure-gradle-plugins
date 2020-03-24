@@ -1,11 +1,7 @@
 # Azure Functions Plugin for Gradle
-
-[![Maven Central](https://img.shields.io/maven-central/v/com.microsoft.azure/azure-functions-gradle-plugin.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.microsoft.azure%22%20AND%20a%3A%22azure-functions-gradle-plugin%22)
+[![Gradle Plugin Portal](https://img.shields.io/maven-metadata/v.svg?colorB=007ec6&label=Azure+Functions+Plugin+for+Gradle&metadataUrl=https%3A%2F%2Fplugins.gradle.org%2Fm2%2Fcom%2Fmicrosoft%2Fazure%2Fazure-functions-gradle-plugin%2Fmaven-metadata.xml)](https://plugins.gradle.org/plugin/com.microsoft.azure.azurefunctions)
 
 This plugin provides seamless integration into Gradle projects. You can package a Java Functions project, run it locally or deploy it to Azure with tasks provided by this plugin.
-
-## Documentation
-[![Maven Central](https://img.shields.io/maven-central/v/com.microsoft.azure/azure-functions-gradle-plugin.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.microsoft.azure%22%20AND%20a%3A%22azure-functions-gradle-plugin%22)
 
 ## Prerequisites
 
