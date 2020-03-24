@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 
 public class GradleFunctionContext implements IAppServiceContext {
     private static final String GRADLE_PLUGIN_POSTFIX = "-gradle-plugin";
-    private static final String GRADLE_PLUGIN_NAME = "azure-functions-gradle-plugin";
 
     private File stagingDirectory;
     private Azure azure;
@@ -53,7 +52,7 @@ public class GradleFunctionContext implements IAppServiceContext {
         if (stagingDirectory == null) {
             synchronized (this) {
                 if (stagingDirectory == null) {
-                    final String outputFolder = GRADLE_PLUGIN_NAME.replaceAll(GRADLE_PLUGIN_POSTFIX, "");
+                    final String outputFolder = AzureFunctionsPlugin.GRADLE_PLUGIN_NAME.replaceAll(GRADLE_PLUGIN_POSTFIX, "");
 
                     final String stagingDirectoryPath = Paths.get(this.javaProject.getBuildDirectory().toString(),
                             outputFolder, this.functionsExtension.getAppName()).toString();
