@@ -50,8 +50,9 @@ import java.util.Set;
 public class PackageHandler {
     public static final String HOST_JSON = "host.json";
     public static final String LOCAL_SETTINGS_JSON = "local.settings.json";
+    private static final String DOCS_LINK = "https://docs.microsoft.com/en-us/azure/azure-functions/functions-run-local?" +
+        "tabs=windows%2Ccsharp%2Cbash#local-settings-file";
     private static final String EMPTY_JSON = "{}";
-    private static final String DEFAULT_LOCAL_SETTINGS_JSON = "{ \"IsEncrypted\": false, \"Values\": { \"FUNCTIONS_WORKER_RUNTIME\": \"java\" } }";
     private static final String SEARCH_FUNCTIONS = "Step 1 of 8: Searching for Azure Functions entry points";
     private static final String FOUND_FUNCTIONS = " Azure Functions entry point(s) found.";
     private static final String NO_FUNCTIONS = "Azure Functions entry point not found, plugin will exit.";
@@ -229,13 +230,22 @@ public class PackageHandler {
         Log.prompt(SAVE_SUCCESS + hostJsonFile.getAbsolutePath());
     }
 
-    private void copyLocalSettingJsonFile() throws IOException {
+    private void copyLocalSettingJsonFile() throws AzureExecutionException, IOException {
         Log.prompt("");
         Log.prompt(SAVE_LOCAL_SETTINGS_JSON);
         final File localSettingJsonTargetFile = Paths.get(this.deploymentStagingDirectoryPath, LOCAL_SETTINGS_JSON)
                 .toFile();
         final File localSettingJsonSrcFile = new File(project.getBaseDirectory().toFile(), LOCAL_SETTINGS_JSON);
-        copyFilesWithDefaultContent(localSettingJsonSrcFile, localSettingJsonTargetFile, DEFAULT_LOCAL_SETTINGS_JSON);
+        if (localSettingJsonSrcFile.exists() && localSettingJsonSrcFile.length() > 0) {
+            copyFilesWithDefaultContent(localSettingJsonSrcFile, localSettingJsonTargetFile, null);
+        } else {
+            if (!localSettingJsonSrcFile.exists()) {
+                throw new AzureExecutionException("Cannot find " + LOCAL_SETTINGS_JSON + ", please check the document at " + DOCS_LINK);
+            } else {
+                throw new AzureExecutionException("The " + LOCAL_SETTINGS_JSON + " file is empty, please check the document at" + DOCS_LINK);
+            }
+        }
+
         Log.prompt(SAVE_SUCCESS + localSettingJsonTargetFile.getAbsolutePath());
     }
 

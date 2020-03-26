@@ -36,7 +36,7 @@ apply plugin: 'idea'
 apply plugin: 'checkstyle'
 
 checkstyle {
-    toolVersion '8.29';
+    toolVersion '8.30';
     // Whether or not to allow the build to continue if there are warnings.
     ignoreFailures = false
 
