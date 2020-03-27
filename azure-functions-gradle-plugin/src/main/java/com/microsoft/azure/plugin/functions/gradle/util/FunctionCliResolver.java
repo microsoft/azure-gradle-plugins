@@ -7,7 +7,7 @@ package com.microsoft.azure.plugin.functions.gradle.util;
 
 import com.microsoft.azure.common.function.utils.CommandUtils;
 import com.microsoft.azure.common.logging.Log;
-import com.microsoft.azure.maven.common.utils.TextUtils;
+import com.microsoft.azure.common.utils.TextUtils;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
