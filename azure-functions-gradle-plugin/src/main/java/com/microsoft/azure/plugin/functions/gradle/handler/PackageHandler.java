@@ -50,8 +50,7 @@ import java.util.Set;
 public class PackageHandler {
     public static final String HOST_JSON = "host.json";
     public static final String LOCAL_SETTINGS_JSON = "local.settings.json";
-    private static final String DOCS_LINK = "https://docs.microsoft.com/en-us/azure/azure-functions/functions-run-local?" +
-        "tabs=windows%2Ccsharp%2Cbash#local-settings-file";
+    private static final String DOCS_LINK = "https://aka.ms/functions-local-settings";
     private static final String EMPTY_JSON = "{}";
     private static final String SEARCH_FUNCTIONS = "Step 1 of 8: Searching for Azure Functions entry points";
     private static final String FOUND_FUNCTIONS = " Azure Functions entry point(s) found.";
@@ -240,7 +239,8 @@ public class PackageHandler {
             copyFilesWithDefaultContent(localSettingJsonSrcFile, localSettingJsonTargetFile, null);
         } else {
             if (!localSettingJsonSrcFile.exists()) {
-                throw new AzureExecutionException("Cannot find " + LOCAL_SETTINGS_JSON + ", please check the document at " + DOCS_LINK);
+                throw new AzureExecutionException("Cannot find file: " + localSettingJsonSrcFile.getAbsolutePath() +
+                        ", please check the document at " + DOCS_LINK);
             } else {
                 throw new AzureExecutionException("The " + LOCAL_SETTINGS_JSON + " file is empty, please check the document at" + DOCS_LINK);
             }
