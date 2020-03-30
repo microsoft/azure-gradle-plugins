@@ -242,7 +242,8 @@ public class PackageHandler {
                 throw new AzureExecutionException("Cannot find file: " + localSettingJsonSrcFile.getAbsolutePath() +
                         ", please check the document at " + DOCS_LINK);
             } else {
-                throw new AzureExecutionException("The " + LOCAL_SETTINGS_JSON + " file is empty, please check the document at" + DOCS_LINK);
+                throw new AzureExecutionException("The " + localSettingJsonSrcFile.getAbsolutePath() +
+                        " file is empty, please check the document at" + DOCS_LINK);
             }
         }
 
