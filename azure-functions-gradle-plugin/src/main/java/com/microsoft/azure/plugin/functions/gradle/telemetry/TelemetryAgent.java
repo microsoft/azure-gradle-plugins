@@ -7,7 +7,7 @@
 package com.microsoft.azure.plugin.functions.gradle.telemetry;
 
 import com.microsoft.azure.common.logging.Log;
-import com.microsoft.azure.maven.common.telemetry.GetHashMac;
+import com.microsoft.azure.common.utils.GetHashMac;
 import com.microsoft.azure.plugin.functions.gradle.AzureFunctionsPlugin;
 
 import org.apache.commons.io.IOUtils;
