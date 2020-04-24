@@ -1,8 +1,13 @@
 # Change Log
 All notable changes to the "Azure Function Plugin for Gradle" will be documented in this file.
 - [Change Log](#change-log)
+  - [1.2.0](#120)
   - [1.1.0](#110)
   - [1.0.0](#100)
+
+## 1.2.0
+- Update depdendencies
+- Fix issue [46](https://github.com/microsoft/azure-gradle-plugins/issues/46): java.io.IOException: Resource not found: /version.txt
 
 
 ## 1.1.0
