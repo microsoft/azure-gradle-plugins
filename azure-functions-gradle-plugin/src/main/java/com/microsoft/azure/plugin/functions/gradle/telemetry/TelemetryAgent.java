@@ -61,7 +61,7 @@ public class TelemetryAgent implements TelemetryConfiguration {
 
     private TelemetryAgent() {
         try {
-            this.pluginVersion = IOUtils.resourceToString("/version.txt", Charset.defaultCharset()).trim();;
+            this.pluginVersion = IOUtils.toString(TelemetryAgent.class.getResource("/version.txt"), Charset.defaultCharset()).trim();
         } catch (IOException e) {
             this.pluginVersion = "unknown";
             Log.error(e);
