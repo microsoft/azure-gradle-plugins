@@ -6,13 +6,6 @@
 
 package com.microsoft.azure.plugin.functions.gradle.telemetry;
 
-import com.microsoft.azure.common.logging.Log;
-import com.microsoft.azure.common.utils.GetHashMac;
-import com.microsoft.azure.plugin.functions.gradle.AzureFunctionsPlugin;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -25,6 +18,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
+
+import com.microsoft.azure.common.logging.Log;
+import com.microsoft.azure.common.utils.GetHashMac;
+import com.microsoft.azure.plugin.functions.gradle.AzureFunctionsPlugin;
 
 public class TelemetryAgent implements TelemetryConfiguration {
     public static final String AUTH_INIT_FAILURE = "AuthInitFailure";
@@ -61,7 +61,7 @@ public class TelemetryAgent implements TelemetryConfiguration {
 
     private TelemetryAgent() {
         try {
-            this.pluginVersion = IOUtils.resourceToString("/version.txt", Charset.defaultCharset(), TelemetryAgent.class.getClassLoader()).trim();;
+            this.pluginVersion = IOUtils.toString(TelemetryAgent.class.getResource("/version.txt"), Charset.defaultCharset()).trim();
         } catch (IOException e) {
             this.pluginVersion = "unknown";
             Log.error(e);
