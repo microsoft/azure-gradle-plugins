@@ -6,11 +6,11 @@
 
 package com.microsoft.azure.plugin.functions.gradle;
 
+import com.microsoft.azure.auth.AzureTokenWrapper;
 import com.microsoft.azure.auth.configuration.AuthConfiguration;
 import com.microsoft.azure.common.exceptions.AzureExecutionException;
 import com.microsoft.azure.common.function.configurations.RuntimeConfiguration;
 import com.microsoft.azure.common.project.IProject;
-import com.microsoft.azure.credentials.AzureTokenCredentials;
 import com.microsoft.azure.management.Azure;
 
 import java.util.Map;
@@ -48,7 +48,7 @@ public interface IAppServiceContext {
 
     Azure getAzureClient() throws AzureExecutionException;
 
-    AzureTokenCredentials getAzureCredential() throws AzureExecutionException;
+    AzureTokenWrapper getAzureTokenWrapper() throws AzureExecutionException;
 
     IProject getProject();
 }

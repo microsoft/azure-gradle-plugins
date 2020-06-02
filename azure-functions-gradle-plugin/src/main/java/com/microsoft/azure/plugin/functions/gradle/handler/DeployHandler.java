@@ -360,7 +360,7 @@ public class DeployHandler {
 
     private ApplicationInsightsComponent getOrCreateApplicationInsights(boolean enableCreation) throws AzureExecutionException {
         final String subscriptionId = ctx.getAzureClient().subscriptionId();
-        final AzureTokenCredentials credentials = ctx.getAzureCredential();
+        final AzureTokenCredentials credentials = ctx.getAzureTokenWrapper();
         final ApplicationInsightsManager applicationInsightsManager = new ApplicationInsightsManager(credentials,
                 subscriptionId, TelemetryAgent.instance.getUserAgent());
         final String appInsightsInstance = ctx.getAppInsightsInstance();

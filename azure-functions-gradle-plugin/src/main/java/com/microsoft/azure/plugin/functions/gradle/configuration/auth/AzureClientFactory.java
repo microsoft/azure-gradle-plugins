@@ -47,7 +47,7 @@ public class AzureClientFactory {
     private static final String SUBSCRIPTION_NOT_SPECIFIED = "Subscription ID was not specified, using the first subscription in current account," +
             " please refer https://github.com/microsoft/azure-maven-plugins/wiki/Authentication#subscription for more information.";
 
-    public static AzureTokenWrapper getAzureCredential(String type, AuthConfiguration auth) throws AzureLoginFailureException {
+    public static AzureTokenWrapper getAzureTokenWrapper(String type, AuthConfiguration auth) throws AzureLoginFailureException {
         TelemetryAgent.instance.setAuthType(type);
         final AzureEnvironment environment = AzureEnvironment.AZURE;
         return getAuthTypeEnum(type).getAzureToken(auth, environment);
