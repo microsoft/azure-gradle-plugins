@@ -10,6 +10,7 @@ import com.microsoft.azure.auth.configuration.AuthConfiguration;
 import com.microsoft.azure.common.exceptions.AzureExecutionException;
 import com.microsoft.azure.common.function.configurations.RuntimeConfiguration;
 import com.microsoft.azure.common.project.IProject;
+import com.microsoft.azure.credentials.AzureTokenCredentials;
 import com.microsoft.azure.management.Azure;
 
 import java.util.Map;
@@ -39,7 +40,15 @@ public interface IAppServiceContext {
 
     String getDeploymentType();
 
+    String getAppInsightsInstance();
+
+    String getAppInsightsKey();
+
+    boolean isDisableAppInsights();
+
     Azure getAzureClient() throws AzureExecutionException;
+
+    AzureTokenCredentials getAzureCredential() throws AzureExecutionException;
 
     IProject getProject();
 }

@@ -18,11 +18,12 @@ import com.microsoft.azure.auth.configuration.AuthConfiguration;
 import com.microsoft.azure.auth.configuration.AuthType;
 import com.microsoft.azure.auth.exception.AzureLoginFailureException;
 import com.microsoft.azure.common.logging.Log;
+import com.microsoft.azure.credentials.AzureTokenCredentials;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.management.Azure.Authenticated;
 import com.microsoft.azure.management.resources.Subscription;
 import com.microsoft.azure.plugin.functions.gradle.telemetry.TelemetryAgent;
-
+import groovy.lang.Tuple2;
 import org.apache.commons.io.input.BOMInputStream;
 import org.apache.commons.lang3.StringUtils;
 
@@ -48,7 +49,7 @@ public class AzureClientFactory {
     private static final String SUBSCRIPTION_NOT_SPECIFIED = "Subscription ID was not specified, using the first subscription in current account," +
             " please refer https://github.com/microsoft/azure-maven-plugins/wiki/Authentication#subscription for more information.";
 
-    public static Azure getAzureClient(String type, AuthConfiguration auth, String subscriptionId)
+    public static Tuple2<Azure, AzureTokenCredentials> getAzureClient(String type, AuthConfiguration auth, String subscriptionId)
             throws AzureLoginFailureException {
         final TelemetryAgent telemetry = TelemetryAgent.instance;
         try {
@@ -58,7 +59,7 @@ public class AzureClientFactory {
             if (azureTokenWrapper != null) {
                 telemetry.setAuthMethod(azureTokenWrapper.getAuthMethod().name());
             }
-            return azureTokenWrapper == null ? null : getAzureClientInner(azureTokenWrapper, subscriptionId);
+            return azureTokenWrapper == null ? null : new Tuple2<>(getAzureClientInner(azureTokenWrapper, subscriptionId), azureTokenWrapper);
         } catch (IOException e) {
             telemetry.trackEvent(TelemetryAgent.AUTH_INIT_FAILURE);
             throw new AzureLoginFailureException(e.getMessage());

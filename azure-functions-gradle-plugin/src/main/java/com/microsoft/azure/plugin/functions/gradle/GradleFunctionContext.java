@@ -11,11 +11,13 @@ import com.microsoft.azure.common.exceptions.AzureExecutionException;
 import com.microsoft.azure.common.function.configurations.RuntimeConfiguration;
 import com.microsoft.azure.common.project.IProject;
 import com.microsoft.azure.common.project.JavaProject;
+import com.microsoft.azure.credentials.AzureTokenCredentials;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.plugin.functions.gradle.configuration.auth.AzureClientFactory;
 import com.microsoft.azure.plugin.functions.gradle.configuration.auth.GradleAuthConfiguration;
 import com.microsoft.azure.plugin.functions.gradle.util.GradleProjectUtils;
 
+import groovy.lang.Tuple2;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.Project;
 
@@ -32,6 +34,7 @@ public class GradleFunctionContext implements IAppServiceContext {
 
     private File stagingDirectory;
     private Azure azure;
+    private AzureTokenCredentials credential;
 
     private JavaProject javaProject;
     private AzureFunctionsExtension functionsExtension;
@@ -137,6 +140,21 @@ public class GradleFunctionContext implements IAppServiceContext {
         return functionsExtension.getDeployment().getType();
     }
 
+    @Override
+    public String getAppInsightsInstance() {
+        return functionsExtension.getAppInsightsInstance();
+    }
+
+    @Override
+    public String getAppInsightsKey() {
+        return functionsExtension.getAppInsightsKey();
+    }
+
+    @Override
+    public boolean isDisableAppInsights() {
+        return functionsExtension.isDisableAppInsights();
+    }
+
     public String getLocalDebugConfig() {
         return this.functionsExtension.getLocalDebug();
     }
@@ -146,7 +164,10 @@ public class GradleFunctionContext implements IAppServiceContext {
         if (azure == null) {
             final GradleAuthConfiguration auth = functionsExtension.getAuthentication();
             try {
-                azure = AzureClientFactory.getAzureClient(auth != null ? auth.getType() : null, auth, this.getSubscription());
+                Tuple2<Azure, AzureTokenCredentials> credentialsTuple = AzureClientFactory
+                        .getAzureClient(auth != null ? auth.getType() : null, auth, this.getSubscription());
+                this.azure = credentialsTuple.getFirst();
+                this.credential = credentialsTuple.getSecond();
             } catch (AzureLoginFailureException e) {
                 throw new AzureExecutionException(e.getMessage(), e);
             }
@@ -161,5 +182,10 @@ public class GradleFunctionContext implements IAppServiceContext {
         }
         return azure;
 
+    }
+
+    @Override
+    public AzureTokenCredentials getAzureCredential() throws AzureExecutionException {
+        return credential;
     }
 }

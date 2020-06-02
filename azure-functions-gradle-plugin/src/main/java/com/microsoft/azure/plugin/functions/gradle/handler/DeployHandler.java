@@ -6,8 +6,8 @@
 package com.microsoft.azure.plugin.functions.gradle.handler;
 
 import com.google.common.base.Preconditions;
-import com.microsoft.azure.PagedList;
 import com.microsoft.azure.common.Utils;
+import com.microsoft.azure.common.applicationinsights.ApplicationInsightsManager;
 import com.microsoft.azure.common.appservice.DeployTargetType;
 import com.microsoft.azure.common.appservice.DeploymentType;
 import com.microsoft.azure.common.appservice.OperatingSystemEnum;
@@ -31,6 +31,8 @@ import com.microsoft.azure.common.handlers.artifact.FTPArtifactHandlerImpl;
 import com.microsoft.azure.common.handlers.artifact.ZIPArtifactHandlerImpl;
 import com.microsoft.azure.common.logging.Log;
 import com.microsoft.azure.common.utils.AppServiceUtils;
+import com.microsoft.azure.credentials.AzureTokenCredentials;
+import com.microsoft.azure.management.applicationinsights.v2015_05_01.ApplicationInsightsComponent;
 import com.microsoft.azure.management.appservice.FunctionApp;
 import com.microsoft.azure.management.appservice.FunctionApp.DefinitionStages.WithCreate;
 import com.microsoft.azure.management.appservice.FunctionApp.Update;
@@ -40,7 +42,7 @@ import com.microsoft.azure.management.resources.fluentcore.arm.Region;
 import com.microsoft.azure.plugin.functions.gradle.GradleDockerCredentialProvider;
 import com.microsoft.azure.plugin.functions.gradle.IAppServiceContext;
 import com.microsoft.azure.plugin.functions.gradle.configuration.GradleRuntimeConfiguration;
-
+import com.microsoft.azure.plugin.functions.gradle.telemetry.TelemetryAgent;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
@@ -84,6 +86,24 @@ public class DeployHandler {
             " meet the requirement of Azure Functions, set it to Java 8";
     public static final String UNKNOWN_DEPLOYMENT_TYPE = "The value of <deploymentType> is unknown, supported values are: " +
             "ftp, zip, msdeploy, run_from_blob and run_from_zip.";
+    private static final String APPINSIGHTS_INSTRUMENTATION_KEY = "APPINSIGHTS_INSTRUMENTATIONKEY";
+    private static final String APPLICATION_INSIGHTS_NOT_SUPPORTED = "Application Insights features are not supported with" +
+            " current authentication, skip related steps.";
+    private static final String APPLICATION_INSIGHTS_CONFIGURATION_CONFLICT = "Contradictory configurations for application insights," +
+            " specify 'appInsightsKey' or 'appInsightsInstance' if you want to enable it, and specify " +
+            "'disableAppInsights=true' if you want to disable it.";
+    private static final String FAILED_TO_GET_APPLICATION_INSIGHTS = "The application insights %s cannot be found, " +
+            "will create it in resource group %s.";
+    private static final String SKIP_CREATING_APPLICATION_INSIGHTS = "Skip creating application insights";
+    private static final String APPLICATION_INSIGHTS_CREATE_START = "Creating application insights...";
+    private static final String APPLICATION_INSIGHTS_CREATED = "Successfully created the application insights %s " +
+            "for this Function App. You can visit https://portal.azure.com/#resource%s/overview to view your " +
+            "Application Insights component.";
+    private static final String APPLICATION_INSIGHTS_CREATE_FAILED = "Unable to create the Application Insights " +
+            "for the Function App due to error %s. Please use the Azure Portal to manually create and configure the " +
+            "Application Insights if needed.";
+    private static final String INSTRUMENTATION_KEY_IS_NOT_VALID = "Instrumentation key is not valid, " +
+            "please update the application insights configuration";
 
     public static final OperatingSystemEnum DEFAULT_OS = OperatingSystemEnum.Windows;
     private IAppServiceContext ctx;
@@ -217,8 +237,7 @@ public class DeployHandler {
     }
 
     public FunctionApp getFunctionApp() throws AzureExecutionException {
-        final PagedList<FunctionApp> functionList = ctx.getAzureClient().appServices().functionApps().list();
-        return AppServiceUtils.findAppServiceInPagedList(functionList, ctx.getResourceGroup(), ctx.getAppName());
+        return ctx.getAzureClient().appServices().functionApps().getByResourceGroup(ctx.getResourceGroup(), ctx.getAppName());
     }
 
     public FunctionExtensionVersion getFunctionExtensionVersion() throws AzureExecutionException {
@@ -294,4 +313,80 @@ public class DeployHandler {
         }
         return builder.stagingDirectoryPath(this.ctx.getDeploymentStagingDirectoryPath()).build();
     }
+
+    /**
+     * Binding Function App with Application Insights
+     * Will follow the below sequence appInsightsKey -> appInsightsInstance -> Create New AI Instance (Function creation only)
+     * @param appSettings App settings map
+     * @param isCreation Define the stage of function app, as we only create ai instance by default when create new function apps
+     * @throws AzureExecutionException When there are conflicts in configuration or meet errors while finding/creating application insights instance
+     */
+    private void bindApplicationInsights(Map appSettings, boolean isCreation) throws AzureExecutionException {
+        // Skip app insights creation when user specify ai connection string in app settings
+        if (appSettings.containsKey(APPINSIGHTS_INSTRUMENTATION_KEY)) {
+            return;
+        }
+        final Boolean isDisableAppInsights = ctx.isDisableAppInsights();
+        final String appInsightsKey = ctx.getAppInsightsKey();
+        final String appInsightsInstance = ctx.getAppInsightsInstance();
+        if (isDisableAppInsights && (StringUtils.isNotEmpty(appInsightsKey) || StringUtils.isNotEmpty(appInsightsInstance))) {
+            throw new AzureExecutionException(APPLICATION_INSIGHTS_CONFIGURATION_CONFLICT);
+        }
+        String instrumentationKey = null;
+        if (StringUtils.isNotEmpty(appInsightsKey)) {
+            instrumentationKey = appInsightsKey;
+            if (!Utils.isGUID(instrumentationKey)) {
+                throw new AzureExecutionException(INSTRUMENTATION_KEY_IS_NOT_VALID);
+            }
+        } else {
+            final ApplicationInsightsComponent applicationInsightsComponent = getOrCreateApplicationInsights(isCreation);
+            instrumentationKey = applicationInsightsComponent == null ? null : applicationInsightsComponent.instrumentationKey();
+        }
+        if (StringUtils.isNotEmpty(instrumentationKey)) {
+            appSettings.put(APPINSIGHTS_INSTRUMENTATION_KEY, instrumentationKey);
+        }
+    }
+
+    private ApplicationInsightsComponent getOrCreateApplicationInsights(boolean enableCreation) throws AzureExecutionException {
+        final AzureTokenCredentials credentials = ctx.getAzureCredential();
+        if (credentials == null) {
+            Log.warn(APPLICATION_INSIGHTS_NOT_SUPPORTED);
+            return null;
+        }
+        final String subscriptionId = ctx.getAzureClient().subscriptionId();
+        final ApplicationInsightsManager applicationInsightsManager = new ApplicationInsightsManager(credentials,
+                subscriptionId, TelemetryAgent.instance.getUserAgent());
+        final String appInsightsInstance = ctx.getAppInsightsInstance();
+        return StringUtils.isNotEmpty(appInsightsInstance) ?
+                getApplicationInsights(applicationInsightsManager, appInsightsInstance) :
+                enableCreation ? createApplicationInsights(applicationInsightsManager, ctx.getAppName()) : null;
+    }
+
+    private ApplicationInsightsComponent getApplicationInsights(ApplicationInsightsManager applicationInsightsManager,
+                                                                String appInsightsInstance) {
+        final ApplicationInsightsComponent resource = applicationInsightsManager.getApplicationInsightsInstance(ctx.getResourceGroup(),
+                appInsightsInstance);
+        if (resource == null) {
+            Log.warn(String.format(FAILED_TO_GET_APPLICATION_INSIGHTS, appInsightsInstance, ctx.getResourceGroup()));
+            return createApplicationInsights(applicationInsightsManager, appInsightsInstance);
+        }
+        return resource;
+    }
+
+    private ApplicationInsightsComponent createApplicationInsights(ApplicationInsightsManager applicationInsightsManager, String name) {
+        if (ctx.isDisableAppInsights()) {
+            Log.info(SKIP_CREATING_APPLICATION_INSIGHTS);
+            return null;
+        }
+        try {
+            Log.info(APPLICATION_INSIGHTS_CREATE_START);
+            final ApplicationInsightsComponent resource = applicationInsightsManager.createApplicationInsights(ctx.getResourceGroup(), name, ctx.getRegion());
+            Log.info(String.format(APPLICATION_INSIGHTS_CREATED, resource.name(), resource.id()));
+            return resource;
+        } catch (Exception e) {
+            Log.warn(String.format(APPLICATION_INSIGHTS_CREATE_FAILED, e.getMessage()));
+            return null;
+        }
+    }
+
 }
