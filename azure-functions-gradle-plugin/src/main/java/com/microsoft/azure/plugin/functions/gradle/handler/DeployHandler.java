@@ -76,7 +76,7 @@ public class DeployHandler {
             "Creating a new function app...";
     public static final String FUNCTION_APP_CREATED = "Successfully created the function app: %s";
     public static final String FUNCTION_APP_UPDATE = "Updating the specified function app...";
-    public static final String FUNCTION_APP_UPDATE_DONE = "Successfully updated the function app.";
+    public static final String FUNCTION_APP_UPDATE_DONE = "Successfully updated the function app %s.";
     public static final String DEPLOYMENT_TYPE_KEY = "deploymentType";
 
     public static final String HOST_JAVA_VERSION = "Java version of function host : %s";
@@ -87,8 +87,6 @@ public class DeployHandler {
     public static final String UNKNOWN_DEPLOYMENT_TYPE = "The value of <deploymentType> is unknown, supported values are: " +
             "ftp, zip, msdeploy, run_from_blob and run_from_zip.";
     private static final String APPINSIGHTS_INSTRUMENTATION_KEY = "APPINSIGHTS_INSTRUMENTATIONKEY";
-    private static final String APPLICATION_INSIGHTS_NOT_SUPPORTED = "Application Insights features are not supported with" +
-            " current authentication, skip related steps.";
     private static final String APPLICATION_INSIGHTS_CONFIGURATION_CONFLICT = "Contradictory configurations for application insights," +
             " specify 'appInsightsKey' or 'appInsightsInstance' if you want to enable it, and specify " +
             "'disableAppInsights=true' if you want to disable it.";
@@ -137,9 +135,12 @@ public class DeployHandler {
 
     private FunctionApp createFunctionApp() throws AzureExecutionException {
         Log.prompt(FUNCTION_APP_CREATE_START);
+        final Map appSettings = getAppSettingsWithDefaultValue();
+        // get/create ai instances only if user didn't specify ai connection string in app settings
+        bindApplicationInsights(appSettings, true);
         final FunctionRuntimeHandler runtimeHandler = getFunctionRuntimeHandler();
         final WithCreate withCreate = runtimeHandler.defineAppWithRuntime();
-        configureAppSettings(withCreate::withAppSettings, getAppSettingsWithDefaultValue());
+        configureAppSettings(withCreate::withAppSettings, appSettings);
         final FunctionApp appCreated = withCreate.withJavaVersion(DEFAULT_JAVA_VERSION).withWebContainer(null).create();
         Log.prompt(String.format(FUNCTION_APP_CREATED, ctx.getAppName()));
         return appCreated;
@@ -153,9 +154,18 @@ public class DeployHandler {
         runtimeHandler.updateAppServicePlan(app);
         final Update update = runtimeHandler.updateAppRuntime(app);
         checkHostJavaVersion(app, update); // Check Java Version of Server
-        configureAppSettings(update::withAppSettings, getAppSettingsWithDefaultValue());
+        final Map appSettings = getAppSettingsWithDefaultValue();
+        if (ctx.isDisableAppInsights()) {
+            // Remove App Insights connection when `disableAppInsights` set to true
+            // Need to call `withoutAppSetting` as withAppSettings will only not remove parameters
+            validateApplicationInsightsConfiguration();
+            update.withoutAppSetting(APPINSIGHTS_INSTRUMENTATION_KEY);
+        } else {
+            bindApplicationInsights(appSettings, false);
+        }
+        configureAppSettings(update::withAppSettings, appSettings);
         final FunctionApp appUpdated = update.apply();
-        Log.prompt(FUNCTION_APP_UPDATE_DONE + ctx.getAppName());
+        Log.prompt(String.format(FUNCTION_APP_UPDATE_DONE, ctx.getAppName()));
         return appUpdated;
     }
 
@@ -322,19 +332,14 @@ public class DeployHandler {
      * @throws AzureExecutionException When there are conflicts in configuration or meet errors while finding/creating application insights instance
      */
     private void bindApplicationInsights(Map appSettings, boolean isCreation) throws AzureExecutionException {
+        validateApplicationInsightsConfiguration();
         // Skip app insights creation when user specify ai connection string in app settings
         if (appSettings.containsKey(APPINSIGHTS_INSTRUMENTATION_KEY)) {
             return;
         }
-        final Boolean isDisableAppInsights = ctx.isDisableAppInsights();
-        final String appInsightsKey = ctx.getAppInsightsKey();
-        final String appInsightsInstance = ctx.getAppInsightsInstance();
-        if (isDisableAppInsights && (StringUtils.isNotEmpty(appInsightsKey) || StringUtils.isNotEmpty(appInsightsInstance))) {
-            throw new AzureExecutionException(APPLICATION_INSIGHTS_CONFIGURATION_CONFLICT);
-        }
         String instrumentationKey = null;
-        if (StringUtils.isNotEmpty(appInsightsKey)) {
-            instrumentationKey = appInsightsKey;
+        if (StringUtils.isNotEmpty(ctx.getAppInsightsKey())) {
+            instrumentationKey = ctx.getAppInsightsKey();
             if (!Utils.isGUID(instrumentationKey)) {
                 throw new AzureExecutionException(INSTRUMENTATION_KEY_IS_NOT_VALID);
             }
@@ -347,13 +352,15 @@ public class DeployHandler {
         }
     }
 
-    private ApplicationInsightsComponent getOrCreateApplicationInsights(boolean enableCreation) throws AzureExecutionException {
-        final AzureTokenCredentials credentials = ctx.getAzureCredential();
-        if (credentials == null) {
-            Log.warn(APPLICATION_INSIGHTS_NOT_SUPPORTED);
-            return null;
+    private void validateApplicationInsightsConfiguration() throws AzureExecutionException {
+        if (ctx.isDisableAppInsights() && (StringUtils.isNotEmpty(ctx.getAppInsightsKey()) || StringUtils.isNotEmpty(ctx.getAppInsightsInstance()))) {
+            throw new AzureExecutionException(APPLICATION_INSIGHTS_CONFIGURATION_CONFLICT);
         }
+    }
+
+    private ApplicationInsightsComponent getOrCreateApplicationInsights(boolean enableCreation) throws AzureExecutionException {
         final String subscriptionId = ctx.getAzureClient().subscriptionId();
+        final AzureTokenCredentials credentials = ctx.getAzureCredential();
         final ApplicationInsightsManager applicationInsightsManager = new ApplicationInsightsManager(credentials,
                 subscriptionId, TelemetryAgent.instance.getUserAgent());
         final String appInsightsInstance = ctx.getAppInsightsInstance();
@@ -367,7 +374,7 @@ public class DeployHandler {
         final ApplicationInsightsComponent resource = applicationInsightsManager.getApplicationInsightsInstance(ctx.getResourceGroup(),
                 appInsightsInstance);
         if (resource == null) {
-            Log.warn(String.format(FAILED_TO_GET_APPLICATION_INSIGHTS, appInsightsInstance, ctx.getResourceGroup()));
+            Log.prompt(String.format(FAILED_TO_GET_APPLICATION_INSIGHTS, appInsightsInstance, ctx.getResourceGroup()));
             return createApplicationInsights(applicationInsightsManager, appInsightsInstance);
         }
         return resource;
@@ -375,16 +382,16 @@ public class DeployHandler {
 
     private ApplicationInsightsComponent createApplicationInsights(ApplicationInsightsManager applicationInsightsManager, String name) {
         if (ctx.isDisableAppInsights()) {
-            Log.info(SKIP_CREATING_APPLICATION_INSIGHTS);
+            Log.prompt(SKIP_CREATING_APPLICATION_INSIGHTS);
             return null;
         }
         try {
-            Log.info(APPLICATION_INSIGHTS_CREATE_START);
+            Log.prompt(APPLICATION_INSIGHTS_CREATE_START);
             final ApplicationInsightsComponent resource = applicationInsightsManager.createApplicationInsights(ctx.getResourceGroup(), name, ctx.getRegion());
-            Log.info(String.format(APPLICATION_INSIGHTS_CREATED, resource.name(), resource.id()));
+            Log.prompt(String.format(APPLICATION_INSIGHTS_CREATED, resource.name(), resource.id()));
             return resource;
         } catch (Exception e) {
-            Log.warn(String.format(APPLICATION_INSIGHTS_CREATE_FAILED, e.getMessage()));
+            Log.prompt(String.format(APPLICATION_INSIGHTS_CREATE_FAILED, e.getMessage()));
             return null;
         }
     }
