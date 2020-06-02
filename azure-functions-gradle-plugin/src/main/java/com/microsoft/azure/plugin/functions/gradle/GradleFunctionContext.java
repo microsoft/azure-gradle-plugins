@@ -5,19 +5,17 @@
  */
 package com.microsoft.azure.plugin.functions.gradle;
 
+import com.microsoft.azure.auth.AzureTokenWrapper;
 import com.microsoft.azure.auth.configuration.AuthConfiguration;
 import com.microsoft.azure.auth.exception.AzureLoginFailureException;
 import com.microsoft.azure.common.exceptions.AzureExecutionException;
 import com.microsoft.azure.common.function.configurations.RuntimeConfiguration;
 import com.microsoft.azure.common.project.IProject;
 import com.microsoft.azure.common.project.JavaProject;
-import com.microsoft.azure.credentials.AzureTokenCredentials;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.plugin.functions.gradle.configuration.auth.AzureClientFactory;
 import com.microsoft.azure.plugin.functions.gradle.configuration.auth.GradleAuthConfiguration;
 import com.microsoft.azure.plugin.functions.gradle.util.GradleProjectUtils;
-
-import groovy.lang.Tuple2;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.Project;
@@ -35,7 +33,7 @@ public class GradleFunctionContext implements IAppServiceContext {
 
     private File stagingDirectory;
     private Azure azure;
-    private AzureTokenCredentials credential;
+    private AzureTokenWrapper credential;
 
     private JavaProject javaProject;
     private AzureFunctionsExtension functionsExtension;
@@ -162,31 +160,15 @@ public class GradleFunctionContext implements IAppServiceContext {
 
     @Override
     public synchronized Azure getAzureClient() throws AzureExecutionException {
-        if (azure == null) {
-            initializeAzureClient();
-        }
-        return azure;
-    }
-
-    @Override
-    public synchronized AzureTokenCredentials getAzureCredential() throws AzureExecutionException {
-        if (credential == null) {
-            initializeAzureClient();
-        }
-        return credential;
-    }
-
-    private void initializeAzureClient() throws AzureExecutionException {
         final GradleAuthConfiguration auth = functionsExtension.getAuthentication();
-        try {
-            final Tuple2<Azure, AzureTokenCredentials> credentialsTuple = AzureClientFactory
-                    .getAzureClient(auth != null ? auth.getType() : null, auth, this.getSubscription());
-            this.azure = credentialsTuple.getFirst();
-            this.credential = credentialsTuple.getSecond();
-        } catch (AzureLoginFailureException e) {
-            throw new AzureExecutionException(e.getMessage(), e);
+        if (azure == null) {
+            try {
+                azure = AzureClientFactory.getAzureClient(getAzureCredential(), getSubscription());
+            } catch (AzureLoginFailureException e) {
+                throw new AzureExecutionException(e.getMessage(), e);
+            }
         }
-        if (azure == null || credential == null) {
+        if (azure == null) {
             if (auth != null && StringUtils.isNotBlank(auth.getType())) {
                 throw new AzureExecutionException(String.format("Failed to authenticate with Azure using type %s. Please check your configuration.",
                         auth.getType()));
@@ -194,5 +176,19 @@ public class GradleFunctionContext implements IAppServiceContext {
                 throw new AzureExecutionException("Failed to authenticate with Azure. Please check your configuration.");
             }
         }
+        return azure;
+    }
+
+    @Override
+    public synchronized AzureTokenWrapper getAzureCredential() throws AzureExecutionException {
+        if (credential == null) {
+            try {
+                final GradleAuthConfiguration auth = functionsExtension.getAuthentication();
+                credential = AzureClientFactory.getAzureCredential(auth != null ? auth.getType() : null, auth);
+            } catch (AzureLoginFailureException e) {
+                throw new AzureExecutionException(e.getMessage(), e);
+            }
+        }
+        return credential;
     }
 }
