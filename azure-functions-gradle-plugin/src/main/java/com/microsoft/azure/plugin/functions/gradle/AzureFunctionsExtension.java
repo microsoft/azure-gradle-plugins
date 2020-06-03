@@ -63,6 +63,15 @@ public class AzureFunctionsExtension {
 
     private final Project project;
 
+    @Nullable
+    private String appInsightsInstance;
+
+    @Nullable
+    private String appInsightsKey;
+
+    @Nullable
+    private Boolean disableAppInsights;
+
     public AzureFunctionsExtension(Project project) {
         this.project = project;
     }
@@ -144,6 +153,24 @@ public class AzureFunctionsExtension {
         return allowTelemetry;
     }
 
+    @Input
+    @Optional
+    public String getAppInsightsInstance() {
+        return appInsightsInstance;
+    }
+
+    @Input
+    @Optional
+    public String getAppInsightsKey() {
+        return appInsightsKey;
+    }
+
+    @Input
+    @Optional
+    public Boolean isDisableAppInsights() {
+        return disableAppInsights;
+    }
+
     public void setAllowTelemetry(Boolean allowTelemetry) {
         this.allowTelemetry = allowTelemetry;
     }
@@ -198,5 +225,17 @@ public class AzureFunctionsExtension {
 
     public void setLocalDebug(String localDebug) {
         this.localDebug = localDebug;
+    }
+
+    public void setAppInsightsInstance(@Nullable String appInsightsInstance) {
+        this.appInsightsInstance = appInsightsInstance;
+    }
+
+    public void setAppInsightsKey(@Nullable String appInsightsKey) {
+        this.appInsightsKey = appInsightsKey;
+    }
+
+    public void setDisableAppInsights(@Nullable Boolean disableAppInsights) {
+        this.disableAppInsights = disableAppInsights;
     }
 }

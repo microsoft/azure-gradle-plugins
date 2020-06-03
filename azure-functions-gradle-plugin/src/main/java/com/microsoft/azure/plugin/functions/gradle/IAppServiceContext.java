@@ -6,6 +6,7 @@
 
 package com.microsoft.azure.plugin.functions.gradle;
 
+import com.microsoft.azure.auth.AzureTokenWrapper;
 import com.microsoft.azure.auth.configuration.AuthConfiguration;
 import com.microsoft.azure.common.exceptions.AzureExecutionException;
 import com.microsoft.azure.common.function.configurations.RuntimeConfiguration;
@@ -39,7 +40,15 @@ public interface IAppServiceContext {
 
     String getDeploymentType();
 
+    String getAppInsightsInstance();
+
+    String getAppInsightsKey();
+
+    boolean isDisableAppInsights();
+
     Azure getAzureClient() throws AzureExecutionException;
+
+    AzureTokenWrapper getAzureTokenWrapper() throws AzureExecutionException;
 
     IProject getProject();
 }

@@ -5,6 +5,7 @@
  */
 package com.microsoft.azure.plugin.functions.gradle;
 
+import com.microsoft.azure.auth.AzureTokenWrapper;
 import com.microsoft.azure.auth.configuration.AuthConfiguration;
 import com.microsoft.azure.auth.exception.AzureLoginFailureException;
 import com.microsoft.azure.common.exceptions.AzureExecutionException;
@@ -15,7 +16,7 @@ import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.plugin.functions.gradle.configuration.auth.AzureClientFactory;
 import com.microsoft.azure.plugin.functions.gradle.configuration.auth.GradleAuthConfiguration;
 import com.microsoft.azure.plugin.functions.gradle.util.GradleProjectUtils;
-
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.Project;
 
@@ -32,6 +33,7 @@ public class GradleFunctionContext implements IAppServiceContext {
 
     private File stagingDirectory;
     private Azure azure;
+    private AzureTokenWrapper credential;
 
     private JavaProject javaProject;
     private AzureFunctionsExtension functionsExtension;
@@ -137,29 +139,56 @@ public class GradleFunctionContext implements IAppServiceContext {
         return functionsExtension.getDeployment().getType();
     }
 
+    @Override
+    public String getAppInsightsInstance() {
+        return functionsExtension.getAppInsightsInstance();
+    }
+
+    @Override
+    public String getAppInsightsKey() {
+        return functionsExtension.getAppInsightsKey();
+    }
+
+    @Override
+    public boolean isDisableAppInsights() {
+        return BooleanUtils.isTrue(functionsExtension.isDisableAppInsights());
+    }
+
     public String getLocalDebugConfig() {
         return this.functionsExtension.getLocalDebug();
     }
 
     @Override
-    public Azure getAzureClient() throws AzureExecutionException {
+    public synchronized Azure getAzureClient() throws AzureExecutionException {
         if (azure == null) {
-            final GradleAuthConfiguration auth = functionsExtension.getAuthentication();
             try {
-                azure = AzureClientFactory.getAzureClient(auth != null ? auth.getType() : null, auth, this.getSubscription());
+                azure = AzureClientFactory.getAzureClient(getAzureTokenWrapper(), getSubscription());
             } catch (AzureLoginFailureException e) {
                 throw new AzureExecutionException(e.getMessage(), e);
             }
-            if (azure == null) {
-                if (auth != null && StringUtils.isNotBlank(auth.getType())) {
-                    throw new AzureExecutionException(String.format("Failed to authenticate with Azure using type %s. Please check your configuration.",
+        }
+        final GradleAuthConfiguration auth = functionsExtension.getAuthentication();
+        if (azure == null) {
+            if (auth != null && StringUtils.isNotBlank(auth.getType())) {
+                throw new AzureExecutionException(String.format("Failed to authenticate with Azure using type %s. Please check your configuration.",
                         auth.getType()));
-                } else {
-                    throw new AzureExecutionException("Failed to authenticate with Azure. Please check your configuration.");
-                }
+            } else {
+                throw new AzureExecutionException("Failed to authenticate with Azure. Please check your configuration.");
             }
         }
         return azure;
+    }
 
+    @Override
+    public synchronized AzureTokenWrapper getAzureTokenWrapper() throws AzureExecutionException {
+        if (credential == null) {
+            try {
+                final GradleAuthConfiguration auth = functionsExtension.getAuthentication();
+                credential = AzureClientFactory.getAzureTokenWrapper(auth != null ? auth.getType() : null, auth);
+            } catch (AzureLoginFailureException e) {
+                throw new AzureExecutionException(e.getMessage(), e);
+            }
+        }
+        return credential;
     }
 }
