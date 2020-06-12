@@ -7,7 +7,8 @@ All notable changes to the "Azure Function Plugin for Gradle" will be documented
   - [1.0.0](#100)
 
 ## 1.3.0
-- Support create Application Insights connection while creating/updating function apps
+- Support provision of Application Insights when creating a new function app.
+- Support detach Application Insights from a existing function app
 
 ## 1.2.0
 - Update depdendencies
