@@ -91,6 +91,13 @@ public class TelemetryAgent implements TelemetryConfiguration {
         this.subscriptionId = subscriptionId;
     }
 
+    public void addDefaultProperties(String key, String value) {
+        if (telemetryProxy == null) {
+            initTelemetry();
+        }
+        this.telemetryProxy.addDefaultProperty(key, value);
+    }
+
     @Override
     public Map<String, String> getTelemetryProperties() {
         final Map<String, String> map = new HashMap<>();

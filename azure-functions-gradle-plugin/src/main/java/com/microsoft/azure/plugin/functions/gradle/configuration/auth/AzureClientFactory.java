@@ -48,10 +48,16 @@ public class AzureClientFactory {
     private static final String SUBSCRIPTION_NOT_SPECIFIED = "Subscription ID was not specified, using the first subscription in current account," +
             " please refer https://github.com/microsoft/azure-maven-plugins/wiki/Authentication#subscription for more information.";
     private static final String UNSUPPORTED_AZURE_ENVIRONMENT = "Unsupported Azure environment %s, using Azure by default.";
+    private static final String AZURE_ENVIRONMENT = "azureEnvironment";
+    private static final String USING_AZURE_ENVIRONMENT = "Using Azure environment : %s.";
 
-    public static AzureTokenWrapper getAzureTokenWrapper(String type, String azureEnvironment, AuthConfiguration auth) throws AzureLoginFailureException {
+    public static AzureTokenWrapper getAzureTokenWrapper(String type, String environmentString, AuthConfiguration auth) throws AzureLoginFailureException {
         TelemetryAgent.instance.setAuthType(type);
-        final AzureEnvironment environment = parseAzureEnvironment(azureEnvironment);
+        TelemetryAgent.instance.addDefaultProperties(AZURE_ENVIRONMENT, environmentString);
+        final AzureEnvironment environment = parseAzureEnvironment(environmentString);
+        if (environment != AzureEnvironment.AZURE) {
+            Log.prompt(String.format(USING_AZURE_ENVIRONMENT, environmentString));
+        }
         return getAuthTypeEnum(type).getAzureToken(auth, environment);
     }
 
