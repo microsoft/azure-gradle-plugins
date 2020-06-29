@@ -30,6 +30,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.stream.Collectors;
@@ -46,10 +47,11 @@ public class AzureClientFactory {
     // TODO: we need to change this link when wiki for gradle plugin is ready
     private static final String SUBSCRIPTION_NOT_SPECIFIED = "Subscription ID was not specified, using the first subscription in current account," +
             " please refer https://github.com/microsoft/azure-maven-plugins/wiki/Authentication#subscription for more information.";
+    private static final String UNSUPPORTED_AZURE_ENVIRONMENT = "Unsupported Azure environment %s, using Azure by default.";
 
-    public static AzureTokenWrapper getAzureTokenWrapper(String type, AuthConfiguration auth) throws AzureLoginFailureException {
+    public static AzureTokenWrapper getAzureTokenWrapper(String type, String azureEnvironment, AuthConfiguration auth) throws AzureLoginFailureException {
         TelemetryAgent.instance.setAuthType(type);
-        final AzureEnvironment environment = AzureEnvironment.AZURE;
+        final AzureEnvironment environment = parseAzureEnvironment(azureEnvironment);
         return getAuthTypeEnum(type).getAzureToken(auth, environment);
     }
 
@@ -62,6 +64,26 @@ public class AzureClientFactory {
         } catch (IOException e) {
             TelemetryAgent.instance.trackEvent(TelemetryAgent.AUTH_INIT_FAILURE);
             throw new AzureLoginFailureException(e.getMessage());
+        }
+    }
+
+    private static AzureEnvironment parseAzureEnvironment(String azureEnvironment) {
+        if (StringUtils.isEmpty(azureEnvironment)) {
+            return AzureEnvironment.AZURE;
+        }
+
+        switch (azureEnvironment.toUpperCase(Locale.ENGLISH)) {
+            case "AZURE":
+                return AzureEnvironment.AZURE;
+            case "AZURE_CHINA":
+                return AzureEnvironment.AZURE_CHINA;
+            case "AZURE_GERMANY":
+                return AzureEnvironment.AZURE_GERMANY;
+            case "AZURE_US_GOVERNMENT":
+                return AzureEnvironment.AZURE_US_GOVERNMENT;
+            default:
+                Log.prompt(String.format(UNSUPPORTED_AZURE_ENVIRONMENT, azureEnvironment));
+                return AzureEnvironment.AZURE;
         }
     }
 
