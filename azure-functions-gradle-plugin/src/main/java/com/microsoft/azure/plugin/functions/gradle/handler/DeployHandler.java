@@ -66,17 +66,14 @@ public class DeployHandler {
     private static final String FUNCTIONS_EXTENSION_VERSION_VALUE = "~3";
     private static final String SET_FUNCTIONS_EXTENSION_VERSION = "Functions extension version " +
             "isn't configured, setting up the default value";
-
-    public static final String DEPLOY_START = "Trying to deploy the function app...";
-    public static final String DEPLOY_FINISH = "Successfully deployed the function app at https://%s.azurewebsites.net";
-    public static final String FUNCTION_APP_CREATE_START = "The specified function app does not exist. " +
+    private static final String DEPLOY_START = "Trying to deploy the function app...";
+    private static final String DEPLOY_FINISH = "Successfully deployed the function app at https://%s.azurewebsites.net";
+    private static final String FUNCTION_APP_CREATE_START = "The specified function app does not exist. " +
             "Creating a new function app...";
-    public static final String FUNCTION_APP_CREATED = "Successfully created the function app: %s";
-    public static final String FUNCTION_APP_UPDATE = "Updating the specified function app...";
-    public static final String FUNCTION_APP_UPDATE_DONE = "Successfully updated the function app %s.";
-    public static final String DEPLOYMENT_TYPE_KEY = "deploymentType";
-
-    public static final String UNKNOWN_DEPLOYMENT_TYPE = "The value of <deploymentType> is unknown, supported values are: " +
+    private static final String FUNCTION_APP_CREATED = "Successfully created the function app: %s";
+    private static final String FUNCTION_APP_UPDATE = "Updating the specified function app...";
+    private static final String FUNCTION_APP_UPDATE_DONE = "Successfully updated the function app %s.";
+    private static final String UNKNOWN_DEPLOYMENT_TYPE = "The value of <deploymentType> is unknown, supported values are: " +
             "ftp, zip, msdeploy, run_from_blob and run_from_zip.";
     private static final String APPINSIGHTS_INSTRUMENTATION_KEY = "APPINSIGHTS_INSTRUMENTATIONKEY";
     private static final String APPLICATION_INSIGHTS_CONFIGURATION_CONFLICT = "Contradictory configurations for application insights," +
@@ -94,8 +91,10 @@ public class DeployHandler {
             "Application Insights if needed.";
     private static final String INSTRUMENTATION_KEY_IS_NOT_VALID = "Instrumentation key is not valid, " +
             "please update the application insights configuration";
+    private static final OperatingSystemEnum DEFAULT_OS = OperatingSystemEnum.Windows;
+    private static final String FUNCTION_JAVA_VERSION_KEY = "functionJavaVersion";
+    private static final String DISABLE_APP_INSIGHTS_KEY = "disableAppInsights";
 
-    public static final OperatingSystemEnum DEFAULT_OS = OperatingSystemEnum.Windows;
     private IAppServiceContext ctx;
 
     public DeployHandler(IAppServiceContext ctx) {
@@ -104,6 +103,8 @@ public class DeployHandler {
     }
 
     public void execute() throws AzureExecutionException {
+        TelemetryAgent.instance.addDefaultProperties(FUNCTION_JAVA_VERSION_KEY, ctx.getRuntime().getJavaVersion());
+        TelemetryAgent.instance.addDefaultProperties(DISABLE_APP_INSIGHTS_KEY, String.valueOf(ctx.isDisableAppInsights()));
         final FunctionApp app = createOrUpdateFunctionApp();
         if (app == null) {
             throw new AzureExecutionException(
