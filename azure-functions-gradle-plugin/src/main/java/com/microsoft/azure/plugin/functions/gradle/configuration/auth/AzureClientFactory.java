@@ -13,6 +13,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.microsoft.azure.AzureEnvironment;
 import com.microsoft.azure.PagedList;
+import com.microsoft.azure.auth.AzureAuthHelper;
 import com.microsoft.azure.auth.AzureTokenWrapper;
 import com.microsoft.azure.auth.configuration.AuthConfiguration;
 import com.microsoft.azure.auth.configuration.AuthType;
@@ -30,7 +31,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.stream.Collectors;
@@ -51,13 +51,21 @@ public class AzureClientFactory {
     private static final String AZURE_ENVIRONMENT = "azureEnvironment";
     private static final String USING_AZURE_ENVIRONMENT = "Using Azure environment : %s.";
 
-    public static AzureTokenWrapper getAzureTokenWrapper(String type, String environmentString, AuthConfiguration auth) throws AzureLoginFailureException {
+    public static AzureTokenWrapper getAzureTokenWrapper(String type, AuthConfiguration auth) throws AzureLoginFailureException {
         TelemetryAgent.instance.setAuthType(type);
-        TelemetryAgent.instance.addDefaultProperties(AZURE_ENVIRONMENT, environmentString);
-        final AzureEnvironment environment = parseAzureEnvironment(environmentString);
-        if (environment != AzureEnvironment.AZURE) {
-            Log.prompt(String.format(USING_AZURE_ENVIRONMENT, environmentString));
+        final String environmentParameter = auth == null ? null : auth.getEnvironment();
+        final AzureEnvironment environment;
+        if (!AzureAuthHelper.validateEnvironment(environmentParameter)) {
+            Log.prompt(String.format(UNSUPPORTED_AZURE_ENVIRONMENT, environmentParameter));
+            environment = AzureEnvironment.AZURE;
+        } else {
+            environment = AzureAuthHelper.getAzureEnvironment(environmentParameter);
         }
+        final String environmentName = AzureAuthHelper.getAzureEnvironmentDisplayName(environment);
+        if (environment != AzureEnvironment.AZURE) {
+            Log.prompt(String.format(USING_AZURE_ENVIRONMENT, environmentName));
+        }
+        TelemetryAgent.instance.addDefaultProperties(AZURE_ENVIRONMENT, environmentName);
         return getAuthTypeEnum(type).getAzureToken(auth, environment);
     }
 
@@ -70,26 +78,6 @@ public class AzureClientFactory {
         } catch (IOException e) {
             TelemetryAgent.instance.trackEvent(TelemetryAgent.AUTH_INIT_FAILURE);
             throw new AzureLoginFailureException(e.getMessage());
-        }
-    }
-
-    private static AzureEnvironment parseAzureEnvironment(String azureEnvironment) {
-        if (StringUtils.isEmpty(azureEnvironment)) {
-            return AzureEnvironment.AZURE;
-        }
-
-        switch (azureEnvironment.toUpperCase(Locale.ENGLISH)) {
-            case "AZURE":
-                return AzureEnvironment.AZURE;
-            case "AZURE_CHINA":
-                return AzureEnvironment.AZURE_CHINA;
-            case "AZURE_GERMANY":
-                return AzureEnvironment.AZURE_GERMANY;
-            case "AZURE_US_GOVERNMENT":
-                return AzureEnvironment.AZURE_US_GOVERNMENT;
-            default:
-                Log.prompt(String.format(UNSUPPORTED_AZURE_ENVIRONMENT, azureEnvironment));
-                return AzureEnvironment.AZURE;
         }
     }
 
@@ -149,7 +137,7 @@ public class AzureClientFactory {
         return result;
     }
 
-    public static String getSubscriptionOfCloudShell() throws IOException {
+    private static String getSubscriptionOfCloudShell() throws IOException {
         final JsonObject subscription = getDefaultSubscriptionObject();
         return subscription == null ? null : subscription.getAsJsonPrimitive("id").getAsString();
     }

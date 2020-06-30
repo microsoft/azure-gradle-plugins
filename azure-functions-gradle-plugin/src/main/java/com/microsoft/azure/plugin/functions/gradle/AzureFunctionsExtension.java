@@ -72,9 +72,6 @@ public class AzureFunctionsExtension {
     @Nullable
     private Boolean disableAppInsights;
 
-    @Nullable
-    private String azureEnvironment;
-
     public AzureFunctionsExtension(Project project) {
         this.project = project;
     }
@@ -170,12 +167,6 @@ public class AzureFunctionsExtension {
 
     @Input
     @Optional
-    public String getAzureEnvironment() {
-        return azureEnvironment;
-    }
-
-    @Input
-    @Optional
     public Boolean isDisableAppInsights() {
         return disableAppInsights;
     }
@@ -246,9 +237,5 @@ public class AzureFunctionsExtension {
 
     public void setDisableAppInsights(@Nullable Boolean disableAppInsights) {
         this.disableAppInsights = disableAppInsights;
-    }
-
-    public void setAzureEnvironment(@Nullable String azureEnvironment) {
-        this.azureEnvironment = azureEnvironment;
     }
 }
