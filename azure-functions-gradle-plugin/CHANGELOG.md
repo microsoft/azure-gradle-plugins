@@ -1,13 +1,18 @@
 # Change Log
 All notable changes to the "Azure Function Plugin for Gradle" will be documented in this file.
 - [Change Log](#change-log)
+  - [1.4.0](#140)
   - [1.3.0](#130)
   - [1.2.0](#120)
   - [1.1.0](#110)
   - [1.0.0](#100)
 
+## 1.4.0
+- Support Java 11 Azure Functions (Preview)
+- Support specify Azure environment for auth method 'azure_auth_maven_plugin'
+
 ## 1.3.0
-- Support provision of Application Insights when creating a new function app.
+- Support provision of Application Insights when creating a new function app
 - Support detach Application Insights from an existing function app
 
 ## 1.2.0
