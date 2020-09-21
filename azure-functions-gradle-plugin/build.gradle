@@ -38,7 +38,7 @@ apply plugin: 'checkstyle'
 apply plugin: 'project-report'
 
 checkstyle {
-    toolVersion '8.34';
+    toolVersion '8.36.1';
     // Whether or not to allow the build to continue if there are warnings.
     ignoreFailures = false
 
