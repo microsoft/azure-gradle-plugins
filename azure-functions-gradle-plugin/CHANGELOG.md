@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to the "Azure Function Plugin for Gradle" will be documented in this file.
 - [Change Log](#change-log)
-  - [1.5.0](#140)
+  - [1.5.0](#150)
   - [1.4.0](#140)
   - [1.3.0](#130)
   - [1.2.0](#120)
