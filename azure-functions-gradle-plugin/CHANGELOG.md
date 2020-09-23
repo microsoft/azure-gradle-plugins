@@ -10,6 +10,7 @@ All notable changes to the "Azure Function Plugin for Gradle" will be documented
 
 ## 1.5.0
 - Fix issue [https://github.com/microsoft/azure-maven-plugins/issues/1110](https://github.com/microsoft/azure-gradle-plugins/issues/46): Cross-Site Scripting: Reflected
+- Fix issue [69](https://github.com/microsoft/azure-gradle-plugins/issues/69): Task azureFunctionsDeploy fails if runtime is not configured
 
 ## 1.4.0
 - Support Java 11 Azure Functions (Preview)
