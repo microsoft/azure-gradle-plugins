@@ -5,6 +5,7 @@
  */
 package com.microsoft.azure.plugin.functions.gradle.handler;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.microsoft.azure.common.Utils;
 import com.microsoft.azure.common.applicationinsights.ApplicationInsightsManager;
@@ -36,6 +37,7 @@ import com.microsoft.azure.management.applicationinsights.v2015_05_01.Applicatio
 import com.microsoft.azure.management.appservice.FunctionApp;
 import com.microsoft.azure.management.appservice.FunctionApp.DefinitionStages.WithCreate;
 import com.microsoft.azure.management.appservice.FunctionApp.Update;
+import com.microsoft.azure.management.appservice.JavaVersion;
 import com.microsoft.azure.management.appservice.PricingTier;
 import com.microsoft.azure.management.resources.fluentcore.arm.Region;
 import com.microsoft.azure.plugin.functions.gradle.GradleDockerCredentialProvider;
@@ -45,6 +47,7 @@ import com.microsoft.azure.plugin.functions.gradle.telemetry.TelemetryAgent;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import static com.microsoft.azure.common.appservice.DeploymentType.DOCKER;
@@ -103,7 +106,8 @@ public class DeployHandler {
     }
 
     public void execute() throws AzureExecutionException {
-        TelemetryAgent.instance.addDefaultProperties(FUNCTION_JAVA_VERSION_KEY, ctx.getRuntime().getJavaVersion());
+
+        TelemetryAgent.instance.addDefaultProperties(FUNCTION_JAVA_VERSION_KEY, String.valueOf(getJavaVersion()));
         TelemetryAgent.instance.addDefaultProperties(DISABLE_APP_INSIGHTS_KEY, String.valueOf(ctx.isDisableAppInsights()));
         final FunctionApp app = createOrUpdateFunctionApp();
         if (app == null) {
@@ -179,8 +183,9 @@ public class DeployHandler {
                 builder = new LinuxFunctionRuntimeHandler.Builder();
                 break;
             case Docker:
-                // TODO: refact RuntimeConfiguration to allow set plain username/password
-                final GradleRuntimeConfiguration runtime = (GradleRuntimeConfiguration) this.ctx.getRuntime();
+                // TODO: refactor RuntimeConfiguration to allow set plain username/password
+                final GradleRuntimeConfiguration runtime =
+                    (GradleRuntimeConfiguration) (Optional.fromNullable(ctx.getRuntime()).or(new GradleRuntimeConfiguration()));
                 builder = new DockerFunctionRuntimeHandler.Builder().image(runtime.getImage())
                         .dockerCredentialProvider(StringUtils.isNotBlank(runtime.getUsername()) ?
                                 new GradleDockerCredentialProvider(runtime.getUsername(), runtime.getPassword())
@@ -190,12 +195,13 @@ public class DeployHandler {
             default:
                 throw new AzureExecutionException(String.format("Unsupported runtime %s", os));
         }
-        return builder.appName(ctx.getAppName()).resourceGroup(ctx.getResourceGroup()).runtime(ctx.getRuntime())
+        return builder.appName(ctx.getAppName()).resourceGroup(ctx.getResourceGroup())
+                .runtime(Optional.fromNullable(ctx.getRuntime()).or(new RuntimeConfiguration()))
                 .region(Region.fromName(ctx.getRegion())).pricingTier(getPricingTier())
                 .servicePlanName(ctx.getAppServicePlanName())
                 .servicePlanResourceGroup(ctx.getAppServicePlanResourceGroup())
                 // since PR https://github.com/microsoft/azure-maven-plugins/pull/1116, java version is required
-                .javaVersion(FunctionUtils.parseJavaVersion(ctx.getRuntime().getJavaVersion()))
+                .javaVersion(getJavaVersion())
                 .functionExtensionVersion(getFunctionExtensionVersion()).azure(this.ctx.getAzureClient()).build();
     }
 
@@ -205,6 +211,10 @@ public class DeployHandler {
             return Utils.parseOperationSystem(runtime.getOs());
         }
         return DEFAULT_OS;
+    }
+
+    private JavaVersion getJavaVersion() {
+        return FunctionUtils.parseJavaVersion(Objects.isNull(ctx.getRuntime()) ? null : ctx.getRuntime().getJavaVersion());
     }
 
     public DeploymentType getDeploymentType() throws AzureExecutionException {
