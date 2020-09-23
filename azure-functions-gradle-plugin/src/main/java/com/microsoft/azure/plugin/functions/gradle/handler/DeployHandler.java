@@ -194,6 +194,8 @@ public class DeployHandler {
                 .region(Region.fromName(ctx.getRegion())).pricingTier(getPricingTier())
                 .servicePlanName(ctx.getAppServicePlanName())
                 .servicePlanResourceGroup(ctx.getAppServicePlanResourceGroup())
+                // since PR https://github.com/microsoft/azure-maven-plugins/pull/1116, java version is required
+                .javaVersion(FunctionUtils.parseJavaVersion(ctx.getRuntime().getJavaVersion()))
                 .functionExtensionVersion(getFunctionExtensionVersion()).azure(this.ctx.getAzureClient()).build();
     }
 
