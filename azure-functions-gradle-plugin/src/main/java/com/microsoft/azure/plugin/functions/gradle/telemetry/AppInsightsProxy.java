@@ -92,6 +92,7 @@ public class AppInsightsProxy implements TelemetryProxy {
     }
     // end
 
+    @Override
     public void addDefaultProperty(String key, String value) {
         if (StringUtils.isEmpty(key)) {
             return;
@@ -99,26 +100,32 @@ public class AppInsightsProxy implements TelemetryProxy {
         defaultProperties.put(key, value);
     }
 
+    @Override
     public Map<String, String> getDefaultProperties() {
         return defaultProperties;
     }
 
+    @Override
     public void enable() {
         this.isEnabled = true;
     }
 
+    @Override
     public void disable() {
         this.isEnabled = false;
     }
 
+    @Override
     public void trackEvent(final String eventName) {
         trackEvent(eventName, null, false);
     }
 
+    @Override
     public void trackEvent(final String eventName, final Map<String, String> customProperties) {
         trackEvent(eventName, customProperties, false);
     }
 
+    @Override
     public void trackEvent(final String eventName, final Map<String, String> customProperties,
                            final boolean overrideDefaultProperties) {
         if (!isEnabled) {

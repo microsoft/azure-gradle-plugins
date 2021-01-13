@@ -32,7 +32,6 @@ import com.microsoft.azure.common.handlers.artifact.FTPArtifactHandlerImpl;
 import com.microsoft.azure.common.handlers.artifact.ZIPArtifactHandlerImpl;
 import com.microsoft.azure.common.logging.Log;
 import com.microsoft.azure.common.utils.AppServiceUtils;
-import com.microsoft.azure.credentials.AzureTokenCredentials;
 import com.microsoft.azure.management.applicationinsights.v2015_05_01.ApplicationInsightsComponent;
 import com.microsoft.azure.management.appservice.FunctionApp;
 import com.microsoft.azure.management.appservice.FunctionApp.DefinitionStages.WithCreate;
@@ -44,6 +43,8 @@ import com.microsoft.azure.plugin.functions.gradle.GradleDockerCredentialProvide
 import com.microsoft.azure.plugin.functions.gradle.IAppServiceContext;
 import com.microsoft.azure.plugin.functions.gradle.configuration.GradleRuntimeConfiguration;
 import com.microsoft.azure.plugin.functions.gradle.telemetry.TelemetryAgent;
+import com.microsoft.azure.tools.auth.model.AzureCredentialWrapper;
+
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
@@ -351,8 +352,8 @@ public class DeployHandler {
 
     private ApplicationInsightsComponent getOrCreateApplicationInsights(boolean enableCreation) throws AzureExecutionException {
         final String subscriptionId = ctx.getAzureClient().subscriptionId();
-        final AzureTokenCredentials credentials = ctx.getAzureTokenWrapper();
-        final ApplicationInsightsManager applicationInsightsManager = new ApplicationInsightsManager(credentials,
+        final AzureCredentialWrapper credentials = ctx.getAzureTokenWrapper();
+        final ApplicationInsightsManager applicationInsightsManager = new ApplicationInsightsManager(credentials.getAzureTokenCredentials(),
                 subscriptionId, TelemetryAgent.instance.getUserAgent());
         final String appInsightsInstance = ctx.getAppInsightsInstance();
         return StringUtils.isNotEmpty(appInsightsInstance) ?

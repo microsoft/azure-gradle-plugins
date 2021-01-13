@@ -34,17 +34,17 @@ apply plugin: 'com.gradle.plugin-publish'
 apply plugin: 'maven-publish'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
-apply plugin: 'checkstyle'
+// apply plugin: 'checkstyle'
 apply plugin: 'project-report'
 
-checkstyle {
-    toolVersion '8.36.1';
-    // Whether or not to allow the build to continue if there are warnings.
-    ignoreFailures = false
+// checkstyle {
+//     toolVersion '8.36.1';
+//     // Whether or not to allow the build to continue if there are warnings.
+//     ignoreFailures = false
 
-    // Whether or not rule violations are to be displayed on the console.
-    showViolations = true
-}
+//     // Whether or not rule violations are to be displayed on the console.
+//     showViolations = true
+// }
 
 repositories {
     mavenLocal()
@@ -62,9 +62,10 @@ dependencies {
     implementation 'com.google.guava:guava:29.0-jre'
     implementation 'com.github.zafarkhaja:java-semver:0.9.0'
     implementation 'com.microsoft.azure:azure:1.36.2'
-    implementation 'com.microsoft.azure:azure-auth-helper:0.6.0'
+    implementation 'com.microsoft.azure:azure-toolkit-auth-lib:0.0.1-SNAPSHOT'
     implementation 'com.microsoft.azure:azure-tools-common:0.6.0'
     implementation 'org.fusesource.jansi:jansi:1.18'
+    implementation 'com.microsoft.azure:applicationinsights-core:2.6.2'
     testImplementation "junit:junit:4.13"
     testImplementation "org.mockito:mockito-core:3.5.11"
 }
@@ -82,7 +83,7 @@ gradlePlugin {
 class PrepareResourceTask extends DefaultTask {
     @Option(option = "release", description = "whether this build is a release build.")
     Boolean release;
-    
+
     Project currentProject
 
     @TaskAction

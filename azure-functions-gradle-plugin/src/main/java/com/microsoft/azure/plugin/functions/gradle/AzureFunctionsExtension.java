@@ -7,8 +7,8 @@
 package com.microsoft.azure.plugin.functions.gradle;
 
 import com.microsoft.azure.plugin.functions.gradle.configuration.GradleRuntimeConfiguration;
-import com.microsoft.azure.plugin.functions.gradle.configuration.auth.GradleAuthConfiguration;
 import com.microsoft.azure.plugin.functions.gradle.configuration.deploy.Deployment;
+import com.microsoft.azure.tools.auth.model.AuthConfiguration;
 
 import groovy.lang.Closure;
 
@@ -51,7 +51,7 @@ public class AzureFunctionsExtension {
     private String appServicePlanName;
 
     @Nullable
-    private GradleAuthConfiguration authentication;
+    private AuthConfiguration authentication;
 
     @Nullable
     private Deployment deployment;
@@ -125,7 +125,7 @@ public class AzureFunctionsExtension {
 
     @Input
     @Optional
-    public GradleAuthConfiguration getAuthentication() {
+    public AuthConfiguration getAuthentication() {
         return authentication;
     }
 
@@ -196,7 +196,7 @@ public class AzureFunctionsExtension {
     }
 
     public void setAuthentication(Closure closure) {
-        this.authentication = new GradleAuthConfiguration();
+        this.authentication = new AuthConfiguration();
         project.configure(authentication, closure);
     }
 

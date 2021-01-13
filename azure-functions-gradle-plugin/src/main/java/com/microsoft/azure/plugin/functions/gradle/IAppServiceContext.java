@@ -6,14 +6,14 @@
 
 package com.microsoft.azure.plugin.functions.gradle;
 
-import com.microsoft.azure.auth.AzureTokenWrapper;
-import com.microsoft.azure.auth.configuration.AuthConfiguration;
+import java.util.Map;
+
 import com.microsoft.azure.common.exceptions.AzureExecutionException;
 import com.microsoft.azure.common.function.configurations.RuntimeConfiguration;
 import com.microsoft.azure.common.project.IProject;
 import com.microsoft.azure.management.Azure;
-
-import java.util.Map;
+import com.microsoft.azure.tools.auth.model.AuthConfiguration;
+import com.microsoft.azure.tools.auth.model.AzureCredentialWrapper;
 
 public interface IAppServiceContext {
     String getDeploymentStagingDirectoryPath();
@@ -48,7 +48,7 @@ public interface IAppServiceContext {
 
     Azure getAzureClient() throws AzureExecutionException;
 
-    AzureTokenWrapper getAzureTokenWrapper() throws AzureExecutionException;
+    AzureCredentialWrapper getAzureTokenWrapper() throws AzureExecutionException;
 
     IProject getProject();
 }
