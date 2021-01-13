@@ -6,18 +6,6 @@
 
 package com.microsoft.azure.plugin.functions.gradle.configuration.auth;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Optional;
-import java.util.Scanner;
-import java.util.stream.Collectors;
-
-import org.apache.commons.io.input.BOMInputStream;
-import org.apache.commons.lang3.StringUtils;
-
 import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -35,15 +23,21 @@ import com.microsoft.azure.tools.auth.AzureAuthManager;
 import com.microsoft.azure.tools.auth.exception.InvalidConfigurationException;
 import com.microsoft.azure.tools.auth.exception.LoginFailureException;
 import com.microsoft.azure.tools.auth.model.AuthConfiguration;
-import com.microsoft.azure.tools.auth.model.AuthType;
 import com.microsoft.azure.tools.auth.model.AzureCredentialWrapper;
+import org.apache.commons.io.input.BOMInputStream;
+import org.apache.commons.lang3.StringUtils;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.util.Optional;
+import java.util.Scanner;
 
 public class AzureClientFactory {
     private static final String CLOUD_SHELL_ENV_KEY = "ACC_CLOUD";
     private static final String AZURE_FOLDER = ".azure";
     private static final String AZURE_PROFILE_NAME = "azureProfile.json";
-    private static final String INVALID_AUTH_TYPE = "'%s' is not a valid auth type for Azure Gradle plugins, "
-            + "supported values are %s. Will use 'auto' by default.";
     private static final String SUBSCRIPTION_TEMPLATE = "Subscription : %s(%s)";
     private static final String SUBSCRIPTION_NOT_FOUND = "Subscription %s was not found in current account.";
     private static final String NO_AVAILABLE_SUBSCRIPTION = "No available subscription found in current account.";
@@ -126,18 +120,6 @@ public class AzureClientFactory {
                 .findAny();
         if (!optionalSubscription.isPresent()) {
             throw new LoginFailureException(String.format(SUBSCRIPTION_NOT_FOUND, targetSubscription));
-        }
-    }
-
-    private static AuthType getAuthTypeEnum(String authType) {
-        try {
-            return AuthType.parseAuthType(authType);
-        } catch (InvalidConfigurationException e) {
-            final String validAuthTypes = Arrays.stream(AuthType.values())
-                    .map(authTypeEnum -> String.format("'%s'", StringUtils.lowerCase(authTypeEnum.name())))
-                    .collect(Collectors.joining(", "));
-            Log.prompt(String.format(INVALID_AUTH_TYPE, authType, validAuthTypes));
-            return AuthType.AUTO;
         }
     }
 
