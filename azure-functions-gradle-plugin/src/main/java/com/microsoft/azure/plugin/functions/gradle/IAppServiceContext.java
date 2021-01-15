@@ -48,7 +48,7 @@ public interface IAppServiceContext {
 
     Azure getAzureClient() throws AzureExecutionException;
 
-    AzureCredentialWrapper getAzureTokenWrapper() throws AzureExecutionException;
+    AzureCredentialWrapper getAzureCredentialWrapper() throws AzureExecutionException;
 
     IProject getProject();
 }

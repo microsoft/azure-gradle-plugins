@@ -46,9 +46,9 @@ public class AzureClientFactory {
             + " please refer https://github.com/microsoft/azure-maven-plugins/wiki/Authentication#subscription for more information.";
     private static final String UNSUPPORTED_AZURE_ENVIRONMENT = "Unsupported Azure environment %s, using Azure by default.";
     private static final String AZURE_ENVIRONMENT = "azureEnvironment";
-    private static final String USING_AZURE_ENVIRONMENT = "Using Azure environment : %s.";
+    private static final String USING_AZURE_ENVIRONMENT = "Using Azure environment: %s.";
 
-    public static AzureCredentialWrapper getAzureTokenWrapper(String type, AuthConfiguration auth)
+    public static AzureCredentialWrapper getAzureCredentialWrapper(String type, AuthConfiguration auth)
             throws LoginFailureException, InvalidConfigurationException {
         TelemetryAgent.instance.setAuthType(type);
         final String environmentParameter = auth == null ? null : auth.getEnvironment();
@@ -65,16 +65,16 @@ public class AzureClientFactory {
         }
         TelemetryAgent.instance.addDefaultProperties(AZURE_ENVIRONMENT, environmentName);
         // convert to AUTO if authType is invalid
-        return AzureAuthManager.getAzureTokenWrapper(auth).toBlocking().value();
+        return AzureAuthManager.getAzureCredentialWrapper(auth).toBlocking().value();
     }
 
-    public static Azure getAzureClient(AzureCredentialWrapper azureTokenWrapper, String subscriptionId)
+    public static Azure getAzureClient(AzureCredentialWrapper azureCredentialWrapper, String subscriptionId)
             throws LoginFailureException {
         try {
-            if (azureTokenWrapper != null) {
-                TelemetryAgent.instance.setAuthMethod(azureTokenWrapper.getAuthMethod().name());
+            if (azureCredentialWrapper != null) {
+                TelemetryAgent.instance.setAuthMethod(azureCredentialWrapper.getAuthMethod().name());
             }
-            return azureTokenWrapper == null ? null : getAzureClientInner(azureTokenWrapper, subscriptionId);
+            return azureCredentialWrapper == null ? null : getAzureClientInner(azureCredentialWrapper, subscriptionId);
         } catch (IOException e) {
             TelemetryAgent.instance.trackEvent(TelemetryAgent.AUTH_INIT_FAILURE);
             throw new LoginFailureException(e.getMessage());

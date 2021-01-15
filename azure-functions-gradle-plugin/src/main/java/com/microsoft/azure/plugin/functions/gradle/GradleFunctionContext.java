@@ -164,7 +164,7 @@ public class GradleFunctionContext implements IAppServiceContext {
     public synchronized Azure getAzureClient() throws AzureExecutionException {
         if (azure == null) {
             try {
-                azure = AzureClientFactory.getAzureClient(getAzureTokenWrapper(), getSubscription());
+                azure = AzureClientFactory.getAzureClient(getAzureCredentialWrapper(), getSubscription());
             } catch (LoginFailureException e) {
                 throw new AzureExecutionException(e.getMessage(), e);
             }
@@ -182,14 +182,14 @@ public class GradleFunctionContext implements IAppServiceContext {
     }
 
     @Override
-    public synchronized AzureCredentialWrapper getAzureTokenWrapper() throws AzureExecutionException {
+    public synchronized AzureCredentialWrapper getAzureCredentialWrapper() throws AzureExecutionException {
         if (credential == null) {
             try {
                 AuthConfiguration auth = functionsExtension.getAuthentication();
                 if (auth == null) {
                     auth = new AuthConfiguration();
                 }
-                credential = AzureClientFactory.getAzureTokenWrapper(auth.getType(), auth);
+                credential = AzureClientFactory.getAzureCredentialWrapper(auth.getType(), auth);
             } catch (LoginFailureException | InvalidConfigurationException e) {
                 throw new AzureExecutionException(e.getMessage(), e);
             }
