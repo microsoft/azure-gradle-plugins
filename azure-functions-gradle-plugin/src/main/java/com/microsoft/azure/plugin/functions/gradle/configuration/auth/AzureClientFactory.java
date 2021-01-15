@@ -53,7 +53,7 @@ public class AzureClientFactory {
         TelemetryAgent.instance.setAuthType(type);
         final String environmentParameter = auth == null ? null : auth.getEnvironment();
         final AzureEnvironment environment;
-        if (!AuthHelper.validateEnvironment(environmentParameter)) {
+        if (StringUtils.isNotBlank(environmentParameter) && !AuthHelper.validateEnvironment(environmentParameter)) {
             Log.prompt(String.format(UNSUPPORTED_AZURE_ENVIRONMENT, environmentParameter));
             environment = AzureEnvironment.AZURE;
         } else {
