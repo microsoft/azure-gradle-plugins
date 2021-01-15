@@ -42,8 +42,8 @@ public class AzureClientFactory {
     private static final String SUBSCRIPTION_NOT_FOUND = "Subscription %s was not found in current account.";
     private static final String NO_AVAILABLE_SUBSCRIPTION = "No available subscription found in current account.";
     // TODO: we need to change this link when wiki for gradle plugin is ready
-    private static final String SUBSCRIPTION_NOT_SPECIFIED = "Subscription ID was not specified, using the first subscription in current account,"
-            + " please refer https://github.com/microsoft/azure-maven-plugins/wiki/Authentication#subscription for more information.";
+    private static final String SUBSCRIPTION_NOT_SPECIFIED = "Subscription ID was not specified, using the first subscription in current account," +
+            " please refer https://github.com/microsoft/azure-maven-plugins/wiki/Authentication#subscription for more information.";
     private static final String UNSUPPORTED_AZURE_ENVIRONMENT = "Unsupported Azure environment %s, using Azure by default.";
     private static final String AZURE_ENVIRONMENT = "azureEnvironment";
     private static final String USING_AZURE_ENVIRONMENT = "Using Azure environment: %s.";
