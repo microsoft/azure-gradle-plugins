@@ -59,7 +59,7 @@ public class AzureClientFactory {
         } else {
             environment = AuthHelper.parseAzureEnvironment(environmentParameter);
         }
-        final String environmentName = AuthHelper.getAzureEnvironmentDisplayName(environment);
+        final String environmentName = AuthHelper.getAzureCloudDisplayName(environment);
         if (environment != AzureEnvironment.AZURE) {
             Log.prompt(String.format(USING_AZURE_ENVIRONMENT, environmentName));
         }
