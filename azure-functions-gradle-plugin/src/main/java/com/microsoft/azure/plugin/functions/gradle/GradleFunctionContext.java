@@ -11,11 +11,11 @@ import com.microsoft.azure.common.project.IProject;
 import com.microsoft.azure.common.project.JavaProject;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.plugin.functions.gradle.configuration.auth.AzureClientFactory;
+import com.microsoft.azure.plugin.functions.gradle.configuration.auth.GradleAuthConfiguration;
+import com.microsoft.azure.plugin.functions.gradle.util.GradleAuthUtils;
 import com.microsoft.azure.plugin.functions.gradle.util.GradleProjectUtils;
-import com.microsoft.azure.tools.auth.exception.InvalidConfigurationException;
 import com.microsoft.azure.tools.auth.exception.LoginFailureException;
 import com.microsoft.azure.tools.auth.model.AzureCredentialWrapper;
-import com.microsoft.azure.tools.auth.model.AuthConfiguration;
 
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -125,7 +125,7 @@ public class GradleFunctionContext implements IAppServiceContext {
     }
 
     @Override
-    public AuthConfiguration getAuth() {
+    public GradleAuthConfiguration getAuth() {
         if (functionsExtension.getAuthentication() == null) {
             return null;
         }
@@ -169,9 +169,9 @@ public class GradleFunctionContext implements IAppServiceContext {
                 throw new AzureExecutionException(e.getMessage(), e);
             }
         }
-        final AuthConfiguration auth = functionsExtension.getAuthentication();
+        final GradleAuthConfiguration auth = functionsExtension.getAuthentication();
         if (azure == null) {
-            if (auth != null && auth != null && StringUtils.isNotBlank(auth.getType())) {
+            if (auth != null && StringUtils.isNotBlank(auth.getType())) {
                 throw new AzureExecutionException(String.format("Failed to authenticate with Azure using type %s. Please check your configuration.",
                         auth.getType()));
             } else {
@@ -182,17 +182,13 @@ public class GradleFunctionContext implements IAppServiceContext {
     }
 
     @Override
-    public synchronized AzureCredentialWrapper getAzureCredentialWrapper() throws AzureExecutionException {
+    public synchronized AzureCredentialWrapper getAzureCredentialWrapper() {
         if (credential == null) {
-            try {
-                AuthConfiguration auth = functionsExtension.getAuthentication();
-                if (auth == null) {
-                    auth = new AuthConfiguration();
-                }
-                credential = AzureClientFactory.getAzureCredentialWrapper(auth.getType(), auth);
-            } catch (LoginFailureException | InvalidConfigurationException e) {
-                throw new AzureExecutionException(e.getMessage(), e);
+            GradleAuthConfiguration auth = functionsExtension.getAuthentication();
+            if (auth == null) {
+                auth = new GradleAuthConfiguration();
             }
+            credential = GradleAuthUtils.login(auth, functionsExtension.getHttpProxyHost(), functionsExtension.getHttpProxyPort());
         }
         return credential;
     }

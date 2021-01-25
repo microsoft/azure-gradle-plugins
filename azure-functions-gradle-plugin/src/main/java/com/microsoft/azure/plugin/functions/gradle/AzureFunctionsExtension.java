@@ -7,8 +7,8 @@
 package com.microsoft.azure.plugin.functions.gradle;
 
 import com.microsoft.azure.plugin.functions.gradle.configuration.GradleRuntimeConfiguration;
+import com.microsoft.azure.plugin.functions.gradle.configuration.auth.GradleAuthConfiguration;
 import com.microsoft.azure.plugin.functions.gradle.configuration.deploy.Deployment;
-import com.microsoft.azure.tools.auth.model.AuthConfiguration;
 
 import groovy.lang.Closure;
 
@@ -51,7 +51,7 @@ public class AzureFunctionsExtension {
     private String appServicePlanName;
 
     @Nullable
-    private AuthConfiguration authentication;
+    private GradleAuthConfiguration authentication;
 
     @Nullable
     private Deployment deployment;
@@ -71,6 +71,12 @@ public class AzureFunctionsExtension {
 
     @Nullable
     private Boolean disableAppInsights;
+
+    @Nullable
+    private String httpProxyHost;
+
+    @Nullable
+    private String httpProxyPort;
 
     public AzureFunctionsExtension(Project project) {
         this.project = project;
@@ -125,8 +131,20 @@ public class AzureFunctionsExtension {
 
     @Input
     @Optional
-    public AuthConfiguration getAuthentication() {
+    public GradleAuthConfiguration getAuthentication() {
         return authentication;
+    }
+
+    @Input
+    @Optional
+    public String getHttpProxyHost() {
+        return httpProxyHost;
+    }
+
+    @Input
+    @Optional
+    public String getHttpProxyPort() {
+        return httpProxyPort;
     }
 
     @Input
@@ -196,7 +214,7 @@ public class AzureFunctionsExtension {
     }
 
     public void setAuthentication(Closure closure) {
-        this.authentication = new AuthConfiguration();
+        this.authentication = new GradleAuthConfiguration();
         project.configure(authentication, closure);
     }
 

@@ -51,15 +51,8 @@ public class AzureClientFactory {
     public static AzureCredentialWrapper getAzureCredentialWrapper(String type, AuthConfiguration auth)
             throws LoginFailureException, InvalidConfigurationException {
         TelemetryAgent.instance.setAuthType(type);
-        final String environmentParameter = auth == null ? null : auth.getEnvironment();
-        final AzureEnvironment environment;
-        if (StringUtils.isNotBlank(environmentParameter) && !AuthHelper.validateEnvironment(environmentParameter)) {
-            Log.prompt(String.format(UNSUPPORTED_AZURE_ENVIRONMENT, environmentParameter));
-            environment = AzureEnvironment.AZURE;
-        } else {
-            environment = AuthHelper.parseAzureEnvironment(environmentParameter);
-        }
-        final String environmentName = AuthHelper.getAzureCloudDisplayName(environment);
+        final AzureEnvironment environment = auth.getEnvironment();
+        final String environmentName = AuthHelper.azureEnvironmentToString(environment);
         if (environment != AzureEnvironment.AZURE) {
             Log.prompt(String.format(USING_AZURE_ENVIRONMENT, environmentName));
         }
