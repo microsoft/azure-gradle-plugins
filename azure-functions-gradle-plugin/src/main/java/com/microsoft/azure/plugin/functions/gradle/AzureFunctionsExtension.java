@@ -12,7 +12,6 @@ import com.microsoft.azure.plugin.functions.gradle.configuration.deploy.Deployme
 
 import groovy.lang.Closure;
 
-import lombok.Setter;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Optional;
@@ -74,11 +73,9 @@ public class AzureFunctionsExtension {
     private Boolean disableAppInsights;
 
     @Nullable
-    @Setter
     private String httpProxyHost;
 
     @Nullable
-    @Setter
     private String httpProxyPort;
 
     public AzureFunctionsExtension(Project project) {
@@ -229,6 +226,14 @@ public class AzureFunctionsExtension {
     public void setRuntime(Closure closure) {
         runtime = new GradleRuntimeConfiguration();
         project.configure(runtime, closure);
+    }
+
+    public void setHttpProxyHost(String httpProxyHost) {
+        this.httpProxyHost = httpProxyHost;
+    }
+
+    public void setHttpProxyPort(String httpProxyPort) {
+        this.httpProxyPort = httpProxyPort;
     }
 
     public void setAppServicePlanName(String appServicePlanName) {

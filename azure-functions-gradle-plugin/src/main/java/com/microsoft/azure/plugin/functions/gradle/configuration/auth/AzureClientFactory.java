@@ -18,6 +18,7 @@ import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.management.Azure.Authenticated;
 import com.microsoft.azure.management.resources.Subscription;
 import com.microsoft.azure.plugin.functions.gradle.telemetry.TelemetryAgent;
+import com.microsoft.azure.toolkit.lib.common.proxy.ProxyManager;
 import com.microsoft.azure.tools.auth.AuthHelper;
 import com.microsoft.azure.tools.auth.AzureAuthManager;
 import com.microsoft.azure.tools.auth.exception.InvalidConfigurationException;
@@ -30,12 +31,12 @@ import org.apache.commons.lang3.StringUtils;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.Proxy;
 import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.Scanner;
 
 public class AzureClientFactory {
-    private static final String CLOUD_SHELL_ENV_KEY = "ACC_CLOUD";
     private static final String AZURE_FOLDER = ".azure";
     private static final String AZURE_PROFILE_NAME = "azureProfile.json";
     private static final String SUBSCRIPTION_TEMPLATE = "Subscription : %s(%s)";
@@ -78,24 +79,17 @@ public class AzureClientFactory {
             throws IOException, LoginFailureException {
         Preconditions.checkNotNull(azureTokenCredentials, "The parameter 'azureTokenCredentials' cannot be null.");
         Log.prompt(azureTokenCredentials.getCredentialDescription());
+        final Proxy proxy = ProxyManager.getInstance().getProxy();
         final Authenticated authenticated = Azure.configure().withUserAgent(TelemetryAgent.instance.getUserAgent())
+                .withProxy(proxy)
                 .authenticate(azureTokenCredentials.getAzureTokenCredentials());
-        // For cloud shell, use subscription in profile as the default subscription.
-        if (StringUtils.isEmpty(subscriptionId) && isInCloudShell()) {
-            subscriptionId = getSubscriptionOfCloudShell();
-        }
-        subscriptionId = StringUtils.isEmpty(subscriptionId) ? azureTokenCredentials.getDefaultSubscriptionId()
-                : subscriptionId;
-        final Azure azureClient = StringUtils.isEmpty(subscriptionId) ? authenticated.withDefaultSubscription()
-                : authenticated.withSubscription(subscriptionId);
-        checkSubscription(azureClient, subscriptionId);
+        final String targetSubscription = StringUtils.firstNonBlank(subscriptionId, azureTokenCredentials.getDefaultSubscriptionId());
+        final Azure azureClient = StringUtils.isEmpty(targetSubscription) ? authenticated.withDefaultSubscription()
+                : authenticated.withSubscription(targetSubscription);
+        checkSubscription(azureClient, targetSubscription);
         final Subscription subscription = azureClient.getCurrentSubscription();
         Log.prompt(String.format(SUBSCRIPTION_TEMPLATE, subscription.displayName(), subscription.subscriptionId()));
         return azureClient;
-    }
-
-    private static boolean isInCloudShell() {
-        return System.getenv(CLOUD_SHELL_ENV_KEY) != null;
     }
 
     private static void checkSubscription(Azure azure, String targetSubscription) throws LoginFailureException {

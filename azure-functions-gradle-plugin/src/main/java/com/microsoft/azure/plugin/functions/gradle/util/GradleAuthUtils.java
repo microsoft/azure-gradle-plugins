@@ -15,7 +15,6 @@ import com.microsoft.azure.tools.auth.model.AuthType;
 import com.microsoft.azure.tools.auth.model.AzureCredentialWrapper;
 import com.microsoft.azure.tools.auth.util.ValidationUtil;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.math.NumberUtils;
 import org.gradle.api.GradleException;
 
 import javax.annotation.Nonnull;
@@ -25,15 +24,10 @@ public class GradleAuthUtils {
     private static final String INVALID_AZURE_ENVIRONMENT = "Invalid environment string '%s', please replace it with one of " +
             "\"Azure\", \"AzureChina\", \"AzureGermany\", \"AzureUSGovernment\",.";
 
-    public static AzureCredentialWrapper login(@Nonnull GradleAuthConfiguration auth, String httpProxyHost, String httpProxyPort) {
+    public static AzureCredentialWrapper login(@Nonnull GradleAuthConfiguration auth) {
         final AuthConfiguration authConfiguration;
         try {
             authConfiguration = convertToAuthConfiguration(auth);
-            ValidationUtil.validateHttpProxy(httpProxyHost, httpProxyPort);
-            authConfiguration.setHttpProxyHost(httpProxyHost);
-            if (Objects.nonNull(httpProxyPort)) {
-                authConfiguration.setHttpProxyPort(NumberUtils.toInt(httpProxyPort));
-            }
         } catch (InvalidConfigurationException ex) {
             final String messagePostfix = "in 'auth' section of your build.gradle.";
             throw new GradleException(String.format("%s %s", ex.getMessage(), messagePostfix));

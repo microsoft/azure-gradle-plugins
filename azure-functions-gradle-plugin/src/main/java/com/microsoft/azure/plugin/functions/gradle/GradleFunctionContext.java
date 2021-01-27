@@ -7,7 +7,6 @@ package com.microsoft.azure.plugin.functions.gradle;
 
 import com.microsoft.azure.common.exceptions.AzureExecutionException;
 import com.microsoft.azure.common.function.configurations.RuntimeConfiguration;
-import com.microsoft.azure.common.logging.Log;
 import com.microsoft.azure.common.project.IProject;
 import com.microsoft.azure.common.project.JavaProject;
 import com.microsoft.azure.management.Azure;
@@ -15,19 +14,13 @@ import com.microsoft.azure.plugin.functions.gradle.configuration.auth.AzureClien
 import com.microsoft.azure.plugin.functions.gradle.configuration.auth.GradleAuthConfiguration;
 import com.microsoft.azure.plugin.functions.gradle.util.GradleAuthUtils;
 import com.microsoft.azure.plugin.functions.gradle.util.GradleProjectUtils;
-import com.microsoft.azure.tools.auth.exception.InvalidConfigurationException;
 import com.microsoft.azure.tools.auth.exception.LoginFailureException;
 import com.microsoft.azure.tools.auth.model.AzureCredentialWrapper;
-
-import com.microsoft.azure.tools.auth.util.ValidationUtil;
-import com.microsoft.azure.tools.common.util.ProxyUtils;
-import com.microsoft.azure.tools.common.util.TextUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.Project;
 
 import java.io.File;
-import java.net.InetSocketAddress;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
@@ -194,26 +187,7 @@ public class GradleFunctionContext implements IAppServiceContext {
             if (auth == null) {
                 auth = new GradleAuthConfiguration();
             }
-
-            final boolean proxyByUser = !StringUtils.isAllBlank(functionsExtension.getHttpProxyHost(), functionsExtension.getHttpProxyPort());
-            InetSocketAddress systemProxy = null;
-            if (proxyByUser) {
-                try {
-                    ValidationUtil.validateHttpProxy(functionsExtension.getHttpProxyHost(), functionsExtension.getHttpProxyPort());
-                } catch (InvalidConfigurationException e) {
-                    throw new AzureExecutionException(e.getMessage());
-                }
-            } else {
-                systemProxy = ProxyUtils.getSystemProxy();
-            }
-            final boolean useSystemProxy = Objects.nonNull(systemProxy);
-            if (useSystemProxy) {
-                Log.info(String.format("Use system proxy: %s:%s", TextUtils.cyan(systemProxy.getHostName()),
-                        TextUtils.cyan(Integer.toString(systemProxy.getPort()))));
-            }
-            credential = GradleAuthUtils.login(auth,
-                    useSystemProxy ? systemProxy.getHostName() : functionsExtension.getHttpProxyHost(),
-                    useSystemProxy ? Integer.toString(systemProxy.getPort()) : functionsExtension.getHttpProxyPort());
+            credential = GradleAuthUtils.login(auth);
         }
         return credential;
     }
