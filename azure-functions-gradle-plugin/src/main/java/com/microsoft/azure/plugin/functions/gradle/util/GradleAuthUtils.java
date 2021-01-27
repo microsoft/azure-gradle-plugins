@@ -31,7 +31,9 @@ public class GradleAuthUtils {
             authConfiguration = convertToAuthConfiguration(auth);
             ValidationUtil.validateHttpProxy(httpProxyHost, httpProxyPort);
             authConfiguration.setHttpProxyHost(httpProxyHost);
-            authConfiguration.setHttpProxyPort(NumberUtils.toInt(httpProxyPort));
+            if (Objects.nonNull(httpProxyPort)) {
+                authConfiguration.setHttpProxyPort(NumberUtils.toInt(httpProxyPort));
+            }
         } catch (InvalidConfigurationException ex) {
             final String messagePostfix = "in 'auth' section of your build.gradle.";
             throw new GradleException(String.format("%s %s", ex.getMessage(), messagePostfix));
