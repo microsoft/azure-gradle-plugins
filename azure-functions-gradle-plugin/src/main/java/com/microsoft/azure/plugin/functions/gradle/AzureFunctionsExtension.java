@@ -72,12 +72,6 @@ public class AzureFunctionsExtension {
     @Nullable
     private Boolean disableAppInsights;
 
-    @Nullable
-    private String httpProxyHost;
-
-    @Nullable
-    private String httpProxyPort;
-
     public AzureFunctionsExtension(Project project) {
         this.project = project;
     }
@@ -133,18 +127,6 @@ public class AzureFunctionsExtension {
     @Optional
     public GradleAuthConfiguration getAuthentication() {
         return authentication;
-    }
-
-    @Input
-    @Optional
-    public String getHttpProxyHost() {
-        return httpProxyHost;
-    }
-
-    @Input
-    @Optional
-    public String getHttpProxyPort() {
-        return httpProxyPort;
     }
 
     @Input
@@ -226,14 +208,6 @@ public class AzureFunctionsExtension {
     public void setRuntime(Closure closure) {
         runtime = new GradleRuntimeConfiguration();
         project.configure(runtime, closure);
-    }
-
-    public void setHttpProxyHost(String httpProxyHost) {
-        this.httpProxyHost = httpProxyHost;
-    }
-
-    public void setHttpProxyPort(String httpProxyPort) {
-        this.httpProxyPort = httpProxyPort;
     }
 
     public void setAppServicePlanName(String appServicePlanName) {

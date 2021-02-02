@@ -11,6 +11,7 @@ import com.microsoft.azure.plugin.functions.gradle.task.PackageTask;
 import com.microsoft.azure.plugin.functions.gradle.task.PackageZipTask;
 import com.microsoft.azure.plugin.functions.gradle.telemetry.TelemetryAgent;
 
+import com.microsoft.azure.toolkit.lib.common.proxy.ProxyManager;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskContainer;
@@ -22,6 +23,7 @@ public class AzureFunctionsPlugin implements Plugin<Project> {
 
     @Override
     public void apply(final Project project) {
+        ProxyManager.getInstance().init();
         final AzureFunctionsExtension extension = project.getExtensions().create(GRADLE_FUNCTION_EXTENSION,
                 AzureFunctionsExtension.class, project);
         TelemetryAgent.instance.showPrivacyStatement();

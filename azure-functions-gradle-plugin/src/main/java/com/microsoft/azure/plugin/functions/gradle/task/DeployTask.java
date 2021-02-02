@@ -13,7 +13,6 @@ import com.microsoft.azure.plugin.functions.gradle.handler.DeployHandler;
 import com.microsoft.azure.plugin.functions.gradle.telemetry.TelemetryAgent;
 
 import com.microsoft.azure.plugin.functions.gradle.util.GradleProxyUtils;
-import com.microsoft.azure.tools.auth.exception.InvalidConfigurationException;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.tasks.Nested;
@@ -42,13 +41,13 @@ public class DeployTask extends DefaultTask implements IFunctionTask {
     @TaskAction
     public void deploy() throws GradleException {
         try {
-            GradleProxyUtils.initProxyManager(functionsExtension.getHttpProxyHost(), functionsExtension.getHttpProxyPort());
+            GradleProxyUtils.configureProxy();
             TelemetryAgent.instance.trackTaskStart(this.getClass());
             final GradleFunctionContext ctx = new GradleFunctionContext(getProject(), this.getFunctionsExtension());
             final DeployHandler deployHandler = new DeployHandler(ctx);
             deployHandler.execute();
             TelemetryAgent.instance.trackTaskSuccess(this.getClass());
-        } catch (final AzureExecutionException | InvalidConfigurationException e) {
+        } catch (final AzureExecutionException e) {
             Log.error(e);
             TelemetryAgent.instance.traceException(this.getClass(), e);
             throw new GradleException(DEPLOY_FAILURE + e.getMessage(), e);

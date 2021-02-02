@@ -6,26 +6,21 @@
 
 package com.microsoft.azure.plugin.functions.gradle.util;
 
+import com.azure.core.util.Configuration;
 import com.microsoft.azure.toolkit.lib.common.proxy.ProxyManager;
-import com.microsoft.azure.tools.auth.exception.InvalidConfigurationException;
-import com.microsoft.azure.tools.auth.util.ValidationUtil;
 import com.microsoft.azure.tools.common.util.TextUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.math.NumberUtils;
+
+import java.util.Objects;
 
 public class GradleProxyUtils {
-
-    public static void initProxyManager(String httpProxyHost, String httpProxyPort) throws InvalidConfigurationException {
+    public static void configureProxy() {
         final ProxyManager proxyManager = ProxyManager.getInstance();
-        if (!StringUtils.isAllBlank(httpProxyHost, httpProxyPort)) {
-            ValidationUtil.validateHttpProxy(httpProxyHost, httpProxyPort);
-            proxyManager.configure("user", httpProxyHost, NumberUtils.toInt(httpProxyPort));
-        }
-
-        final String source = proxyManager.getSource();
-        if (source != null) {
-            System.out.println(String.format("Use %s proxy: %s:%s", source, TextUtils.cyan(proxyManager.getHttpProxyHost()),
+        if (Objects.nonNull(proxyManager.getProxy())) {
+            System.out.println(String.format("Use system proxy: %s:%s", TextUtils.cyan(proxyManager.getHttpProxyHost()),
                     TextUtils.cyan(Integer.toString(proxyManager.getHttpProxyPort()))));
+
+            Configuration.getGlobalConfiguration().put(Configuration.PROPERTY_HTTP_PROXY,
+                    String.format("http://%s:%s", proxyManager.getHttpProxyHost(), proxyManager.getHttpProxyPort()));
         }
     }
 }
