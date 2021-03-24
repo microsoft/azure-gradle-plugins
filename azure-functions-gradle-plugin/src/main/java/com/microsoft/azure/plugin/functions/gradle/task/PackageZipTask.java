@@ -45,6 +45,7 @@ public class PackageZipTask extends DefaultTask implements IFunctionTask {
         try {
             TelemetryAgent.instance.trackTaskStart(this.getClass());
             final GradleFunctionContext ctx = new GradleFunctionContext(getProject(), this.getFunctionsExtension());
+            TelemetryAgent.instance.addDefaultProperties(ctx.getTelemetryProperties());
             FunctionUtils.checkStagingDirectory(ctx.getDeploymentStagingDirectoryPath());
             final File zipFile = new File(ctx.getDeploymentStagingDirectoryPath() + ".zip");
             ZipUtil.pack(new File(ctx.getDeploymentStagingDirectoryPath()), zipFile);

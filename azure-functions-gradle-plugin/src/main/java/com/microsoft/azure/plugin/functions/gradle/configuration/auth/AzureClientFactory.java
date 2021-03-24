@@ -70,9 +70,6 @@ public class AzureClientFactory {
 
     public static Azure getAzureClient(AzureTokenWrapper azureTokenWrapper, String subscriptionId) throws AzureLoginFailureException {
         try {
-            if (azureTokenWrapper != null) {
-                TelemetryAgent.instance.setAuthMethod(azureTokenWrapper.getAuthMethod().name());
-            }
             return azureTokenWrapper == null ? null : getAzureClientInner(azureTokenWrapper, subscriptionId);
         } catch (IOException e) {
             TelemetryAgent.instance.trackEvent(TelemetryAgent.AUTH_INIT_FAILURE);

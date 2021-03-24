@@ -22,6 +22,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
 
@@ -88,6 +89,7 @@ public class TelemetryAgent implements TelemetryConfiguration {
 
     public void setSubscriptionId(String subscriptionId) {
         this.subscriptionId = subscriptionId;
+        this.telemetryProxy.addDefaultProperty(SUBSCRIPTION_ID_KEY, subscriptionId);
     }
 
     public void addDefaultProperties(String key, String value) {
@@ -95,6 +97,13 @@ public class TelemetryAgent implements TelemetryConfiguration {
             initTelemetry();
         }
         this.telemetryProxy.addDefaultProperty(key, value);
+    }
+
+    public void addDefaultProperties(Map<String, String> properties) {
+        if (telemetryProxy == null) {
+            initTelemetry();
+        }
+        Optional.ofNullable(properties).ifPresent(values -> values.forEach((key, value) -> addDefaultProperties(key, value)));
     }
 
     @Override
@@ -112,10 +121,12 @@ public class TelemetryAgent implements TelemetryConfiguration {
 
     public void setAuthType(String authType) {
         this.authType = authType;
+        this.telemetryProxy.addDefaultProperty(AUTH_TYPE_KEY, authType);
     }
 
     public void setAuthMethod(String method) {
         this.authMethod = method;
+        this.telemetryProxy.addDefaultProperty(AUTH_METHOD_KEY, method);
     }
 
     public void setAllowTelemetry(boolean allowTelemetry) {

@@ -42,6 +42,7 @@ import com.microsoft.azure.management.resources.fluentcore.arm.Region;
 import com.microsoft.azure.plugin.functions.gradle.GradleDockerCredentialProvider;
 import com.microsoft.azure.plugin.functions.gradle.IAppServiceContext;
 import com.microsoft.azure.plugin.functions.gradle.configuration.GradleRuntimeConfiguration;
+import com.microsoft.azure.plugin.functions.gradle.telemetry.AppInsightsProxy;
 import com.microsoft.azure.plugin.functions.gradle.telemetry.TelemetryAgent;
 import org.apache.commons.lang3.StringUtils;
 
@@ -94,8 +95,8 @@ public class DeployHandler {
     private static final String INSTRUMENTATION_KEY_IS_NOT_VALID = "Instrumentation key is not valid, " +
             "please update the application insights configuration";
     private static final OperatingSystemEnum DEFAULT_OS = OperatingSystemEnum.Windows;
-    private static final String FUNCTION_JAVA_VERSION_KEY = "functionJavaVersion";
-    private static final String DISABLE_APP_INSIGHTS_KEY = "disableAppInsights";
+    private static final String DEPLOYMENT_TYPE_KEY = "deploymentType";
+    private static final String CREATE_NEW_FUNCTION_APP = "isCreateNewFunctionApp";
 
     private IAppServiceContext ctx;
 
@@ -106,8 +107,6 @@ public class DeployHandler {
 
     public void execute() throws AzureExecutionException {
 
-        TelemetryAgent.instance.addDefaultProperties(FUNCTION_JAVA_VERSION_KEY, String.valueOf(getJavaVersion()));
-        TelemetryAgent.instance.addDefaultProperties(DISABLE_APP_INSIGHTS_KEY, String.valueOf(ctx.isDisableAppInsights()));
         final FunctionApp app = createOrUpdateFunctionApp();
         if (app == null) {
             throw new AzureExecutionException(
@@ -131,6 +130,7 @@ public class DeployHandler {
 
     private FunctionApp createFunctionApp() throws AzureExecutionException {
         Log.prompt(FUNCTION_APP_CREATE_START);
+        TelemetryAgent.instance.addDefaultProperties(CREATE_NEW_FUNCTION_APP, String.valueOf(true));
         validateApplicationInsightsConfiguration();
         final Map appSettings = getAppSettingsWithDefaultValue();
         // get/create ai instances only if user didn't specify ai connection string in app settings
@@ -289,6 +289,7 @@ public class DeployHandler {
         final ArtifactHandlerBase.Builder builder;
 
         final DeploymentType deploymentType = getDeploymentType();
+        TelemetryAgent.instance.addDefaultProperties(DEPLOYMENT_TYPE_KEY, deploymentType.toString());
         switch (deploymentType) {
             case MSDEPLOY:
                 builder = new MSDeployArtifactHandlerImpl.Builder().functionAppName(this.ctx.getAppName());

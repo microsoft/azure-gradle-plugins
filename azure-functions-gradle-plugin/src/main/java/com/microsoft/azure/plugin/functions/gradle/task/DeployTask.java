@@ -41,6 +41,7 @@ public class DeployTask extends DefaultTask implements IFunctionTask {
         try {
             TelemetryAgent.instance.trackTaskStart(this.getClass());
             final GradleFunctionContext ctx = new GradleFunctionContext(getProject(), this.getFunctionsExtension());
+            TelemetryAgent.instance.addDefaultProperties(ctx.getTelemetryProperties());
             final DeployHandler deployHandler = new DeployHandler(ctx);
             deployHandler.execute();
             TelemetryAgent.instance.trackTaskSuccess(this.getClass());
