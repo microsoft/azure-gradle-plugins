@@ -42,7 +42,6 @@ import com.microsoft.azure.management.resources.fluentcore.arm.Region;
 import com.microsoft.azure.plugin.functions.gradle.GradleDockerCredentialProvider;
 import com.microsoft.azure.plugin.functions.gradle.IAppServiceContext;
 import com.microsoft.azure.plugin.functions.gradle.configuration.GradleRuntimeConfiguration;
-import com.microsoft.azure.plugin.functions.gradle.telemetry.AppInsightsProxy;
 import com.microsoft.azure.plugin.functions.gradle.telemetry.TelemetryAgent;
 import org.apache.commons.lang3.StringUtils;
 
