@@ -14,6 +14,7 @@ import com.microsoft.azure.common.project.JavaProject;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.plugin.functions.gradle.configuration.auth.AzureClientFactory;
 import com.microsoft.azure.plugin.functions.gradle.configuration.auth.GradleAuthConfiguration;
+import com.microsoft.azure.plugin.functions.gradle.telemetry.TelemetryAgent;
 import com.microsoft.azure.plugin.functions.gradle.util.GradleProjectUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -28,6 +29,12 @@ import java.util.stream.Collectors;
 
 
 public class GradleFunctionContext implements IAppServiceContext {
+    private static final String FUNCTION_JAVA_VERSION_KEY = "functionJavaVersion";
+    private static final String DISABLE_APP_INSIGHTS_KEY = "disableAppInsights";
+    private static final String FUNCTION_RUNTIME_KEY = "os";
+    private static final String FUNCTION_IS_DOCKER_KEY = "isDockerFunction";
+    private static final String FUNCTION_REGION_KEY = "region";
+    private static final String FUNCTION_PRICING_KEY = "pricingTier";
     private static final String GRADLE_PLUGIN_POSTFIX = "-gradle-plugin";
 
     private File stagingDirectory;
@@ -162,6 +169,9 @@ public class GradleFunctionContext implements IAppServiceContext {
         if (azure == null) {
             try {
                 azure = AzureClientFactory.getAzureClient(getAzureTokenWrapper(), getSubscription());
+                if (azure != null) {
+                    TelemetryAgent.instance.setSubscriptionId(azure.subscriptionId());
+                }
             } catch (AzureLoginFailureException e) {
                 throw new AzureExecutionException(e.getMessage(), e);
             }
@@ -184,10 +194,30 @@ public class GradleFunctionContext implements IAppServiceContext {
             try {
                 final GradleAuthConfiguration auth = functionsExtension.getAuthentication();
                 credential = AzureClientFactory.getAzureTokenWrapper(auth != null ? auth.getType() : null, auth);
+                final String authMethod = credential.getAuthMethod() == null ? null : credential.getAuthMethod().name();
+                final String authType = (credential.getAuthMethod() == null || credential.getAuthMethod().getAuthType() == null) ?
+                        null : credential.getAuthMethod().getAuthType().name();
+                TelemetryAgent.instance.setAuthMethod(authMethod);
+                TelemetryAgent.instance.setAuthType(authType);
             } catch (AzureLoginFailureException e) {
                 throw new AzureExecutionException(e.getMessage(), e);
             }
         }
         return credential;
+    }
+
+    public Map<String, String> getTelemetryProperties() {
+        final Map<String, String> result = new HashMap<>();
+        final RuntimeConfiguration runtime = getRuntime();
+        final String javaVersion = runtime == null ? null : runtime.getJavaVersion();
+        final String os = runtime == null ? null : runtime.getOs();
+        final boolean isDockerFunction = runtime == null ? false : StringUtils.isNotEmpty(runtime.getImage());
+        result.put(FUNCTION_JAVA_VERSION_KEY, StringUtils.isEmpty(javaVersion) ? "" : javaVersion);
+        result.put(FUNCTION_RUNTIME_KEY, StringUtils.isEmpty(os) ? "" : os);
+        result.put(FUNCTION_IS_DOCKER_KEY, String.valueOf(isDockerFunction));
+        result.put(FUNCTION_REGION_KEY, getRegion());
+        result.put(FUNCTION_PRICING_KEY, getPricingTier());
+        result.put(DISABLE_APP_INSIGHTS_KEY, String.valueOf(isDisableAppInsights()));
+        return result;
     }
 }

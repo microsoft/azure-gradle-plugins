@@ -42,6 +42,7 @@ public class PackageTask extends DefaultTask implements IFunctionTask {
         try {
             TelemetryAgent.instance.trackTaskStart(this.getClass());
             final GradleFunctionContext ctx = new GradleFunctionContext(getProject(), this.getFunctionsExtension());
+            TelemetryAgent.instance.addDefaultProperties(ctx.getTelemetryProperties());
             final File stagingFolder = new File(ctx.getDeploymentStagingDirectoryPath());
             // package task will start from a empty staging folder
             if (stagingFolder.exists()) {

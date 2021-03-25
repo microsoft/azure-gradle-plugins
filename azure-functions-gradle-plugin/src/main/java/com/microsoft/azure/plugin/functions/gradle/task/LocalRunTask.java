@@ -62,6 +62,7 @@ public class LocalRunTask extends Exec implements IFunctionTask {
         try {
             TelemetryAgent.instance.trackTaskStart(this.getClass());
             final GradleFunctionContext ctx = new GradleFunctionContext(getProject(), this.getFunctionsExtension());
+            TelemetryAgent.instance.addDefaultProperties(ctx.getTelemetryProperties());
             final String cliExec = FunctionCliResolver.resolveFunc();
             if (StringUtils.isEmpty(cliExec)) {
                 TelemetryAgent.instance.trackTaskFailure(this.getClass(), FUNC_CORE_CLI_NOT_FOUND);
