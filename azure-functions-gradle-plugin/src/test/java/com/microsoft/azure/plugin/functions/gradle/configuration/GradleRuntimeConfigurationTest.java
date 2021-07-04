@@ -11,11 +11,11 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
 public class GradleRuntimeConfigurationTest {
-    private GradleRuntimeConfiguration runtime;
+    private GradleRuntimeConfig runtime;
 
     @Before
     public void setUp() {
-        runtime = new GradleRuntimeConfiguration();
+        runtime = new GradleRuntimeConfig();
     }
 
     @Test
