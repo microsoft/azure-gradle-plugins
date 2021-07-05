@@ -39,7 +39,7 @@ import com.microsoft.azure.toolkit.lib.legacy.function.utils.FunctionUtils;
 import com.microsoft.azure.toolkit.lib.resource.AzureGroup;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.gradle.internal.impldep.org.apache.maven.artifact.versioning.ComparableVersion;
+import org.apache.maven.artifact.versioning.ComparableVersion;
 import org.zeroturnaround.zip.ZipUtil;
 
 import java.io.File;
