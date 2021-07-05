@@ -4,9 +4,9 @@
  */
 package com.microsoft.azure.plugin.functions.gradle.util;
 
-import com.microsoft.azure.common.exceptions.AzureExecutionException;
-import com.microsoft.azure.common.logging.Log;
 import com.microsoft.azure.plugin.functions.gradle.handler.PackageHandler;
+import com.microsoft.azure.toolkit.lib.common.exception.AzureExecutionException;
+import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
 
 import java.io.File;
 
@@ -22,7 +22,7 @@ public class FunctionUtils {
         if (!file.exists() || !file.isDirectory()) {
             throw new AzureExecutionException(STAGE_DIR_NOT_FOUND);
         }
-        Log.prompt(STAGE_DIR_FOUND + stagingFolder);
+        AzureMessager.getMessager().info(STAGE_DIR_FOUND + stagingFolder);
         final File hostJson = new File(file, PackageHandler.HOST_JSON);
         if (!hostJson.exists() || !hostJson.isFile()) {
             throw new AzureExecutionException(HOST_JSON_NOT_FOUND);

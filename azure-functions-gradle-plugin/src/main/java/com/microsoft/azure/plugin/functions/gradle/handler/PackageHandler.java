@@ -13,18 +13,20 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.base.Preconditions;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.microsoft.azure.common.exceptions.AzureExecutionException;
-import com.microsoft.azure.common.function.bindings.BindingEnum;
-import com.microsoft.azure.common.function.configurations.FunctionConfiguration;
-import com.microsoft.azure.common.function.handlers.AnnotationHandler;
-import com.microsoft.azure.common.function.handlers.AnnotationHandlerImpl;
-import com.microsoft.azure.common.function.handlers.CommandHandler;
-import com.microsoft.azure.common.function.handlers.CommandHandlerImpl;
-import com.microsoft.azure.common.function.handlers.FunctionCoreToolsHandler;
-import com.microsoft.azure.common.function.handlers.FunctionCoreToolsHandlerImpl;
-import com.microsoft.azure.common.logging.Log;
-import com.microsoft.azure.common.project.IProject;
 
+import com.microsoft.azure.toolkit.lib.common.IProject;
+import com.microsoft.azure.toolkit.lib.common.exception.AzureExecutionException;
+import com.microsoft.azure.toolkit.lib.common.exception.AzureToolkitRuntimeException;
+import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
+import com.microsoft.azure.toolkit.lib.legacy.function.bindings.BindingEnum;
+import com.microsoft.azure.toolkit.lib.legacy.function.configurations.FunctionConfiguration;
+import com.microsoft.azure.toolkit.lib.legacy.function.handlers.AnnotationHandler;
+import com.microsoft.azure.toolkit.lib.legacy.function.handlers.AnnotationHandlerImpl;
+import com.microsoft.azure.toolkit.lib.legacy.function.handlers.CommandHandler;
+import com.microsoft.azure.toolkit.lib.legacy.function.handlers.CommandHandlerImpl;
+import com.microsoft.azure.toolkit.lib.legacy.function.handlers.FunctionCoreToolsHandler;
+import com.microsoft.azure.toolkit.lib.legacy.function.handlers.FunctionCoreToolsHandlerImpl;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.input.BOMInputStream;
 import org.apache.commons.lang3.StringUtils;
@@ -40,17 +42,18 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 
+@Slf4j
 public class PackageHandler {
     public static final String HOST_JSON = "host.json";
     public static final String LOCAL_SETTINGS_JSON = "local.settings.json";
     private static final String DOCS_LINK = "https://aka.ms/functions-local-settings";
-    private static final String EMPTY_JSON = "{}";
     private static final String SEARCH_FUNCTIONS = "Step 1 of 8: Searching for Azure Functions entry points";
     private static final String FOUND_FUNCTIONS = " Azure Functions entry point(s) found.";
     private static final String NO_FUNCTIONS = "Azure Functions entry point not found, plugin will exit.";
@@ -78,9 +81,12 @@ public class PackageHandler {
         BindingEnum.HttpTrigger };
     private static final String EXTENSION_BUNDLE_ID = "Microsoft.Azure.Functions.ExtensionBundle";
     private static final String SKIP_INSTALL_EXTENSIONS_BUNDLE = "Extension bundle specified, skip install extension";
-
-    private IProject project;
-    private String deploymentStagingDirectoryPath;
+    private static final String DEFAULT_LOCAL_SETTINGS_JSON = "{ \"IsEncrypted\": false, \"Values\": " +
+        "{ \"FUNCTIONS_WORKER_RUNTIME\": \"java\" } }";
+    private static final String DEFAULT_HOST_JSON = "{\"version\":\"2.0\",\"extensionBundle\":" +
+        "{\"id\":\"Microsoft.Azure.Functions.ExtensionBundle\",\"version\":\"[1.*, 2.0.0)\"}}\n";
+    private final IProject project;
+    private final String deploymentStagingDirectoryPath;
 
     public PackageHandler(IProject project, String deploymentStagingDirectoryPath) {
         Preconditions.checkNotNull(project);
@@ -116,7 +122,7 @@ public class PackageHandler {
 
         installExtension(functionCoreToolsHandler, bindingClasses);
 
-        Log.prompt(BUILD_SUCCESS);
+        AzureMessager.getMessager().info(BUILD_SUCCESS);
     }
 
     private AnnotationHandler getAnnotationHandler() {
@@ -124,20 +130,20 @@ public class PackageHandler {
     }
 
     private Set<Method> findAnnotatedMethods(final AnnotationHandler handler) throws MalformedURLException {
-        Log.prompt("");
-        Log.prompt(SEARCH_FUNCTIONS);
+        AzureMessager.getMessager().info("");
+        AzureMessager.getMessager().info(SEARCH_FUNCTIONS);
         Set<Method> functions;
         try {
-            Log.debug("ClassPath to resolve: " + getArtifactFileUrl());
+            log.debug("ClassPath to resolve: " + getArtifactFileUrl());
             final List<URL> dependencyWithTargetClass = getDependencyArtifactUrls();
             dependencyWithTargetClass.add(getArtifactFileUrl());
             functions = handler.findFunctions(dependencyWithTargetClass);
         } catch (NoClassDefFoundError e) {
             // fallback to reflect through artifact url, for shaded project(fat jar)
-            Log.debug("ClassPath to resolve: " + getArtifactUrl());
-            functions = handler.findFunctions(Arrays.asList(getArtifactUrl()));
+            log.debug("ClassPath to resolve: " + getArtifactUrl());
+            functions = handler.findFunctions(Collections.singletonList(getArtifactUrl()));
         }
-        Log.prompt(functions.size() + FOUND_FUNCTIONS);
+        AzureMessager.getMessager().info(functions.size() + FOUND_FUNCTIONS);
         return functions;
     }
 
@@ -159,50 +165,49 @@ public class PackageHandler {
             try {
                 urlList.add(f.toURI().toURL());
             } catch (MalformedURLException e) {
-                Log.debug("Failed to get URL for file: " + f.toString());
+                log.debug("Failed to get URL for file: " + f);
             }
         }
         return urlList;
     }
 
     private Map<String, FunctionConfiguration> getFunctionConfigurations(final AnnotationHandler handler,
-            final Set<Method> methods) throws AzureExecutionException {
-        Log.prompt("");
-        Log.prompt(GENERATE_CONFIG);
+                                                                         final Set<Method> methods) throws AzureExecutionException {
+        AzureMessager.getMessager().info("");
+        AzureMessager.getMessager().info(GENERATE_CONFIG);
         final Map<String, FunctionConfiguration> configMap = handler.generateConfigurations(methods);
         if (configMap.size() == 0) {
-            Log.prompt(GENERATE_SKIP);
+            AzureMessager.getMessager().info(GENERATE_SKIP);
         } else {
             final String scriptFilePath = getScriptFilePath();
             configMap.values().forEach(config -> config.setScriptFile(scriptFilePath));
-            Log.prompt(GENERATE_DONE);
+            AzureMessager.getMessager().info(GENERATE_DONE);
         }
 
         return configMap;
     }
 
     private String getScriptFilePath() {
-        return new StringBuilder().append("..").append("/").append(project.getArtifactFile().getFileName().toString())
-                .toString();
+        return "../" + project.getArtifactFile().getFileName().toString();
     }
 
     private void validateFunctionConfigurations(final Map<String, FunctionConfiguration> configMap) {
-        Log.prompt("");
-        Log.prompt(VALIDATE_CONFIG);
+        AzureMessager.getMessager().info("");
+        AzureMessager.getMessager().info(VALIDATE_CONFIG);
         if (configMap.size() == 0) {
-            Log.prompt(VALIDATE_SKIP);
+            AzureMessager.getMessager().info(VALIDATE_SKIP);
         } else {
-            configMap.values().forEach(config -> config.validate());
-            Log.prompt(VALIDATE_DONE);
+            configMap.values().forEach(FunctionConfiguration::validate);
+            AzureMessager.getMessager().info(VALIDATE_DONE);
         }
     }
 
     private void writeFunctionJsonFiles(final ObjectWriter objectWriter,
-            final Map<String, FunctionConfiguration> configMap) throws IOException {
-        Log.prompt("");
-        Log.prompt(SAVE_FUNCTION_JSONS);
+                                        final Map<String, FunctionConfiguration> configMap) throws IOException {
+        AzureMessager.getMessager().info("");
+        AzureMessager.getMessager().info(SAVE_FUNCTION_JSONS);
         if (configMap.size() == 0) {
-            Log.prompt(SAVE_SKIP);
+            AzureMessager.getMessager().info(SAVE_SKIP);
         } else {
             for (final Map.Entry<String, FunctionConfiguration> config : configMap.entrySet()) {
                 writeFunctionJsonFile(objectWriter, config.getKey(), config.getValue());
@@ -211,55 +216,52 @@ public class PackageHandler {
     }
 
     private void writeFunctionJsonFile(final ObjectWriter objectWriter, final String functionName,
-            final FunctionConfiguration config) throws IOException {
-        Log.prompt(SAVE_FUNCTION_JSON + functionName);
+                                       final FunctionConfiguration config) throws IOException {
+        AzureMessager.getMessager().info(SAVE_FUNCTION_JSON + functionName);
         final File functionJsonFile = Paths.get(deploymentStagingDirectoryPath, functionName, FUNCTION_JSON)
-                .toFile();
+            .toFile();
         writeObjectToFile(objectWriter, config, functionJsonFile);
-        Log.prompt(SAVE_SUCCESS + functionJsonFile.getAbsolutePath());
+        AzureMessager.getMessager().info(SAVE_SUCCESS + functionJsonFile.getAbsolutePath());
     }
 
     private void copyHostJsonFile() throws IOException {
-        Log.prompt("");
-        Log.prompt(SAVE_HOST_JSON);
+        AzureMessager.getMessager().info("");
+        AzureMessager.getMessager().info(SAVE_HOST_JSON);
         final File sourceHostJsonFile = new File(project.getBaseDirectory().toFile(), HOST_JSON);
         final File hostJsonFile = Paths.get(this.deploymentStagingDirectoryPath, HOST_JSON).toFile();
-        copyFilesWithDefaultContent(sourceHostJsonFile, hostJsonFile, EMPTY_JSON);
-        Log.prompt(SAVE_SUCCESS + hostJsonFile.getAbsolutePath());
+        copyFilesWithDefaultContent(sourceHostJsonFile, hostJsonFile, DEFAULT_HOST_JSON);
+        AzureMessager.getMessager().info(SAVE_SUCCESS + hostJsonFile.getAbsolutePath());
     }
 
     private void copyLocalSettingJsonFile() throws AzureExecutionException, IOException {
-        Log.prompt("");
-        Log.prompt(SAVE_LOCAL_SETTINGS_JSON);
+        AzureMessager.getMessager().info("");
+        AzureMessager.getMessager().info(SAVE_LOCAL_SETTINGS_JSON);
         final File localSettingJsonTargetFile = Paths.get(this.deploymentStagingDirectoryPath, LOCAL_SETTINGS_JSON)
-                .toFile();
+            .toFile();
         final File localSettingJsonSrcFile = new File(project.getBaseDirectory().toFile(), LOCAL_SETTINGS_JSON);
-        if (localSettingJsonSrcFile.exists() && localSettingJsonSrcFile.length() > 0) {
-            copyFilesWithDefaultContent(localSettingJsonSrcFile, localSettingJsonTargetFile, null);
+        if (localSettingJsonSrcFile.exists() && localSettingJsonSrcFile.length() == 0) {
+            throw new AzureExecutionException("The " + localSettingJsonSrcFile.getAbsolutePath() +
+                " file is empty, please check the document at" + DOCS_LINK);
         } else {
-            if (!localSettingJsonSrcFile.exists()) {
-                throw new AzureExecutionException("Cannot find file: " + localSettingJsonSrcFile.getAbsolutePath() +
-                        ", please check the document at " + DOCS_LINK);
-            } else {
-                throw new AzureExecutionException("The " + localSettingJsonSrcFile.getAbsolutePath() +
-                        " file is empty, please check the document at" + DOCS_LINK);
-            }
+            copyFilesWithDefaultContent(localSettingJsonSrcFile, localSettingJsonTargetFile, DEFAULT_LOCAL_SETTINGS_JSON);
         }
 
-        Log.prompt(SAVE_SUCCESS + localSettingJsonTargetFile.getAbsolutePath());
+        AzureMessager.getMessager().info(SAVE_SUCCESS + localSettingJsonTargetFile.getAbsolutePath());
     }
 
     private static void copyFilesWithDefaultContent(File src, File dest, String defaultContent) throws IOException {
         if (src.exists()) {
             FileUtils.copyFile(src, dest);
         } else {
-            FileUtils.write(dest, defaultContent, Charset.defaultCharset());
+            FileUtils.write(dest, StringUtils.firstNonBlank(defaultContent, ""), Charset.defaultCharset());
         }
     }
 
     private void writeObjectToFile(final ObjectWriter objectWriter, final Object object, final File targetFile)
-            throws IOException {
-        targetFile.getParentFile().mkdirs();
+        throws IOException {
+        if (!targetFile.getParentFile().mkdirs()) {
+            throw new AzureToolkitRuntimeException("Cannot create folder: " + targetFile.getParentFile().getAbsolutePath());
+        }
         targetFile.createNewFile();
         objectWriter.writeValue(targetFile, object);
     }
@@ -271,9 +273,8 @@ public class PackageHandler {
     }
 
     private void copyJarsToStageDirectory() throws IOException {
-        final String stagingDirectory = deploymentStagingDirectoryPath;
-        Log.prompt("");
-        Log.prompt(COPY_JARS + stagingDirectory);
+        AzureMessager.getMessager().info("");
+        AzureMessager.getMessager().info(COPY_JARS + deploymentStagingDirectoryPath);
         final File libFolder = new File(deploymentStagingDirectoryPath, "lib");
         if (libFolder.exists()) {
             FileUtils.cleanDirectory(libFolder);
@@ -286,7 +287,7 @@ public class PackageHandler {
         }
 
         FileUtils.copyFileToDirectory(project.getArtifactFile().toFile(), new File(deploymentStagingDirectoryPath));
-        Log.prompt(COPY_SUCCESS);
+        AzureMessager.getMessager().info(COPY_SUCCESS);
     }
 
     private FunctionCoreToolsHandler getFunctionCoreToolsHandler(final CommandHandler commandHandler) {
@@ -294,14 +295,14 @@ public class PackageHandler {
     }
 
     private void installExtension(final FunctionCoreToolsHandler handler, Set<BindingEnum> bindingEnums)
-            throws AzureExecutionException {
-        Log.prompt(INSTALL_EXTENSIONS);
+        throws AzureExecutionException {
+        AzureMessager.getMessager().info(INSTALL_EXTENSIONS);
         if (!isInstallingExtensionNeeded(bindingEnums)) {
             return;
         }
         handler.installExtension(new File(this.deploymentStagingDirectoryPath),
-                project.getBaseDirectory().toFile());
-        Log.prompt(INSTALL_EXTENSIONS_FINISH);
+            project.getBaseDirectory().toFile());
+        AzureMessager.getMessager().info(INSTALL_EXTENSIONS_FINISH);
     }
 
     private Set<BindingEnum> getFunctionBindingEnums(Map<String, FunctionConfiguration> configMap) {
@@ -316,13 +317,13 @@ public class PackageHandler {
         final JsonObject extensionBundle = hostJson == null ? null : hostJson.getAsJsonObject(EXTENSION_BUNDLE);
         if (extensionBundle != null && extensionBundle.has("id") &&
             StringUtils.equalsIgnoreCase(extensionBundle.get("id").getAsString(), EXTENSION_BUNDLE_ID)) {
-            Log.prompt(SKIP_INSTALL_EXTENSIONS_BUNDLE);
+            AzureMessager.getMessager().info(SKIP_INSTALL_EXTENSIONS_BUNDLE);
             return false;
         }
         final boolean isNonHttpTriggersExist = bindingTypes.stream()
-                .anyMatch(binding -> !Arrays.asList(FUNCTION_WITHOUT_FUNCTION_EXTENSION).contains(binding));
+            .anyMatch(binding -> !Arrays.asList(FUNCTION_WITHOUT_FUNCTION_EXTENSION).contains(binding));
         if (!isNonHttpTriggersExist) {
-            Log.prompt(SKIP_INSTALL_EXTENSIONS_HTTP);
+            AzureMessager.getMessager().info(SKIP_INSTALL_EXTENSIONS_HTTP);
             return false;
         }
         return true;
@@ -331,7 +332,7 @@ public class PackageHandler {
     private JsonObject readHostJson() {
         final File hostJson = new File(project.getBaseDirectory().toFile(), HOST_JSON);
         try (final FileInputStream fis = new FileInputStream(hostJson);
-                final Scanner scanner = new Scanner(new BOMInputStream(fis))) {
+             final Scanner scanner = new Scanner(new BOMInputStream(fis))) {
             final String jsonRaw = scanner.useDelimiter("\\Z").next();
             return JsonParser.parseString(jsonRaw).getAsJsonObject();
         } catch (IOException e) {
