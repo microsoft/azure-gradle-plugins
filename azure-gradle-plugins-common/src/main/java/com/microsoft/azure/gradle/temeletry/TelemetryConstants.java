@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  */
 
-package com.microsoft.azure.plugin.functions.gradle.telemetry;
+package com.microsoft.azure.gradle.temeletry;
 
 public class TelemetryConstants {
     public static final String TELEMETRY_NOT_ALLOWED = "TelemetryNotAllowed";

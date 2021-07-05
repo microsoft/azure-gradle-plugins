@@ -4,9 +4,9 @@
  */
 package com.microsoft.azure.plugin.functions.gradle.task;
 
+import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
 import com.microsoft.azure.plugin.functions.gradle.AzureFunctionsExtension;
 import com.microsoft.azure.plugin.functions.gradle.GradleFunctionContext;
-import com.microsoft.azure.plugin.functions.gradle.telemetry.TelemetryAgent;
 import com.microsoft.azure.plugin.functions.gradle.util.FunctionCliResolver;
 import com.microsoft.azure.plugin.functions.gradle.util.FunctionUtils;
 import com.microsoft.azure.toolkit.lib.legacy.function.utils.CommandUtils;

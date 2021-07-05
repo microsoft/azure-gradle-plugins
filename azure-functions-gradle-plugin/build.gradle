@@ -67,6 +67,8 @@ dependencies {
     implementation 'com.microsoft.azure:azure-toolkit-applicationinsights-lib:0.9.0'
     implementation 'com.microsoft.azure:azure-toolkit-appservice-lib:0.9.0'
     implementation 'com.microsoft.azure:azure-toolkit-applicationinsights-lib:0.9.0'
+
+    implementation project(':azure-gradle-plugins-common')
     
     compileOnly 'org.projectlombok:lombok:1.18.20'
     annotationProcessor 'org.projectlombok:lombok:1.18.20'
