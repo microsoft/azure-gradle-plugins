@@ -5,12 +5,10 @@
 
 package com.microsoft.azure.plugin.functions.gradle;
 
-import com.microsoft.azure.auth.AzureTokenWrapper;
-import com.microsoft.azure.auth.configuration.AuthConfiguration;
-import com.microsoft.azure.common.exceptions.AzureExecutionException;
-import com.microsoft.azure.common.function.configurations.RuntimeConfiguration;
-import com.microsoft.azure.common.project.IProject;
-import com.microsoft.azure.management.Azure;
+import com.microsoft.azure.plugin.functions.gradle.configuration.GradleRuntimeConfig;
+import com.microsoft.azure.plugin.functions.gradle.configuration.auth.GradleAuthConfig;
+import com.microsoft.azure.toolkit.lib.appservice.AzureAppService;
+import com.microsoft.azure.toolkit.lib.common.IProject;
 
 import java.util.Map;
 
@@ -23,7 +21,7 @@ public interface IAppServiceContext {
 
     String getResourceGroup();
 
-    RuntimeConfiguration getRuntime();
+    GradleRuntimeConfig getRuntime();
 
     String getRegion();
 
@@ -35,7 +33,7 @@ public interface IAppServiceContext {
 
     Map<String, String> getAppSettings();
 
-    AuthConfiguration getAuth();
+    GradleAuthConfig getAuth();
 
     String getDeploymentType();
 
@@ -45,9 +43,7 @@ public interface IAppServiceContext {
 
     boolean isDisableAppInsights();
 
-    Azure getAzureClient() throws AzureExecutionException;
-
-    AzureTokenWrapper getAzureTokenWrapper() throws AzureExecutionException;
-
     IProject getProject();
+
+    AzureAppService getOrCreateAzureAppServiceClient();
 }
