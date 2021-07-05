@@ -4,14 +4,12 @@
  */
 package com.microsoft.azure.plugin.functions.gradle.task;
 
-import com.microsoft.azure.common.exceptions.AzureExecutionException;
-import com.microsoft.azure.common.function.utils.CommandUtils;
 import com.microsoft.azure.plugin.functions.gradle.AzureFunctionsExtension;
 import com.microsoft.azure.plugin.functions.gradle.GradleFunctionContext;
 import com.microsoft.azure.plugin.functions.gradle.telemetry.TelemetryAgent;
 import com.microsoft.azure.plugin.functions.gradle.util.FunctionCliResolver;
 import com.microsoft.azure.plugin.functions.gradle.util.FunctionUtils;
-
+import com.microsoft.azure.toolkit.lib.legacy.function.utils.CommandUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.GradleException;
@@ -21,9 +19,7 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
 import javax.annotation.Nullable;
-
 import java.io.File;
-import java.io.IOException;
 
 public class LocalRunTask extends Exec implements IFunctionTask {
 
@@ -60,12 +56,11 @@ public class LocalRunTask extends Exec implements IFunctionTask {
     @Override
     public void exec() {
         try {
-            TelemetryAgent.instance.trackTaskStart(this.getClass());
+            TelemetryAgent.getInstance().trackTaskStart(this.getClass());
             final GradleFunctionContext ctx = new GradleFunctionContext(getProject(), this.getFunctionsExtension());
-            TelemetryAgent.instance.addDefaultProperties(ctx.getTelemetryProperties());
             final String cliExec = FunctionCliResolver.resolveFunc();
             if (StringUtils.isEmpty(cliExec)) {
-                TelemetryAgent.instance.trackTaskFailure(this.getClass(), FUNC_CORE_CLI_NOT_FOUND);
+                TelemetryAgent.getInstance().trackTaskFailure(this.getClass(), FUNC_CORE_CLI_NOT_FOUND);
                 throw new GradleException(FUNC_CORE_CLI_NOT_FOUND);
             }
 
@@ -74,7 +69,7 @@ public class LocalRunTask extends Exec implements IFunctionTask {
 
             if (BooleanUtils.isTrue(this.enableDebug) || StringUtils.isNotEmpty(ctx.getLocalDebugConfig())) {
                 this.commandLine(cliExec, "host", "start", "--language-worker", "--",
-                        getDebugJvmArgument(ctx.getLocalDebugConfig()));
+                    getDebugJvmArgument(ctx.getLocalDebugConfig()));
             } else {
                 this.commandLine(cliExec, "host", "start");
             }
@@ -84,14 +79,14 @@ public class LocalRunTask extends Exec implements IFunctionTask {
             final int code = this.getExecResult().getExitValue();
             for (final Long validCode : CommandUtils.getValidReturnCodes()) {
                 if (validCode != null && validCode.intValue() == code) {
-                    TelemetryAgent.instance.trackTaskSuccess(this.getClass());
+                    TelemetryAgent.getInstance().trackTaskSuccess(this.getClass());
                     return;
                 }
             }
-            TelemetryAgent.instance.trackTaskFailure(this.getClass(), RUN_FUNCTIONS_FAILURE);
+            TelemetryAgent.getInstance().trackTaskFailure(this.getClass(), RUN_FUNCTIONS_FAILURE);
             throw new GradleException(RUN_FUNCTIONS_FAILURE);
-        } catch (AzureExecutionException | IOException | InterruptedException e) {
-            TelemetryAgent.instance.traceException(this.getClass(), e);
+        } catch (Exception e) {
+            TelemetryAgent.getInstance().traceException(this.getClass(), e);
             throw new GradleException("Cannot run functions locally due to error:" + e.getMessage(), e);
         }
 
