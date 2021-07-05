@@ -5,20 +5,18 @@
 
 package com.microsoft.azure.plugin.functions.gradle.telemetry;
 
-import com.microsoft.azure.common.logging.Log;
-import com.microsoft.azure.common.utils.GetHashMac;
-import com.microsoft.azure.plugin.functions.gradle.AzureFunctionsPlugin;
-
-import org.apache.commons.io.IOUtils;
+import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
+import com.microsoft.azure.toolkit.lib.common.telemetry.AzureTelemeter;
+import com.microsoft.azure.toolkit.lib.common.utils.InstallationIdUtils;
+import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 
+import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.charset.Charset;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,111 +24,83 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
 
+import static com.microsoft.azure.plugin.functions.gradle.telemetry.TelemetryConstants.*;
+
 public class TelemetryAgent implements TelemetryConfiguration {
-    public static final String AUTH_INIT_FAILURE = "AuthInitFailure";
-    private static final String PLUGIN_NAME_KEY = "pluginName";
-    private static final String PLUGIN_VERSION_KEY = "pluginVersion";
-    private static final String INSTALLATION_ID_KEY = "installationId";
-    private static final String SESSION_ID_KEY = "sessionId";
-    private static final String SUBSCRIPTION_ID_KEY = "subscriptionId";
-    private static final String TELEMETRY_NOT_ALLOWED = "TelemetryNotAllowed";
-    private static final String AUTH_TYPE_KEY = "authType";
-    private static final String AUTH_METHOD_KEY = "authMethod";
+
     private static final String FAILURE_REASON = "failureReason";
 
     private static final String CONFIGURATION_PATH = Paths.get(System.getProperty("user.home"),
-            ".azure", "gradleplugins.properties").toString();
+        ".azure", "gradleplugins.properties").toString();
     private static final String FIRST_RUN_KEY = "first.run";
     private static final String PRIVACY_STATEMENT = "\nData/Telemetry\n" +
-            "---------\n" +
-            "This project collects usage data and sends it to Microsoft to help improve our products and services.\n" +
-            "Read Microsoft's privacy statement to learn more: https://privacy.microsoft.com/en-us/privacystatement." +
-            "\n\nYou can change your telemetry configuration through 'allowTelemetry' property.\n" +
-            "For more information, please go to https://aka.ms/azure-gradle-config.\n";
+        "---------\n" +
+        "This project collects usage data and sends it to Microsoft to help improve our products and services.\n" +
+        "Read Microsoft's privacy statement to learn more: https://privacy.microsoft.com/en-us/privacystatement." +
+        "\n\nYou can change your telemetry configuration through 'allowTelemetry' property.\n" +
+        "For more information, please go to https://aka.ms/azure-gradle-config.\n";
 
-    private boolean allowTelemetry = true;
-    private String sessionId = UUID.randomUUID().toString();
-    private String installationId = GetHashMac.getHashMac();
+    private String pluginName;
     private String pluginVersion;
+    private boolean allowTelemetry;
+
+    @Setter
     private String subscriptionId;
+    @Setter
     private String authType;
+    @Setter
     private String authMethod;
-    private TelemetryProxy telemetryProxy;
+    private AppInsightsProxy telemetryProxy;
+    private final String sessionId = UUID.randomUUID().toString();
+    private final String installationId = InstallationIdUtils.getHashMac();
 
-    public static TelemetryAgent instance = new TelemetryAgent();
+    private static TelemetryAgent instance = new TelemetryAgent();
 
-    private TelemetryAgent() {
-        try {
-            this.pluginVersion = IOUtils.toString(TelemetryAgent.class.getResource("/version.txt"), Charset.defaultCharset()).trim();
-        } catch (IOException e) {
-            this.pluginVersion = "unknown";
-            Log.error(e);
-        }
-    }
-
-    public String getPluginVersion() {
-        return pluginVersion;
+    public static TelemetryAgent getInstance() {
+        return instance;
     }
 
     public String getUserAgent() {
         return this.allowTelemetry ?
-            String.format("%s/%s %s:%s %s:%s", AzureFunctionsPlugin.GRADLE_PLUGIN_NAME, pluginVersion,
-                        INSTALLATION_ID_KEY, installationId, SESSION_ID_KEY, sessionId)
-                : String.format("%s/%s", AzureFunctionsPlugin.GRADLE_PLUGIN_NAME, pluginVersion);
+            String.format("%s/%s %s:%s %s:%s", pluginName, pluginVersion,
+                INSTALLATION_ID_KEY, installationId, SESSION_ID_KEY, sessionId)
+            : String.format("%s/%s", pluginName, pluginVersion);
     }
 
-    public void initTelemetry() {
+    public void initTelemetry(@Nonnull String pluginName, @Nonnull String pluginVersion, boolean allowTelemetry) {
+        this.pluginName = pluginName;
+        this.pluginVersion = pluginVersion;
+        this.allowTelemetry = allowTelemetry;
         telemetryProxy = new AppInsightsProxy(this);
         if (!allowTelemetry) {
             telemetryProxy.trackEvent(TELEMETRY_NOT_ALLOWED);
             telemetryProxy.disable();
+        } else {
+            AzureTelemeter.setClient(telemetryProxy.getClient());
+            AzureTelemeter.setCommonProperties(this.getTelemetryProperties());
+            AzureTelemeter.setEventNamePrefix("AzurePlugin.Gradle");
         }
     }
 
-    public void setSubscriptionId(String subscriptionId) {
-        this.subscriptionId = subscriptionId;
-        this.telemetryProxy.addDefaultProperty(SUBSCRIPTION_ID_KEY, subscriptionId);
-    }
-
-    public void addDefaultProperties(String key, String value) {
-        if (telemetryProxy == null) {
-            initTelemetry();
-        }
+    public void addDefaultProperty(String key, String value) {
         this.telemetryProxy.addDefaultProperty(key, value);
     }
 
     public void addDefaultProperties(Map<String, String> properties) {
-        if (telemetryProxy == null) {
-            initTelemetry();
-        }
-        Optional.ofNullable(properties).ifPresent(values -> values.forEach((key, value) -> addDefaultProperties(key, value)));
+        Optional.ofNullable(properties).ifPresent(values -> values.forEach(this::addDefaultProperty));
     }
 
     @Override
     public Map<String, String> getTelemetryProperties() {
         final Map<String, String> map = new HashMap<>();
         map.put(INSTALLATION_ID_KEY, installationId);
-        map.put(PLUGIN_NAME_KEY, AzureFunctionsPlugin.GRADLE_PLUGIN_NAME);
-        map.put(PLUGIN_VERSION_KEY, getPluginVersion());
-        map.put(SUBSCRIPTION_ID_KEY, subscriptionId);
+        map.put(PLUGIN_NAME_KEY, pluginName);
+        map.put(PLUGIN_VERSION_KEY, pluginVersion);
+        map.put(TelemetryConstants.SUBSCRIPTION_ID_KEY, subscriptionId);
         map.put(SESSION_ID_KEY, sessionId);
         map.put(AUTH_TYPE_KEY, authType);
         map.put(AUTH_METHOD_KEY, authMethod);
         return map;
-    }
-
-    public void setAuthType(String authType) {
-        this.authType = authType;
-        this.telemetryProxy.addDefaultProperty(AUTH_TYPE_KEY, authType);
-    }
-
-    public void setAuthMethod(String method) {
-        this.authMethod = method;
-        this.telemetryProxy.addDefaultProperty(AUTH_METHOD_KEY, method);
-    }
-
-    public void setAllowTelemetry(boolean allowTelemetry) {
-        this.allowTelemetry = allowTelemetry;
     }
 
     public void trackEvent(String event) {
@@ -148,7 +118,7 @@ public class TelemetryAgent implements TelemetryConfiguration {
     public void showPrivacyStatement() {
         final Properties prop = new Properties();
         if (isFirstRun(prop)) {
-            Log.prompt(PRIVACY_STATEMENT);
+            AzureMessager.getMessager().confirm(PRIVACY_STATEMENT);
             updateConfigurationFile(prop);
         }
     }
@@ -196,7 +166,7 @@ public class TelemetryAgent implements TelemetryConfiguration {
             }
         } catch (Exception e) {
             // catch exceptions here to avoid blocking mojo execution.
-            Log.debug(e.getMessage());
+            AzureMessager.getMessager().warning(e.getMessage());
         }
         return true;
     }
@@ -204,10 +174,10 @@ public class TelemetryAgent implements TelemetryConfiguration {
     private void updateConfigurationFile(Properties prop) {
         try (OutputStream output = new FileOutputStream(CONFIGURATION_PATH)) {
             prop.setProperty(FIRST_RUN_KEY, "false");
-            prop.store(output, "Azure Maven Plugin configurations");
+            prop.store(output, "Azure Gradle Plugin configurations");
         } catch (Exception e) {
             // catch exceptions here to avoid blocking mojo execution.
-            Log.debug(e.getMessage());
+            AzureMessager.getMessager().warning(e.getMessage());
         }
     }
 }
