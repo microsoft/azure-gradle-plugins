@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  */
 
-package com.microsoft.azure.plugin.functions.gradle.telemetry;
+package com.microsoft.azure.gradle.temeletry;
 
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
 import com.microsoft.azure.toolkit.lib.common.telemetry.AzureTelemeter;
@@ -24,7 +24,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
 
-import static com.microsoft.azure.plugin.functions.gradle.telemetry.TelemetryConstants.*;
+import static com.microsoft.azure.gradle.temeletry.TelemetryConstants.*;
 
 public class TelemetryAgent implements TelemetryConfiguration {
 

@@ -1,0 +1,54 @@
+
+plugins {
+    id "net.linguica.maven-settings" version "0.5"
+    id 'java'
+}
+apply plugin: 'maven-publish'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'checkstyle'
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+checkstyle {
+    toolVersion '8.36.1';
+    // Whether or not to allow the build to continue if there are warnings.
+    ignoreFailures = false
+
+    // Whether or not rule violations are to be displayed on the console.
+    showViolations = true
+}
+
+publishing {
+    repositories {
+        mavenLocal()
+    }
+}
+
+dependencies {
+    implementation 'commons-io:commons-io:2.10.0'
+    implementation 'org.apache.commons:commons-lang3:3.12.0'
+    implementation 'com.google.guava:guava:30.1.1-jre'
+    implementation 'com.microsoft.azure:azure-toolkit-common-lib:0.9.0'
+    implementation 'com.microsoft.azure:azure-toolkit-resource-lib:0.9.0'
+    implementation 'com.microsoft.azure:azure-toolkit-appservice-lib:0.9.0'
+    implementation 'com.microsoft.azure:azure-toolkit-applicationinsights-lib:0.9.0'
+    testImplementation "junit:junit:4.13.2"
+    testImplementation "org.mockito:mockito-core:3.11.2"
+
+    compileOnly 'org.projectlombok:lombok:1.18.20'
+    annotationProcessor 'org.projectlombok:lombok:1.18.20'
+}
+
+
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+}
