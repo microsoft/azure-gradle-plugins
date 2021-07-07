@@ -1,0 +1,118 @@
+/*
+ * MIT License
+ *
+ * Copyright (c) Microsoft Corporation. All rights reserved.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+plugins {
+    id "net.linguica.maven-settings" version "0.5"
+    id "com.gradle.plugin-publish" version "0.15.0"
+    id "nu.studer.credentials" version "2.1"
+    id "com.github.ben-manes.versions" version "0.39.0"
+}
+apply plugin: 'java-gradle-plugin'
+apply plugin: 'com.gradle.plugin-publish'
+apply plugin: 'maven-publish'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'checkstyle'
+apply plugin: 'project-report'
+
+checkstyle {
+    toolVersion '8.36.1';
+    // Whether or not to allow the build to continue if there are warnings.
+    ignoreFailures = false
+
+    // Whether or not rule violations are to be displayed on the console.
+    showViolations = true
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+dependencies {
+    implementation 'commons-io:commons-io:2.10.0'
+    implementation 'org.apache.commons:commons-exec:1.3'
+    implementation 'org.apache.commons:commons-lang3:3.12.0'
+    implementation 'com.google.code.gson:gson:2.8.7'
+    implementation 'com.google.guava:guava:30.1.1-jre'
+    implementation 'com.microsoft.azure:azure-toolkit-common-lib:0.9.0'
+    implementation 'com.microsoft.azure:azure-toolkit-resource-lib:0.9.0'
+    implementation 'com.microsoft.azure:azure-toolkit-applicationinsights-lib:0.9.0'
+    implementation 'com.microsoft.azure:azure-toolkit-appservice-lib:0.9.0'
+    implementation 'com.microsoft.azure:azure-toolkit-applicationinsights-lib:0.9.0'
+    implementation 'org.fusesource.jansi:jansi:1.18'
+    implementation 'com.microsoft.azure:applicationinsights-core:2.6.3'
+    implementation 'org.apache.maven:maven-artifact:3.8.1'
+    implementation project(':azure-gradle-plugins-common')
+    testImplementation "junit:junit:4.13.2"
+    testImplementation "org.mockito:mockito-core:3.11.2"
+    compileOnly 'org.projectlombok:lombok:1.18.20'
+    annotationProcessor 'org.projectlombok:lombok:1.18.20'
+}
+
+gradlePlugin {
+    plugins {
+        "${project.pluginDisplayName}" {
+            id                  = project.pluginId
+            implementationClass = project.pluginImplementationClass
+        }
+    }
+}
+
+jar {
+    manifest {
+        attributes 'Implementation-Version': archiveVersion
+        attributes 'Automatic-Module-Name': 'com.microsoft.azure.azurewebapp'
+
+    }
+}
+
+pluginBundle {
+    website = 'https://github.com/microsoft/azure-gradle-plugins/wiki'
+    vcsUrl = 'https://github.com/microsoft/azure-gradle-plugins'
+
+    plugins {
+        "${project.pluginDisplayName}" {
+            id = project.pluginId
+            displayName = 'Azure Webapp Plugin for Gradle'
+            version = project.version
+            description = 'Azure Webapp Plugin for gradle'
+            tags = ['microsoft', 'azure', 'webapp', 'cloud', 'appservice', 'deploy']
+        }
+    }
+}
+
+task setupPluginPublishSecret {
+    doLast {
+        def key = credentials['gradle.publish.key']
+        def secret = credentials['gradle.publish.secret']
+        if( !key || !secret) {
+            throw new RuntimeException("gradlePublishKey and/or gradlePublishSecret are not defined")
+        }
+
+        System.properties.setProperty("gradle.publish.key", key)
+        System.properties.setProperty("gradle.publish.secret", secret)
+    }
+}
+
+tasks.publishPlugins.dependsOn tasks.setupPluginPublishSecret
