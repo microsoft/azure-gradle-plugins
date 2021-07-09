@@ -135,7 +135,7 @@ public class GradleAuthHelper {
 
     private static Account accountLogin(AuthConfiguration auth) {
         if (auth.getEnvironment() != null) {
-            com.microsoft.azure.toolkit.lib.Azure.az(AzureCloud.class).set(auth.getEnvironment());
+            Azure.az(AzureCloud.class).set(auth.getEnvironment());
         }
         if (auth.getType() == null || auth.getType() == AuthType.AUTO) {
             if (StringUtils.isAllBlank(auth.getCertificate(), auth.getCertificatePassword(), auth.getKey())) {
@@ -144,7 +144,7 @@ public class GradleAuthHelper {
                     throw new AzureToolkitAuthenticationException("There are no accounts available.");
                 }
                 promptForOAuthOrDeviceCodeLogin(account.getAuthType());
-                return handleDeviceCodeAccount(com.microsoft.azure.toolkit.lib.Azure.az(AzureAccount.class).loginAsync(account, false).block());
+                return handleDeviceCodeAccount(Azure.az(AzureAccount.class).loginAsync(account, false).block());
             } else {
                 return doServicePrincipalLogin(auth);
             }
