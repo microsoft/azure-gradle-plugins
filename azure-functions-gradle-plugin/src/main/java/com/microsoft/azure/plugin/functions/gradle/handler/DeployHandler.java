@@ -95,8 +95,6 @@ public class DeployHandler {
     private static final String CREATE_RESOURCE_GROUP = "Creating resource group %s in region %s...";
     private static final String CREATE_RESOURCE_GROUP_DONE = "Successfully created resource group %s.";
 
-    private static final OperatingSystem DEFAULT_OS = OperatingSystem.WINDOWS;
-
     private static final String FUNCTION_JAVA_VERSION_KEY = "functionJavaVersion";
     private static final String DISABLE_APP_INSIGHTS_KEY = "disableAppInsights";
     private static final String JVM_UP_TIME = "jvmUpTime";
@@ -150,7 +148,7 @@ public class DeployHandler {
 
     public void execute() throws AzureExecutionException {
 
-        TelemetryAgent.getInstance().addDefaultProperty(FUNCTION_JAVA_VERSION_KEY, String.valueOf(getJavaVersion()));
+        TelemetryAgent.getInstance().addDefaultProperty(FUNCTION_JAVA_VERSION_KEY, String.valueOf(javaVersion()));
         TelemetryAgent.getInstance().addDefaultProperty(DISABLE_APP_INSIGHTS_KEY, String.valueOf(ctx.isDisableAppInsights()));
         doValidate();
         final IFunctionApp app = createOrUpdateFunctionApp();
@@ -258,12 +256,12 @@ public class DeployHandler {
 
         final GradleRuntimeConfig runtime = ctx.getRuntime();
         // os
-        if (StringUtils.isNotEmpty(runtime.getOs()) && OperatingSystem.fromString(runtime.getOs()) == null) {
+        if (StringUtils.isNotEmpty(runtime.os()) && OperatingSystem.fromString(runtime.os()) == null) {
             throw new AzureToolkitRuntimeException(INVALID_OS);
         }
         // java version
-        if (StringUtils.isNotEmpty(runtime.getJavaVersion()) && JavaVersion.fromString(runtime.getJavaVersion()) == JavaVersion.OFF) {
-            throw new AzureToolkitRuntimeException(String.format(INVALID_JAVA_VERSION, runtime.getJavaVersion()));
+        if (StringUtils.isNotEmpty(runtime.javaVersion()) && JavaVersion.fromString(runtime.javaVersion()) == JavaVersion.OFF) {
+            throw new AzureToolkitRuntimeException(String.format(INVALID_JAVA_VERSION, runtime.javaVersion()));
         }
 
         final String pricingTier = ctx.getPricingTier();
@@ -272,7 +270,7 @@ public class DeployHandler {
             throw new AzureToolkitRuntimeException(String.format(INVALID_PRICING_TIER, pricingTier));
         }
         // docker image
-        if (OperatingSystem.fromString(runtime.getOs()) == OperatingSystem.DOCKER && StringUtils.isEmpty(runtime.getImage())) {
+        if (OperatingSystem.fromString(runtime.os()) == OperatingSystem.DOCKER && StringUtils.isEmpty(runtime.image())) {
             throw new AzureToolkitRuntimeException(EMPTY_IMAGE_NAME);
         }
 
@@ -367,23 +365,15 @@ public class DeployHandler {
 
     private DockerConfiguration getDockerConfiguration() {
         GradleRuntimeConfig runtime = ctx.getRuntime();
-        final OperatingSystem os = Optional.ofNullable(runtime.getOs()).map(OperatingSystem::fromString).orElse(null);
+        final OperatingSystem os = Optional.ofNullable(runtime.os()).map(OperatingSystem::fromString).orElse(null);
         if (os != OperatingSystem.DOCKER) {
             return null;
         }
-        if (!StringUtils.isAllBlank(runtime.getUsername(), runtime.getPassword())) {
-            if (StringUtils.isNotBlank(runtime.getUsername()) && StringUtils.isBlank(runtime.getPassword())) {
-                throw new AzureToolkitRuntimeException("Missing password for private docker image.");
-            }
-            if (StringUtils.isBlank(runtime.getUsername()) && StringUtils.isNotBlank(runtime.getPassword())) {
-                throw new AzureToolkitRuntimeException("Missing username for private docker image.");
-            }
-        }
         return DockerConfiguration.builder()
-            .image(runtime.getImage())
-            .registryUrl(runtime.getRegistryUrl())
-            .userName(runtime.getUsername())
-            .password(runtime.getPassword())
+            .image(runtime.image())
+            .registryUrl(runtime.registryUrl())
+            .userName(runtime.username())
+            .password(runtime.password())
             .build();
     }
 
@@ -409,22 +399,22 @@ public class DeployHandler {
     }
 
     private Runtime getRuntimeOrDefault() {
-        final OperatingSystem os = java.util.Optional.ofNullable(ctx.getRuntime().getOs()).map(OperatingSystem::fromString).orElse(OperatingSystem.WINDOWS);
-        final JavaVersion javaVersion = java.util.Optional.ofNullable(ctx.getRuntime().getJavaVersion())
+        final OperatingSystem os = Optional.ofNullable(ctx.getRuntime().os()).map(OperatingSystem::fromString).orElse(OperatingSystem.WINDOWS);
+        final JavaVersion javaVersion = Optional.ofNullable(ctx.getRuntime().javaVersion())
             .map(JavaVersion::fromString).orElse(JavaVersion.JAVA_8);
         return Runtime.getRuntime(os, WebContainer.JAVA_OFF, javaVersion);
     }
 
     private Region getParsedRegion() {
-        return java.util.Optional.ofNullable(ctx.getRegion()).map(Region::fromName).orElse(Region.US_WEST);
+        return Optional.ofNullable(ctx.getRegion()).map(Region::fromName).orElse(Region.US_WEST);
     }
 
     private PricingTier getParsedPricingTier() {
         String pricingTier = ctx.getPricingTier();
         if (StringUtils.isEmpty(pricingTier)) {
-            return com.microsoft.azure.toolkit.lib.appservice.model.PricingTier.CONSUMPTION;
+            return PricingTier.CONSUMPTION;
         }
-        return java.util.Optional.ofNullable(com.microsoft.azure.toolkit.lib.appservice.model.PricingTier.fromString(pricingTier))
+        return Optional.ofNullable(PricingTier.fromString(pricingTier))
             .orElseThrow(() -> new AzureToolkitRuntimeException(String.format("Invalid pricing tier %s", pricingTier)));
     }
 
@@ -486,11 +476,11 @@ public class DeployHandler {
 
     private Runtime getRuntime() {
         final GradleRuntimeConfig runtime = ctx.getRuntime();
-        if (StringUtils.isEmpty(runtime.getOs()) && StringUtils.isEmpty(runtime.getJavaVersion())) {
+        if (StringUtils.isEmpty(runtime.os()) && StringUtils.isEmpty(runtime.javaVersion())) {
             return null;
         }
-        final OperatingSystem os = OperatingSystem.fromString(runtime.getOs());
-        final JavaVersion javaVersion = JavaVersion.fromString(runtime.getJavaVersion());
+        final OperatingSystem os = OperatingSystem.fromString(runtime.os());
+        final JavaVersion javaVersion = JavaVersion.fromString(runtime.javaVersion());
         return Runtime.getRuntime(os, WebContainer.JAVA_OFF, javaVersion);
     }
 
@@ -513,16 +503,8 @@ public class DeployHandler {
         }
     }
 
-    private OperatingSystem getOsEnum() throws AzureExecutionException {
-        final GradleRuntimeConfig runtime = ctx.getRuntime();
-        if (runtime != null && StringUtils.isNotBlank(runtime.getOs())) {
-            return OperatingSystem.fromString(runtime.getOs());
-        }
-        return DEFAULT_OS;
-    }
-
-    private JavaVersion getJavaVersion() {
-        return Objects.isNull(ctx.getRuntime()) ? null : JavaVersion.fromString(ctx.getRuntime().getJavaVersion());
+    private JavaVersion javaVersion() {
+        return Objects.isNull(ctx.getRuntime()) ? null : JavaVersion.fromString(ctx.getRuntime().javaVersion());
     }
 
     public IFunctionApp getFunctionApp() {
