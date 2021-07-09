@@ -4,10 +4,10 @@
  */
 package com.microsoft.azure.plugin.functions.gradle.task;
 
+import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
 import com.microsoft.azure.plugin.functions.gradle.AzureFunctionsExtension;
 import com.microsoft.azure.plugin.functions.gradle.GradleFunctionContext;
 import com.microsoft.azure.plugin.functions.gradle.handler.PackageHandler;
-import com.microsoft.azure.plugin.functions.gradle.telemetry.TelemetryAgent;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;

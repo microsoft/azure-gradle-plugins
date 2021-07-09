@@ -5,12 +5,13 @@
 
 package com.microsoft.azure.plugin.functions.gradle.configuration;
 
+import com.microsoft.azure.gradle.configuration.GradleRuntimeConfig;
 import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class GradleRuntimeConfigurationTest {
+public class GradleRuntimeConfigTest {
     private GradleRuntimeConfig runtime;
 
     @Before

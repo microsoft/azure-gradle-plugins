@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  */
 
-package com.microsoft.azure.plugin.functions.gradle.util;
+package com.microsoft.azure.gradle.util;
 
 import com.azure.core.util.Configuration;
 import com.microsoft.azure.toolkit.lib.common.proxy.ProxyManager;

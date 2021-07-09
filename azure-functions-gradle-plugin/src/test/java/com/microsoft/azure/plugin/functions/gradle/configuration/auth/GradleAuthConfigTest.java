@@ -5,6 +5,7 @@
 
 package com.microsoft.azure.plugin.functions.gradle.configuration.auth;
 
+import com.microsoft.azure.gradle.auth.GradleAuthConfig;
 import org.junit.Before;
 import org.junit.Test;
 

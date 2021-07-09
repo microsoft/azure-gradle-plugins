@@ -5,12 +5,12 @@
 package com.microsoft.azure.plugin.functions.gradle;
 
 import com.azure.core.http.policy.HttpLogDetailLevel;
+import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
+import com.microsoft.azure.gradle.util.GradleAzureMessager;
 import com.microsoft.azure.plugin.functions.gradle.task.DeployTask;
 import com.microsoft.azure.plugin.functions.gradle.task.LocalRunTask;
 import com.microsoft.azure.plugin.functions.gradle.task.PackageTask;
 import com.microsoft.azure.plugin.functions.gradle.task.PackageZipTask;
-import com.microsoft.azure.plugin.functions.gradle.telemetry.TelemetryAgent;
-import com.microsoft.azure.plugin.functions.gradle.util.GradleAzureMessager;
 import com.microsoft.azure.toolkit.lib.Azure;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
 import com.microsoft.azure.toolkit.lib.common.proxy.ProxyManager;

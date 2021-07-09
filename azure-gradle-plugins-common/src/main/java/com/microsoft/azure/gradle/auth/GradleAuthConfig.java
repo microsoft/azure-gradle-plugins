@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  */
 
-package com.microsoft.azure.plugin.functions.gradle.configuration.auth;
+package com.microsoft.azure.gradle.auth;
 
 import lombok.Getter;
 import lombok.Setter;

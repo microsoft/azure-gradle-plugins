@@ -4,9 +4,9 @@
  */
 package com.microsoft.azure.plugin.functions.gradle;
 
-import com.microsoft.azure.plugin.functions.gradle.configuration.GradleRuntimeConfig;
-import com.microsoft.azure.plugin.functions.gradle.configuration.auth.GradleAuthConfig;
-import com.microsoft.azure.plugin.functions.gradle.configuration.auth.GradleAuthHelper;
+import com.microsoft.azure.gradle.auth.GradleAuthConfig;
+import com.microsoft.azure.gradle.auth.GradleAuthHelper;
+import com.microsoft.azure.gradle.configuration.GradleRuntimeConfig;
 import com.microsoft.azure.plugin.functions.gradle.util.GradleProjectUtils;
 import com.microsoft.azure.toolkit.lib.Azure;
 import com.microsoft.azure.toolkit.lib.appservice.AzureAppService;

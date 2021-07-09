@@ -23,4 +23,5 @@
  */
 rootProject.name = 'azure-gradle-plugins'
 
+include 'azure-gradle-plugins-common'
 include 'azure-functions-gradle-plugin'
