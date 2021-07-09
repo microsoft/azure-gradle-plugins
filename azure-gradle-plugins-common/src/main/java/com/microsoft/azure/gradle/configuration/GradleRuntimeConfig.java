@@ -7,10 +7,11 @@ package com.microsoft.azure.gradle.configuration;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.commons.lang3.StringUtils;
+import lombok.experimental.Accessors;
 
 @Getter
 @Setter
+@Accessors(fluent = true)
 public class GradleRuntimeConfig {
     private String os;
     private String javaVersion;
@@ -20,8 +21,4 @@ public class GradleRuntimeConfig {
     private String username;
     private String password;
     private String startUpCommand;
-
-    public boolean isPublicImage() {
-        return StringUtils.isAllEmpty(username, password);
-    }
 }

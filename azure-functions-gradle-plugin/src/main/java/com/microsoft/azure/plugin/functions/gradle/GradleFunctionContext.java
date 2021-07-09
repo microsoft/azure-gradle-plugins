@@ -169,9 +169,9 @@ public class GradleFunctionContext implements IAppServiceContext {
     public Map<String, String> getTelemetryProperties() {
         final Map<String, String> result = new HashMap<>();
         final GradleRuntimeConfig runtime = getRuntime();
-        final String javaVersion = runtime == null ? null : runtime.getJavaVersion();
-        final String os = runtime == null ? null : runtime.getOs();
-        final boolean isDockerFunction = runtime != null && StringUtils.isNotEmpty(runtime.getImage());
+        final String javaVersion = runtime == null ? null : runtime.javaVersion();
+        final String os = runtime == null ? null : runtime.os();
+        final boolean isDockerFunction = runtime != null && StringUtils.isNotEmpty(runtime.image());
         result.put(FUNCTION_JAVA_VERSION_KEY, StringUtils.isEmpty(javaVersion) ? "" : javaVersion);
         result.put(FUNCTION_RUNTIME_KEY, StringUtils.isEmpty(os) ? "" : os);
         result.put(FUNCTION_IS_DOCKER_KEY, String.valueOf(isDockerFunction));
