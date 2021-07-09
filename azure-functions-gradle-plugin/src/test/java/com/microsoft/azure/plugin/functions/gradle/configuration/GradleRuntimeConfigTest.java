@@ -21,13 +21,13 @@ public class GradleRuntimeConfigTest {
 
     @Test
     public void testGetUsername() throws Exception {
-        runtime.setUsername("username");
-        assertEquals("username", runtime.getUsername());
+        runtime.username("username");
+        assertEquals("username", runtime.username());
     }
 
     @Test
     public void testGetPassword() throws Exception {
-        runtime.setPassword("password");
-        assertEquals("password", runtime.getPassword());
+        runtime.password("password");
+        assertEquals("password", runtime.password());
     }
 }
