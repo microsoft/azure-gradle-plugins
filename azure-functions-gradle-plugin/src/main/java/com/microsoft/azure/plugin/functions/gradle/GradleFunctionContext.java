@@ -4,18 +4,14 @@
  */
 package com.microsoft.azure.plugin.functions.gradle;
 
-import com.microsoft.azure.auth.AzureTokenWrapper;
-import com.microsoft.azure.auth.configuration.AuthConfiguration;
-import com.microsoft.azure.auth.exception.AzureLoginFailureException;
-import com.microsoft.azure.common.exceptions.AzureExecutionException;
-import com.microsoft.azure.common.function.configurations.RuntimeConfiguration;
-import com.microsoft.azure.common.project.IProject;
-import com.microsoft.azure.common.project.JavaProject;
-import com.microsoft.azure.management.Azure;
-import com.microsoft.azure.plugin.functions.gradle.configuration.auth.AzureClientFactory;
-import com.microsoft.azure.plugin.functions.gradle.configuration.auth.GradleAuthConfiguration;
-import com.microsoft.azure.plugin.functions.gradle.telemetry.TelemetryAgent;
+import com.microsoft.azure.plugin.functions.gradle.configuration.GradleRuntimeConfig;
+import com.microsoft.azure.plugin.functions.gradle.configuration.auth.GradleAuthConfig;
+import com.microsoft.azure.plugin.functions.gradle.configuration.auth.GradleAuthHelper;
 import com.microsoft.azure.plugin.functions.gradle.util.GradleProjectUtils;
+import com.microsoft.azure.toolkit.lib.Azure;
+import com.microsoft.azure.toolkit.lib.appservice.AzureAppService;
+import com.microsoft.azure.toolkit.lib.common.IProject;
+import com.microsoft.azure.toolkit.lib.common.exception.AzureToolkitRuntimeException;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.Project;
@@ -27,7 +23,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-
 public class GradleFunctionContext implements IAppServiceContext {
     private static final String FUNCTION_JAVA_VERSION_KEY = "functionJavaVersion";
     private static final String DISABLE_APP_INSIGHTS_KEY = "disableAppInsights";
@@ -36,23 +31,33 @@ public class GradleFunctionContext implements IAppServiceContext {
     private static final String FUNCTION_REGION_KEY = "region";
     private static final String FUNCTION_PRICING_KEY = "pricingTier";
     private static final String GRADLE_PLUGIN_POSTFIX = "-gradle-plugin";
-
     private File stagingDirectory;
-    private Azure azure;
-    private AzureTokenWrapper credential;
-
     private JavaProject javaProject;
     private AzureFunctionsExtension functionsExtension;
     private Map<String, String> appSettings;
+    private AzureAppService appServiceClient;
 
-    public GradleFunctionContext(Project project, AzureFunctionsExtension functionsExtension)
-            throws AzureExecutionException {
+    public GradleFunctionContext(Project project, AzureFunctionsExtension functionsExtension) {
         this.functionsExtension = functionsExtension;
         this.javaProject = GradleProjectUtils.convert(project);
     }
 
+    @Override
     public IProject getProject() {
         return javaProject;
+    }
+
+    @Override
+    public AzureAppService getOrCreateAzureAppServiceClient() {
+        if (appServiceClient == null) {
+            try {
+                GradleAuthHelper.login(functionsExtension.getAuthentication(), functionsExtension.getSubscription());
+                appServiceClient = Azure.az(AzureAppService.class);
+            } catch (AzureToolkitRuntimeException e) {
+                throw new AzureToolkitRuntimeException(String.format("Cannot authenticate due to error %s", e.getMessage()), e);
+            }
+        }
+        return appServiceClient;
     }
 
     @Override
@@ -63,7 +68,7 @@ public class GradleFunctionContext implements IAppServiceContext {
                     final String outputFolder = AzureFunctionsPlugin.GRADLE_PLUGIN_NAME.replaceAll(GRADLE_PLUGIN_POSTFIX, "");
 
                     final String stagingDirectoryPath = Paths.get(this.javaProject.getBuildDirectory().toString(),
-                            outputFolder, this.functionsExtension.getAppName()).toString();
+                        outputFolder, this.functionsExtension.getAppName()).toString();
 
                     stagingDirectory = new File(stagingDirectoryPath);
                     // If staging directory doesn't exist, create one and delete it on exit
@@ -92,7 +97,7 @@ public class GradleFunctionContext implements IAppServiceContext {
     }
 
     @Override
-    public RuntimeConfiguration getRuntime() {
+    public GradleRuntimeConfig getRuntime() {
         return functionsExtension.getRuntime();
     }
 
@@ -120,19 +125,16 @@ public class GradleFunctionContext implements IAppServiceContext {
     public Map<String, String> getAppSettings() {
         if (appSettings == null) {
             // we need to cache app settings since gradle will always return a new app settings.
-            final Map<String, Object> map = functionsExtension.getAppSettings() != null ? functionsExtension.getAppSettings() : new HashMap<>();
+            final Map<String, String> map = functionsExtension.getAppSettings() != null ? functionsExtension.getAppSettings() : new HashMap<>();
             // convert <string, object> map to <string, string> map
             appSettings = map.entrySet().stream()
-                    .collect(Collectors.toMap(Map.Entry::getKey, e -> Objects.toString(e.getValue(), null)));
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> Objects.toString(e.getValue(), null)));
         }
         return appSettings;
     }
 
     @Override
-    public AuthConfiguration getAuth() {
-        if (functionsExtension.getAuthentication() == null) {
-            return null;
-        }
+    public GradleAuthConfig getAuth() {
         return functionsExtension.getAuthentication();
     }
 
@@ -164,54 +166,12 @@ public class GradleFunctionContext implements IAppServiceContext {
         return this.functionsExtension.getLocalDebug();
     }
 
-    @Override
-    public synchronized Azure getAzureClient() throws AzureExecutionException {
-        if (azure == null) {
-            try {
-                azure = AzureClientFactory.getAzureClient(getAzureTokenWrapper(), getSubscription());
-                if (azure != null) {
-                    TelemetryAgent.instance.setSubscriptionId(azure.subscriptionId());
-                }
-            } catch (AzureLoginFailureException e) {
-                throw new AzureExecutionException(e.getMessage(), e);
-            }
-        }
-        final GradleAuthConfiguration auth = functionsExtension.getAuthentication();
-        if (azure == null) {
-            if (auth != null && StringUtils.isNotBlank(auth.getType())) {
-                throw new AzureExecutionException(String.format("Failed to authenticate with Azure using type %s. Please check your configuration.",
-                        auth.getType()));
-            } else {
-                throw new AzureExecutionException("Failed to authenticate with Azure. Please check your configuration.");
-            }
-        }
-        return azure;
-    }
-
-    @Override
-    public synchronized AzureTokenWrapper getAzureTokenWrapper() throws AzureExecutionException {
-        if (credential == null) {
-            try {
-                final GradleAuthConfiguration auth = functionsExtension.getAuthentication();
-                credential = AzureClientFactory.getAzureTokenWrapper(auth != null ? auth.getType() : null, auth);
-                final String authMethod = credential.getAuthMethod() == null ? null : credential.getAuthMethod().name();
-                final String authType = (credential.getAuthMethod() == null || credential.getAuthMethod().getAuthType() == null) ?
-                        null : credential.getAuthMethod().getAuthType().name();
-                TelemetryAgent.instance.setAuthMethod(authMethod);
-                TelemetryAgent.instance.setAuthType(authType);
-            } catch (AzureLoginFailureException e) {
-                throw new AzureExecutionException(e.getMessage(), e);
-            }
-        }
-        return credential;
-    }
-
     public Map<String, String> getTelemetryProperties() {
         final Map<String, String> result = new HashMap<>();
-        final RuntimeConfiguration runtime = getRuntime();
+        final GradleRuntimeConfig runtime = getRuntime();
         final String javaVersion = runtime == null ? null : runtime.getJavaVersion();
         final String os = runtime == null ? null : runtime.getOs();
-        final boolean isDockerFunction = runtime == null ? false : StringUtils.isNotEmpty(runtime.getImage());
+        final boolean isDockerFunction = runtime != null && StringUtils.isNotEmpty(runtime.getImage());
         result.put(FUNCTION_JAVA_VERSION_KEY, StringUtils.isEmpty(javaVersion) ? "" : javaVersion);
         result.put(FUNCTION_RUNTIME_KEY, StringUtils.isEmpty(os) ? "" : os);
         result.put(FUNCTION_IS_DOCKER_KEY, String.valueOf(isDockerFunction));

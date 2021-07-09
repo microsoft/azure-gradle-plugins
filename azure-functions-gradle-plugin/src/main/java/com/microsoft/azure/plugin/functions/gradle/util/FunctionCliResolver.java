@@ -4,9 +4,9 @@
  */
 package com.microsoft.azure.plugin.functions.gradle.util;
 
-import com.microsoft.azure.common.function.utils.CommandUtils;
-import com.microsoft.azure.common.logging.Log;
-import com.microsoft.azure.common.utils.TextUtils;
+import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
+import com.microsoft.azure.toolkit.lib.common.utils.CommandUtils;
+import com.microsoft.azure.toolkit.lib.common.utils.TextUtils;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -49,7 +49,7 @@ public class FunctionCliResolver {
                 return result.getAbsolutePath();
             }
         }
-        Log.warn(TextUtils.red(RUNTIME_NOT_FOUND));
+        AzureMessager.getMessager().warning(TextUtils.red(RUNTIME_NOT_FOUND));
         return null;
     }
 

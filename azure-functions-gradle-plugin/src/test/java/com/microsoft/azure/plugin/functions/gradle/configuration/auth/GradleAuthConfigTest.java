@@ -11,12 +11,12 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
 
-public class GradleAuthConfigurationTest {
-    private GradleAuthConfiguration config;
+public class GradleAuthConfigTest {
+    private GradleAuthConfig config;
 
     @Before
     public void setUp() {
-        config = new GradleAuthConfiguration();
+        config = new GradleAuthConfig();
     }
 
     @Test

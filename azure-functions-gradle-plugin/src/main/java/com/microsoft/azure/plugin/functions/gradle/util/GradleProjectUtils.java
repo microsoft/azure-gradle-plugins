@@ -4,9 +4,7 @@
  */
 package com.microsoft.azure.plugin.functions.gradle.util;
 
-import com.microsoft.azure.common.exceptions.AzureExecutionException;
-import com.microsoft.azure.common.project.JavaProject;
-
+import com.microsoft.azure.plugin.functions.gradle.JavaProject;
 import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.BasePluginConvention;
@@ -18,6 +16,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Convert a Gradle project to a common project
@@ -25,20 +24,18 @@ import java.util.List;
 public class GradleProjectUtils {
     private static final String MAIN_SOURCE_SET_NAME = "main";
 
-    public static JavaProject convert(final Project project) throws AzureExecutionException {
+    public static JavaProject convert(final Project project) {
         final JavaPluginConvention javaPluginConvention = project.getConvention().getPlugin(JavaPluginConvention.class);
-        if (javaPluginConvention == null) {
-            throw new AzureExecutionException("Project " + project.getName() + " is not java project.");
-        }
+        Objects.requireNonNull(javaPluginConvention, "Project " + project.getName() + " is not java project.");
 
         final SourceSet mainSourceSet = javaPluginConvention.getSourceSets().getByName(MAIN_SOURCE_SET_NAME);
 
         final FileCollection classesOutputDirectories = mainSourceSet.getOutput().getClassesDirs().filter(File::exists);
-        final Path resourcesOutputDirectory = mainSourceSet.getOutput().getResourcesDir().toPath();
+        final Path resourcesOutputDirectory = Objects.requireNonNull(mainSourceSet.getOutput().getResourcesDir()).toPath();
         final FileCollection allFiles = mainSourceSet.getRuntimeClasspath().filter(File::exists);
 
         final FileCollection allDependencies = allFiles.minus(classesOutputDirectories)
-                .filter(file -> !file.toPath().equals(resourcesOutputDirectory));
+            .filter(file -> !file.toPath().equals(resourcesOutputDirectory));
         final JavaProject func = new JavaProject();
         func.setBaseDirectory(project.getProjectDir().toPath());
         func.setBuildDirectory(project.getBuildDir().toPath());
@@ -51,7 +48,7 @@ public class GradleProjectUtils {
 
         final BasePluginConvention basePlugin = project.getConvention().getPlugin(BasePluginConvention.class);
         func.setArtifactFile(Paths.get(project.getBuildDir().getAbsolutePath(), basePlugin.getLibsDirName(),
-                basePlugin.getArchivesBaseName() + "-" + project.getVersion().toString() + ".jar"));
+            basePlugin.getArchivesBaseName() + "-" + project.getVersion() + ".jar"));
         return func;
     }
 }

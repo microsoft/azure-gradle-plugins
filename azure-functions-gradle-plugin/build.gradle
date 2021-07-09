@@ -49,7 +49,6 @@ checkstyle {
 repositories {
     mavenLocal()
     mavenCentral()
-    jcenter()
 }
 dependencies {
     implementation 'commons-io:commons-io:2.10.0'
@@ -57,14 +56,21 @@ dependencies {
     implementation 'org.apache.commons:commons-lang3:3.12.0'
     implementation 'org.reflections:reflections:0.9.12'
     implementation 'com.microsoft.azure.functions:azure-functions-java-library:1.4.2'
-    implementation 'org.atteo.classindex:classindex:3.10'
+    implementation 'org.atteo.classindex:classindex:3.11'
     implementation 'com.google.code.gson:gson:2.8.7'
     implementation 'com.google.guava:guava:30.1.1-jre'
-    implementation 'com.github.zafarkhaja:java-semver:0.9.0'
-    implementation 'com.microsoft.azure:azure:1.41.1'
-    implementation 'com.microsoft.azure:azure-auth-helper:0.7.0'
-    implementation 'com.microsoft.azure:azure-tools-common:0.7.0'
+    implementation 'org.apache.maven:maven-artifact:3.8.1'
     implementation 'org.fusesource.jansi:jansi:1.18'
+    
+    implementation 'com.microsoft.azure:azure-toolkit-common-lib:0.9.0'
+    implementation 'com.microsoft.azure:azure-toolkit-resource-lib:0.9.0'
+    implementation 'com.microsoft.azure:azure-toolkit-applicationinsights-lib:0.9.0'
+    implementation 'com.microsoft.azure:azure-toolkit-appservice-lib:0.9.0'
+    implementation 'com.microsoft.azure:azure-toolkit-applicationinsights-lib:0.9.0'
+    
+    compileOnly 'org.projectlombok:lombok:1.18.20'
+    annotationProcessor 'org.projectlombok:lombok:1.18.20'
+    
     testImplementation "junit:junit:4.13.2"
     testImplementation "org.mockito:mockito-core:3.11.2"
 }
@@ -78,6 +84,13 @@ gradlePlugin {
     }
 }
 
+jar {
+    manifest {
+        attributes 'Implementation-Version': archiveVersion
+        attributes 'Automatic-Module-Name': 'com.microsoft.azure.azurefunctions'
+
+    }
+}
 
 class PrepareResourceTask extends DefaultTask {
     @Option(option = "release", description = "whether this build is a release build.")
@@ -87,7 +100,6 @@ class PrepareResourceTask extends DefaultTask {
 
     @TaskAction
     void prepare() {
-        new File(currentProject.projectDir, "src/main/resources/version.txt").text = currentProject.version
         def text = new File(currentProject.projectDir, "src/main/resources/ApplicationInsightsTemplate.xml").text
         text = text.replaceAll("\\{AI_KEY}", (release != null && release) ? "435bdea7-d399-49ee-8d2d-b2792aa060d2" : "fda156f5-2eb8-48ab-8a3c-3e06b3c64b49")
         new File(currentProject.projectDir, "src/main/resources/ApplicationInsights.xml").text = text;

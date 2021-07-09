@@ -4,12 +4,18 @@
  */
 package com.microsoft.azure.plugin.functions.gradle;
 
+import com.azure.core.http.policy.HttpLogDetailLevel;
 import com.microsoft.azure.plugin.functions.gradle.task.DeployTask;
 import com.microsoft.azure.plugin.functions.gradle.task.LocalRunTask;
 import com.microsoft.azure.plugin.functions.gradle.task.PackageTask;
 import com.microsoft.azure.plugin.functions.gradle.task.PackageZipTask;
 import com.microsoft.azure.plugin.functions.gradle.telemetry.TelemetryAgent;
-
+import com.microsoft.azure.plugin.functions.gradle.util.GradleAzureMessager;
+import com.microsoft.azure.toolkit.lib.Azure;
+import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
+import com.microsoft.azure.toolkit.lib.common.proxy.ProxyManager;
+import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskContainer;
@@ -21,13 +27,16 @@ public class AzureFunctionsPlugin implements Plugin<Project> {
 
     @Override
     public void apply(final Project project) {
+        ProxyManager.getInstance().init();
+        AzureMessager.setDefaultMessager(new GradleAzureMessager());
         final AzureFunctionsExtension extension = project.getExtensions().create(GRADLE_FUNCTION_EXTENSION,
                 AzureFunctionsExtension.class, project);
-        TelemetryAgent.instance.showPrivacyStatement();
-        if (extension.getAllowTelemetry() != null) {
-            TelemetryAgent.instance.setAllowTelemetry(extension.getAllowTelemetry());
-        }
-        TelemetryAgent.instance.initTelemetry();
+        Azure.az().config().setLogLevel(HttpLogDetailLevel.NONE.name());
+        Azure.az().config().setUserAgent(TelemetryAgent.getInstance().getUserAgent());
+        TelemetryAgent.getInstance().initTelemetry(GRADLE_PLUGIN_NAME,
+            StringUtils.firstNonBlank(AzureFunctionsPlugin.class.getPackage().getImplementationVersion(), "develop"), // default version: develop
+            BooleanUtils.isNotFalse(extension.getAllowTelemetry()));
+        TelemetryAgent.getInstance().showPrivacyStatement();
 
         final TaskContainer tasks = project.getTasks();
 

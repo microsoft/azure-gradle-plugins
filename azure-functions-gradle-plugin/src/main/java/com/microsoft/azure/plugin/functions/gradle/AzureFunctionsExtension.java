@@ -5,18 +5,15 @@
 
 package com.microsoft.azure.plugin.functions.gradle;
 
-import com.microsoft.azure.plugin.functions.gradle.configuration.GradleRuntimeConfiguration;
-import com.microsoft.azure.plugin.functions.gradle.configuration.auth.GradleAuthConfiguration;
+import com.microsoft.azure.plugin.functions.gradle.configuration.GradleRuntimeConfig;
+import com.microsoft.azure.plugin.functions.gradle.configuration.auth.GradleAuthConfig;
 import com.microsoft.azure.plugin.functions.gradle.configuration.deploy.Deployment;
-
 import groovy.lang.Closure;
-
 import org.gradle.api.Project;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Optional;
 
 import javax.annotation.Nullable;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -50,15 +47,15 @@ public class AzureFunctionsExtension {
     private String appServicePlanName;
 
     @Nullable
-    private GradleAuthConfiguration authentication;
+    private GradleAuthConfig authentication;
 
     @Nullable
     private Deployment deployment;
 
     @Nullable
-    private GradleRuntimeConfiguration runtime;
+    private GradleRuntimeConfig runtime;
 
-    private Map<String, Object> appSettings;
+    private Map<String, String> appSettings;
 
     private final Project project;
 
@@ -124,7 +121,7 @@ public class AzureFunctionsExtension {
 
     @Input
     @Optional
-    public GradleAuthConfiguration getAuthentication() {
+    public GradleAuthConfig getAuthentication() {
         return authentication;
     }
 
@@ -136,13 +133,13 @@ public class AzureFunctionsExtension {
 
     @Input
     @Optional
-    public Map<String, Object> getAppSettings() {
+    public Map<String, String> getAppSettings() {
         return appSettings;
     }
 
     @Input
     @Optional
-    public GradleRuntimeConfiguration getRuntime() {
+    public GradleRuntimeConfig getRuntime() {
         return runtime;
     }
 
@@ -195,7 +192,7 @@ public class AzureFunctionsExtension {
     }
 
     public void setAuthentication(Closure closure) {
-        this.authentication = new GradleAuthConfiguration();
+        this.authentication = new GradleAuthConfig();
         project.configure(authentication, closure);
     }
 
@@ -205,7 +202,7 @@ public class AzureFunctionsExtension {
     }
 
     public void setRuntime(Closure closure) {
-        runtime = new GradleRuntimeConfiguration();
+        runtime = new GradleRuntimeConfig();
         project.configure(runtime, closure);
     }
 

@@ -4,14 +4,13 @@
  */
 package com.microsoft.azure.plugin.functions.gradle.task;
 
-import com.microsoft.azure.common.exceptions.AzureExecutionException;
-import com.microsoft.azure.common.logging.Log;
 import com.microsoft.azure.plugin.functions.gradle.AzureFunctionsExtension;
 import com.microsoft.azure.plugin.functions.gradle.GradleFunctionContext;
 import com.microsoft.azure.plugin.functions.gradle.handler.PackageHandler;
 import com.microsoft.azure.plugin.functions.gradle.telemetry.TelemetryAgent;
 import com.microsoft.azure.plugin.functions.gradle.util.FunctionUtils;
 
+import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.tasks.Nested;
@@ -43,17 +42,16 @@ public class PackageZipTask extends DefaultTask implements IFunctionTask {
     @TaskAction
     public void buildZip() throws GradleException, IOException {
         try {
-            TelemetryAgent.instance.trackTaskStart(this.getClass());
+            TelemetryAgent.getInstance().trackTaskStart(this.getClass());
             final GradleFunctionContext ctx = new GradleFunctionContext(getProject(), this.getFunctionsExtension());
-            TelemetryAgent.instance.addDefaultProperties(ctx.getTelemetryProperties());
             FunctionUtils.checkStagingDirectory(ctx.getDeploymentStagingDirectoryPath());
             final File zipFile = new File(ctx.getDeploymentStagingDirectoryPath() + ".zip");
             ZipUtil.pack(new File(ctx.getDeploymentStagingDirectoryPath()), zipFile);
             ZipUtil.removeEntry(zipFile, PackageHandler.LOCAL_SETTINGS_JSON);
-            Log.prompt("Build zip from staging folder successfully: " + zipFile.getAbsolutePath());
-            TelemetryAgent.instance.trackTaskSuccess(this.getClass());
-        } catch (AzureExecutionException e) {
-            TelemetryAgent.instance.traceException(this.getClass(), e);
+            AzureMessager.getMessager().info("Build zip from staging folder successfully: " + zipFile.getAbsolutePath());
+            TelemetryAgent.getInstance().trackTaskSuccess(this.getClass());
+        } catch (Exception e) {
+            TelemetryAgent.getInstance().traceException(this.getClass(), e);
             throw new GradleException(PACKAGE_ZIP_FAILURE + e.getMessage(), e);
         }
     }

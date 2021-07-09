@@ -10,32 +10,35 @@ import com.microsoft.applicationinsights.channel.TelemetryChannel;
 import com.microsoft.applicationinsights.channel.concrete.TelemetryChannelBase;
 import com.microsoft.applicationinsights.channel.concrete.inprocess.InProcessTelemetryChannel;
 import com.microsoft.applicationinsights.internal.config.TelemetryConfigurationFactory;
-
+import lombok.Getter;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class AppInsightsProxy implements TelemetryProxy {
+class AppInsightsProxy {
 
-    public static final String CONFIGURATION_FILE = "ApplicationInsights.xml";
-    public static final Pattern INSTRUMENTATION_KEY_PATTERN = Pattern.compile("<InstrumentationKey>(.*)" +
+    private static final String CONFIGURATION_FILE = "ApplicationInsights.xml";
+    private static final Pattern INSTRUMENTATION_KEY_PATTERN = Pattern.compile("<InstrumentationKey>(.*)" +
         "</InstrumentationKey>");
-    protected TelemetryClient client;
 
-    protected TelemetryConfiguration configuration;
+    @Getter
+    private TelemetryClient client;
 
-    protected Map<String, String> defaultProperties;
+    private TelemetryConfiguration configuration;
 
-    protected boolean isEnabled = true;
+    private Map<String, String> defaultProperties;
 
-    public AppInsightsProxy(final TelemetryConfiguration config) {
+    // Telemetry is enabled by default.
+    private boolean isEnabled = true;
+
+    AppInsightsProxy(final TelemetryConfiguration config) {
         client = new TelemetryClient(readConfigurationFromFile());
 
         if (config == null) {
@@ -78,7 +81,7 @@ public class AppInsightsProxy implements TelemetryProxy {
                 return StringUtils.EMPTY;
             }
 
-            final String configurationContent = IOUtils.toString(inputStream, "utf8");
+            final String configurationContent = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
             final Matcher matcher = INSTRUMENTATION_KEY_PATTERN.matcher(configurationContent);
             if (matcher.find()) {
                 return matcher.group(1);
@@ -89,7 +92,6 @@ public class AppInsightsProxy implements TelemetryProxy {
             return StringUtils.EMPTY;
         }
     }
-    // end
 
     public void addDefaultProperty(String key, String value) {
         if (StringUtils.isEmpty(key)) {
@@ -131,7 +133,7 @@ public class AppInsightsProxy implements TelemetryProxy {
         client.flush();
     }
 
-    protected Map<String, String> mergeProperties(Map<String, String> defaultProperties,
+    private static Map<String, String> mergeProperties(Map<String, String> defaultProperties,
                                                   Map<String, String> customProperties,
                                                   boolean overrideDefaultProperties) {
         if (customProperties == null) {
@@ -146,12 +148,7 @@ public class AppInsightsProxy implements TelemetryProxy {
             merged.putAll(customProperties);
             merged.putAll(defaultProperties);
         }
-        final Iterator<Map.Entry<String, String>> it = merged.entrySet().iterator();
-        while (it.hasNext()) {
-            if (StringUtils.isEmpty(it.next().getValue())) {
-                it.remove();
-            }
-        }
+        merged.entrySet().removeIf(stringStringEntry -> StringUtils.isEmpty(stringStringEntry.getValue()));
         return merged;
     }
 }
