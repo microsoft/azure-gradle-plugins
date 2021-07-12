@@ -5,6 +5,7 @@
 
 package com.microsoft.azure.plugin.webapps.gradle;
 
+import com.microsoft.azure.gradle.GradleAzureOperationTitleProvider;
 import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.ObjectUtils;
@@ -31,6 +32,8 @@ public class AzureWebappPlugin implements Plugin<Project> {
         final AzureWebappPluginExtension extension = project.getExtensions().create(GRADLE_FUNCTION_EXTENSION,
             AzureWebappPluginExtension.class, project);
 
+        GradleAzureOperationTitleProvider.register();
+
         String pluginVersion = StringUtils.firstNonBlank(AzureWebappPlugin.class.getPackage().getImplementationVersion(), "develop");
         TelemetryAgent.getInstance().initTelemetry(GRADLE_PLUGIN_NAME, pluginVersion, BooleanUtils.isNotFalse(extension.getAllowTelemetry()));
         TelemetryAgent.getInstance().showPrivacyStatement();
@@ -49,10 +52,13 @@ public class AzureWebappPlugin implements Plugin<Project> {
             final TaskProvider<Task> jarTask = projectAfterEvaluation.getTasks().named("jar");
 
             deployTask.configure(task -> {
-                TaskProvider<Task> targetTask = ObjectUtils.firstNonNull(bootWarTask, bootJarTask, warTask, jarTask);
-                task.dependsOn(targetTask);
-                task.setArtifactFile(Optional.ofNullable(targetTask)
-                    .map(Provider::get).map(Task::getOutputs).map(TaskOutputs::getFiles).map(FileCollection::getAsPath).orElse(null));
+                if (extension.getRuntime() != null && StringUtils.isNotBlank(extension.getRuntime().image())
+                    && (StringUtils.isBlank(extension.getRuntime().os()) || StringUtils.equalsIgnoreCase(extension.getRuntime().os(), "docker"))) {
+                    TaskProvider<Task> targetTask = ObjectUtils.firstNonNull(bootWarTask, bootJarTask, warTask, jarTask);
+                    task.dependsOn(targetTask);
+                    task.setArtifactFile(Optional.ofNullable(targetTask)
+                        .map(Provider::get).map(Task::getOutputs).map(TaskOutputs::getFiles).map(FileCollection::getAsPath).orElse(null));
+                }
             });
         });
     }
