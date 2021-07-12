@@ -52,8 +52,8 @@ public class AzureWebappPlugin implements Plugin<Project> {
             final TaskProvider<Task> jarTask = projectAfterEvaluation.getTasks().named("jar");
 
             deployTask.configure(task -> {
-                if (extension.getRuntime() != null && StringUtils.isNotBlank(extension.getRuntime().image())
-                    && (StringUtils.isBlank(extension.getRuntime().os()) || StringUtils.equalsIgnoreCase(extension.getRuntime().os(), "docker"))) {
+                if (!(extension.getRuntime() != null && StringUtils.isNotBlank(extension.getRuntime().image())
+                    && (StringUtils.isBlank(extension.getRuntime().os()) || StringUtils.equalsIgnoreCase(extension.getRuntime().os(), "docker")))) {
                     TaskProvider<Task> targetTask = ObjectUtils.firstNonNull(bootWarTask, bootJarTask, warTask, jarTask);
                     task.dependsOn(targetTask);
                     task.setArtifactFile(Optional.ofNullable(targetTask)

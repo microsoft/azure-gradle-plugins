@@ -166,15 +166,17 @@ public class DeployTask extends DefaultTask {
         config.appSettings(ctx.getAppSettings());
         config.servicePlanName(ctx.getAppServicePlanName());
         config.servicePlanResourceGroup(StringUtils.firstNonBlank(ctx.getAppServicePlanResourceGroup(), ctx.getResourceGroup()));
-        File file = new File(this.artifactFile);
-        if (!file.exists()) {
-            throw new AzureToolkitRuntimeException(String.format("artifact file(%s) cannot be found.", file.getAbsolutePath()));
-        }
-        final WebAppArtifact webAppArtifact = WebAppArtifact.builder()
-            .deployType(Utils.getDeployTypeByFileExtension(file))
-            .file(file).build();
+        if (StringUtils.isNotBlank(this.artifactFile)) {
+            File file = new File(this.artifactFile);
+            if (!file.exists()) {
+                throw new AzureToolkitRuntimeException(String.format("artifact file(%s) cannot be found.", file.getAbsolutePath()));
+            }
+            final WebAppArtifact webAppArtifact = WebAppArtifact.builder()
+                .deployType(Utils.getDeployTypeByFileExtension(file))
+                .file(file).build();
 
-        config.webAppArtifacts(Collections.singletonList(webAppArtifact));
+            config.webAppArtifacts(Collections.singletonList(webAppArtifact));
+        }
         return config;
     }
 

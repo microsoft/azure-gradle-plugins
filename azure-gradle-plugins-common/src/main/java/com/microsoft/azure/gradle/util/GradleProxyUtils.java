@@ -15,8 +15,9 @@ public class GradleProxyUtils {
     @SuppressWarnings("HttpUrlsUsage")
     public static void configureProxy() {
         final ProxyManager proxyManager = ProxyManager.getInstance();
+        ProxyManager.getInstance().init();
         if (Objects.nonNull(proxyManager.getProxy())) {
-            System.out.printf("Use system proxy: %s:%s%n", TextUtils.cyan(proxyManager.getHttpProxyHost()),
+            System.out.printf("Use proxy: %s:%s%n", TextUtils.cyan(proxyManager.getHttpProxyHost()),
                 TextUtils.cyan(Integer.toString(proxyManager.getHttpProxyPort())));
 
             Configuration.getGlobalConfiguration().put(Configuration.PROPERTY_HTTP_PROXY,
