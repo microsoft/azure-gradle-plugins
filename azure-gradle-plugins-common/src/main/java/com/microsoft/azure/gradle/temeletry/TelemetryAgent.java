@@ -11,6 +11,7 @@ import com.microsoft.azure.toolkit.lib.common.telemetry.AzureTelemetryClient;
 import com.microsoft.azure.toolkit.lib.common.utils.InstallationIdUtils;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import javax.annotation.Nonnull;
 import java.io.File;
@@ -29,8 +30,6 @@ import static com.microsoft.azure.gradle.temeletry.TelemetryConstants.*;
 
 public class TelemetryAgent implements TelemetryConfiguration {
 
-    private static final String FAILURE_REASON = "failureReason";
-
     private static final String CONFIGURATION_PATH = Paths.get(System.getProperty("user.home"),
         ".azure", "gradleplugins.properties").toString();
     private static final String FIRST_RUN_KEY = "first.run";
@@ -40,6 +39,9 @@ public class TelemetryAgent implements TelemetryConfiguration {
         "Read Microsoft's privacy statement to learn more: https://privacy.microsoft.com/en-us/privacystatement." +
         "\n\nYou can change your telemetry configuration through 'allowTelemetry' property.\n" +
         "For more information, please go to https://aka.ms/azure-gradle-config.\n";
+    private static final String ERROR_MESSAGE = "error.message";
+    private static final String ERROR_STACK = "error.stack";
+    private static final String ERROR_CLASSNAME = "error.class_name";
 
     private String pluginName;
     private String pluginVersion;
@@ -136,18 +138,14 @@ public class TelemetryAgent implements TelemetryConfiguration {
         trackEvent(taskClass.getSimpleName() + ".success");
     }
 
-    public void trackTaskFailure(Class taskClass, final String message) {
-        final HashMap<String, String> failureReason = new HashMap<>();
-        failureReason.put(FAILURE_REASON, message);
-        trackEvent(taskClass.getSimpleName() + ".failure", failureReason);
-    }
-
     public void traceException(Class taskClass, final Exception exception) {
-        String message = exception.getMessage();
-        if (StringUtils.isEmpty(message)) {
-            message = exception.toString();
-        }
-        trackTaskFailure(taskClass, message);
+        final HashMap<String, String> failureReason = new HashMap<>();
+        final String errorMessage = Optional.ofNullable(exception.getMessage())
+                .filter(StringUtils::isNotEmpty).orElseGet(() -> exception.toString());
+        failureReason.put(ERROR_MESSAGE, errorMessage);
+        failureReason.put(ERROR_STACK, ExceptionUtils.getStackTrace(exception));
+        failureReason.put(ERROR_CLASSNAME, exception.getClass().getName());
+        trackEvent(taskClass.getSimpleName() + ".failure", failureReason);
     }
 
     private boolean isFirstRun(Properties prop) {
