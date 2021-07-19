@@ -7,6 +7,7 @@ package com.microsoft.azure.gradle.temeletry;
 
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
 import com.microsoft.azure.toolkit.lib.common.telemetry.AzureTelemeter;
+import com.microsoft.azure.toolkit.lib.common.telemetry.AzureTelemetryClient;
 import com.microsoft.azure.toolkit.lib.common.utils.InstallationIdUtils;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
@@ -50,7 +51,7 @@ public class TelemetryAgent implements TelemetryConfiguration {
     private String authType;
     @Setter
     private String authMethod;
-    private AppInsightsProxy telemetryProxy;
+    private AzureTelemetryClient telemetryProxy;
     private final String sessionId = UUID.randomUUID().toString();
     private final String installationId = InstallationIdUtils.getHashMac();
 
@@ -71,12 +72,12 @@ public class TelemetryAgent implements TelemetryConfiguration {
         this.pluginName = pluginName;
         this.pluginVersion = pluginVersion;
         this.allowTelemetry = allowTelemetry;
-        telemetryProxy = new AppInsightsProxy(this);
+        telemetryProxy = new AzureTelemetryClient(this.getTelemetryProperties());
         if (!allowTelemetry) {
             telemetryProxy.trackEvent(TELEMETRY_NOT_ALLOWED);
             telemetryProxy.disable();
         } else {
-            AzureTelemeter.setClient(telemetryProxy.getClient());
+            AzureTelemeter.setClient(telemetryProxy);
             AzureTelemeter.setCommonProperties(this.getTelemetryProperties());
             AzureTelemeter.setEventNamePrefix("AzurePlugin.Gradle");
         }
