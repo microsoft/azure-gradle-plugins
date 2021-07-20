@@ -15,5 +15,4 @@ public class TelemetryConstants {
     public static final String AUTH_TYPE_KEY = "authType";
     public static final String AUTH_METHOD_KEY = "authMethod";
     public static final String AZURE_ENVIRONMENT_KEY = "azureEnvironment";
-    public static final String CREATE_NEW_RESOURCE_GROUP_KEY = "createNewResourceGroup";
 }
