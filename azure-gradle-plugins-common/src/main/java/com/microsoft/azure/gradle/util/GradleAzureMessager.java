@@ -8,10 +8,12 @@ package com.microsoft.azure.gradle.util;
 import com.microsoft.azure.toolkit.lib.common.messager.IAzureMessage;
 import com.microsoft.azure.toolkit.lib.common.messager.IAzureMessager;
 import com.microsoft.azure.toolkit.lib.common.utils.TextUtils;
-import lombok.extern.slf4j.Slf4j;
+import lombok.AllArgsConstructor;
+import org.gradle.api.logging.Logger;
 
-@Slf4j
+@AllArgsConstructor
 public class GradleAzureMessager implements IAzureMessager {
+    private Logger log;
 
     @Override
     public boolean show(IAzureMessage message) {
@@ -27,17 +29,8 @@ public class GradleAzureMessager implements IAzureMessager {
             case INFO:
             case SUCCESS:
             default:
-                prompt(message.getMessage());
+                log.lifecycle(message.getMessage());
                 return true;
-        }
-    }
-
-    public static void prompt(String message) {
-        // legacy code for prompt, will be replaced by new method: Notifier.noticeUser later
-        if (log.isInfoEnabled()) {
-            log.info(message);
-        } else {
-            System.out.println(message);
         }
     }
 

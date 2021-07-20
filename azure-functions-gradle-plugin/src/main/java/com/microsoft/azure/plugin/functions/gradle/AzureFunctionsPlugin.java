@@ -28,7 +28,7 @@ public class AzureFunctionsPlugin implements Plugin<Project> {
     @Override
     public void apply(final Project project) {
         ProxyManager.getInstance().init();
-        AzureMessager.setDefaultMessager(new GradleAzureMessager());
+        AzureMessager.setDefaultMessager(new GradleAzureMessager(project.getLogger()));
         final AzureFunctionsExtension extension = project.getExtensions().create(GRADLE_FUNCTION_EXTENSION,
                 AzureFunctionsExtension.class, project);
         Azure.az().config().setLogLevel(HttpLogDetailLevel.NONE.name());

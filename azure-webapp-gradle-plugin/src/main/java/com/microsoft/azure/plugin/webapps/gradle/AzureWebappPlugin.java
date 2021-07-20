@@ -6,6 +6,9 @@
 package com.microsoft.azure.plugin.webapps.gradle;
 
 import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
+import com.microsoft.azure.gradle.util.GradleAzureMessager;
+import com.microsoft.azure.toolkit.lib.appservice.model.OperatingSystem;
+import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -31,12 +34,13 @@ public class AzureWebappPlugin implements Plugin<Project> {
         final AzureWebappPluginExtension extension = project.getExtensions().create(GRADLE_FUNCTION_EXTENSION,
             AzureWebappPluginExtension.class, project);
 
+        AzureMessager.setDefaultMessager(new GradleAzureMessager(project.getLogger()));
         String pluginVersion = StringUtils.firstNonBlank(AzureWebappPlugin.class.getPackage().getImplementationVersion(), "develop");
         TelemetryAgent.getInstance().initTelemetry(GRADLE_PLUGIN_NAME, pluginVersion, BooleanUtils.isNotFalse(extension.getAllowTelemetry()));
         TelemetryAgent.getInstance().showPrivacyStatement();
         final TaskContainer tasks = project.getTasks();
 
-        final TaskProvider<DeployTask> deployTask = tasks.register("azureWebappDeploy", DeployTask.class, task -> {
+        final TaskProvider<DeployTask> deployTask = tasks.register("azureWebAppDeploy", DeployTask.class, task -> {
             task.setGroup("AzureWebapp");
             task.setDescription("Deploy current project to azure webapp.");
             task.setAzureWebappExtension(extension);
@@ -49,10 +53,16 @@ public class AzureWebappPlugin implements Plugin<Project> {
             final TaskProvider<Task> jarTask = projectAfterEvaluation.getTasks().named("jar");
 
             deployTask.configure(task -> {
-                TaskProvider<Task> targetTask = ObjectUtils.firstNonNull(bootWarTask, bootJarTask, warTask, jarTask);
-                task.dependsOn(targetTask);
-                task.setArtifactFile(Optional.ofNullable(targetTask)
-                    .map(Provider::get).map(Task::getOutputs).map(TaskOutputs::getFiles).map(FileCollection::getAsPath).orElse(null));
+                boolean isDocker = extension.getRuntime() != null && OperatingSystem.fromString(extension.getRuntime().os()) == OperatingSystem.DOCKER;
+                if (extension.getRuntime() != null && StringUtils.isBlank(extension.getRuntime().os())) {
+                    isDocker = StringUtils.isNotBlank(extension.getRuntime().image());
+                }
+                if (!isDocker) {
+                    TaskProvider<Task> targetTask = ObjectUtils.firstNonNull(bootWarTask, bootJarTask, warTask, jarTask);
+                    task.dependsOn(targetTask);
+                    task.setArtifactFile(Optional.ofNullable(targetTask)
+                        .map(Provider::get).map(Task::getOutputs).map(TaskOutputs::getFiles).map(FileCollection::getAsPath).orElse(null));
+                }
             });
         });
     }
