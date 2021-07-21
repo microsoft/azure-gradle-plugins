@@ -11,8 +11,11 @@ import com.microsoft.azure.toolkit.lib.common.utils.TextUtils;
 import lombok.AllArgsConstructor;
 import org.gradle.api.logging.Logger;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 @AllArgsConstructor
-public class GradleAzureMessager implements IAzureMessager {
+public class GradleAzureMessager implements IAzureMessager, IAzureMessage.ValueDecorator {
     private Logger log;
 
     @Override
@@ -21,21 +24,21 @@ public class GradleAzureMessager implements IAzureMessager {
             case ALERT:
             case CONFIRM:
             case WARNING:
-                log.warn(message.getMessage());
+                log.warn(message.getContent());
                 return true;
             case ERROR:
-                log.error(message.getMessage(), ((Throwable) message.getPayload()));
+                log.error(message.getContent(), ((Throwable) message.getPayload()));
                 return true;
             case INFO:
             case SUCCESS:
             default:
-                log.lifecycle(message.getMessage());
+                log.lifecycle(message.getContent());
                 return true;
         }
     }
 
     @Override
-    public String value(String val) {
-        return TextUtils.cyan(val);
+    public String decorateValue(@Nonnull Object p, @Nullable IAzureMessage message) {
+        return TextUtils.cyan(p.toString());
     }
 }
