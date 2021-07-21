@@ -42,11 +42,13 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.tasks.TaskAction;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -127,23 +129,23 @@ public class DeployTask extends DefaultTask {
             .servicePlanResourceGroup(config.servicePlanResourceGroup())
             .deploymentSlotName(config.deploymentSlotName())
             .deploymentSlotConfigurationSource(config.deploymentSlotConfigurationSource())
-            .pricingTier(PricingTier.fromString(config.pricingTier()))
-            .region(Region.fromName(config.region()))
+            .pricingTier(Optional.ofNullable(config.pricingTier()).map(PricingTier::fromString).orElse(null))
+            .region(Optional.ofNullable(config.region()).map(Region::fromName).orElse(null))
             .runtime(convert(config.runtime()))
             .servicePlanName(config.servicePlanName())
             .appSettings(config.appSettings());
     }
 
-    private RuntimeConfig convert(GradleRuntimeConfig config) {
-        return new RuntimeConfig()
-            .os(OperatingSystem.fromString(config.os()))
-            .webContainer(WebContainer.fromString(config.webContainer()))
-            .javaVersion(JavaVersion.fromString(config.javaVersion()))
+    private RuntimeConfig convert(@Nullable GradleRuntimeConfig configNullable) {
+        return Optional.ofNullable(configNullable).map(config -> new RuntimeConfig()
+            .os(Optional.ofNullable(config.os()).map(OperatingSystem::fromString).orElse(null))
+            .webContainer(Optional.ofNullable(config.webContainer()).map(WebContainer::fromString).orElse(null))
+            .javaVersion(Optional.ofNullable(config.javaVersion()).map(JavaVersion::fromString).orElse(null))
             .registryUrl(config.registryUrl())
             .image(config.image())
             .username(config.username())
             .password(config.password())
-            .startUpCommand(config.startUpCommand());
+            .startUpCommand(config.startUpCommand())).orElse(null);
     }
 
     private void initTask() {
