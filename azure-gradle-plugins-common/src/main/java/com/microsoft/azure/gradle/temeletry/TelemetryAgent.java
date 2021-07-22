@@ -99,7 +99,7 @@ public class TelemetryAgent implements TelemetryConfiguration {
         map.put(INSTALLATION_ID_KEY, installationId);
         map.put(PLUGIN_NAME_KEY, pluginName);
         map.put(PLUGIN_VERSION_KEY, pluginVersion);
-        map.put(TelemetryConstants.SUBSCRIPTION_ID_KEY, subscriptionId);
+        map.put(SUBSCRIPTION_ID_KEY, subscriptionId);
         map.put(SESSION_ID_KEY, sessionId);
         map.put(AUTH_TYPE_KEY, authType);
         map.put(AUTH_METHOD_KEY, authMethod);
