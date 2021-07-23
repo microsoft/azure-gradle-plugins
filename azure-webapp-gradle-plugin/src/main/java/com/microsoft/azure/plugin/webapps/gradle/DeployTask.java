@@ -13,7 +13,7 @@ import com.microsoft.azure.gradle.auth.GradleAuthHelper;
 import com.microsoft.azure.gradle.configuration.GradleRuntimeConfig;
 import com.microsoft.azure.gradle.configuration.GradleWebAppConfig;
 import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
-import com.microsoft.azure.gradle.util.GradleAzureMessager;
+import com.microsoft.azure.gradle.util.GradleProxyUtils;
 import com.microsoft.azure.toolkit.lib.Azure;
 import com.microsoft.azure.toolkit.lib.appservice.config.AppServiceConfig;
 import com.microsoft.azure.toolkit.lib.appservice.config.RuntimeConfig;
@@ -64,6 +64,7 @@ public class DeployTask extends DefaultTask {
 
     @TaskAction
     public void deploy() throws GradleException {
+        GradleProxyUtils.configureProxy();
         initTask();
         final GradleWebAppConfig config = parseConfiguration();
         normalizeConfigValue(config);
@@ -147,7 +148,6 @@ public class DeployTask extends DefaultTask {
 
     private void initTask() {
         ProxyManager.getInstance().init();
-        AzureMessager.setDefaultMessager(new GradleAzureMessager());
         Azure.az().config().setLogLevel(HttpLogDetailLevel.NONE.name());
         Azure.az().config().setUserAgent(TelemetryAgent.getInstance().getUserAgent());
     }
@@ -163,28 +163,22 @@ public class DeployTask extends DefaultTask {
         config.runtime(ctx.getRuntime());
         config.appSettings(ctx.getAppSettings());
         config.servicePlanName(ctx.getAppServicePlanName());
-        config.servicePlanResourceGroup(StringUtils.firstNonBlank(ctx.getAppServicePlanResourceGroup(), ctx.getResourceGroup()));
-        File file = new File(this.artifactFile);
-        if (!file.exists()) {
-            throw new AzureToolkitRuntimeException(String.format("artifact file(%s) cannot be found.", file.getAbsolutePath()));
-        }
-        final WebAppArtifact webAppArtifact = WebAppArtifact.builder()
-            .deployType(Utils.getDeployTypeByFileExtension(file))
-            .file(file).build();
+        config.servicePlanResourceGroup(ctx.getAppServicePlanResourceGroup());
+        if (StringUtils.isNotBlank(this.artifactFile)) {
+            File file = new File(this.artifactFile);
+            if (!file.exists()) {
+                throw new AzureToolkitRuntimeException(String.format("artifact file(%s) cannot be found.", file.getAbsolutePath()));
+            }
+            final WebAppArtifact webAppArtifact = WebAppArtifact.builder()
+                .deployType(Utils.getDeployTypeByFileExtension(file))
+                .file(file).build();
 
-        config.webAppArtifacts(Collections.singletonList(webAppArtifact));
+            config.webAppArtifacts(Collections.singletonList(webAppArtifact));
+        }
         return config;
     }
 
     private void normalizeConfigValue(GradleWebAppConfig config) {
-        if (StringUtils.isBlank(config.servicePlanName())) {
-            config.servicePlanName(String.format("asp-%s", config.appName()));
-        }
-
-        if (StringUtils.isBlank(config.servicePlanResourceGroup())) {
-            config.servicePlanResourceGroup(config.resourceGroup());
-        }
-
         if (StringUtils.isNotBlank(config.region()) && Region.fromName(config.region()) != null) {
             config.region(Region.fromName(config.region()).getName());
         }
