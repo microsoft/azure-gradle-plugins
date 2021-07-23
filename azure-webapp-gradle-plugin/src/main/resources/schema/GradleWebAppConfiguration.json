@@ -11,11 +11,15 @@
     },
     "appName": {
       "type": "string",
-      "pattern": "^[a-zA-Z0-9\\-]{2,60}$"
+      "pattern": "^[a-zA-Z0-9\\-]+$",
+      "minLength": 2,
+      "maxLength": 60
     },
     "appServicePlanName": {
       "type": "string",
-      "pattern": "^[a-zA-Z0-9\\-]{1,40}$"
+      "pattern": "^[a-zA-Z0-9\\-]+$",
+      "minLength": 1,
+      "maxLength": 40
     },
     "appServicePlanResourceGroup": {
       "$ref": "#/definitions/azure-resource-group"
@@ -31,6 +35,9 @@
     },
     "runtime": {
       "$ref": "#/definitions/runtime"
+    },
+    "deploymentSlot": {
+      "$ref": "#/definitions/deployment-slot"
     },
     "appSettings": {
       "type": "object"
@@ -59,7 +66,28 @@
     },
     "azure-resource-group": {
       "type": "string",
-      "pattern": "^[a-zA-Z0-9\\.\\_\\-\\(\\)]{1,90}$"
+      "pattern": "^[a-zA-Z0-9._\\-()]+$",
+      "minLength": 1,
+      "maxLength": 90
+    },
+    "deployment-slot": {
+      "title": "DeploymentSlotConfiguration",
+      "description": "Deployment slot configuration for Maven plugin for Azure Web App",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9-]+$",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "configurationSource": {
+          "$ref": "#/definitions/non-empty-string"
+        }
+      },
+      "required": [
+        "name"
+      ]
     },
     "runtime": {
       "title": "Runtime",
@@ -84,7 +112,8 @@
           "$ref": "#/definitions/non-empty-string"
         },
         "registryUrl": {
-          "$ref": "#/definitions/non-empty-string"
+          "type": "string",
+          "pattern": "^https.*"
         }
       },
       "dependencies": {
@@ -105,7 +134,10 @@
               "os": {
                 "pattern": "(?i)^(windows|linux)$"
               }
-            }
+            },
+            "required": [
+              "os"
+            ]
           },
           "then": {
             "required": [
@@ -120,7 +152,10 @@
               "os": {
                 "pattern": "(?i)^(docker)$"
               }
-            }
+            },
+            "required": [
+              "os"
+            ]
           },
           "then": {
             "required": [
@@ -165,8 +200,8 @@
         "environment": {
           "description": "The Azure cloud environment",
           "type": "string",
-          "default": "azure",
-          "pattern": "(?i)^(azure|azure_china|azure_germany|azure_us_government)$"
+          "default": "AZURE",
+          "pattern": "(?i)^(AZURE|AZURE_CHINA|AZURE_GERMANY|AZURE_US_GOVERNMENT)$"
         }
       },
       "allOf": [
@@ -177,7 +212,9 @@
                 "pattern": "(?i)^service_principal$"
               }
             },
-            "required": ["type"]
+            "required": [
+              "type"
+            ]
           },
           "then": {
             "anyOf": [

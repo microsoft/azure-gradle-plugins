@@ -13,7 +13,6 @@ import com.microsoft.azure.plugin.functions.gradle.task.PackageTask;
 import com.microsoft.azure.plugin.functions.gradle.task.PackageZipTask;
 import com.microsoft.azure.toolkit.lib.Azure;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
-import com.microsoft.azure.toolkit.lib.common.proxy.ProxyManager;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.Plugin;
@@ -27,16 +26,17 @@ public class AzureFunctionsPlugin implements Plugin<Project> {
 
     @Override
     public void apply(final Project project) {
-        ProxyManager.getInstance().init();
         AzureMessager.setDefaultMessager(new GradleAzureMessager(project.getLogger()));
         final AzureFunctionsExtension extension = project.getExtensions().create(GRADLE_FUNCTION_EXTENSION,
                 AzureFunctionsExtension.class, project);
-        Azure.az().config().setLogLevel(HttpLogDetailLevel.NONE.name());
-        Azure.az().config().setUserAgent(TelemetryAgent.getInstance().getUserAgent());
+
         TelemetryAgent.getInstance().initTelemetry(GRADLE_PLUGIN_NAME,
             StringUtils.firstNonBlank(AzureFunctionsPlugin.class.getPackage().getImplementationVersion(), "develop"), // default version: develop
             BooleanUtils.isNotFalse(extension.getAllowTelemetry()));
         TelemetryAgent.getInstance().showPrivacyStatement();
+
+        Azure.az().config().setLogLevel(HttpLogDetailLevel.NONE.name());
+        Azure.az().config().setUserAgent(TelemetryAgent.getInstance().getUserAgent());
 
         final TaskContainer tasks = project.getTasks();
 

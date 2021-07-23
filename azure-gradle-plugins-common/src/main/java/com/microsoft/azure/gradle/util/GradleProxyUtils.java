@@ -6,8 +6,10 @@
 package com.microsoft.azure.gradle.util;
 
 import com.azure.core.util.Configuration;
+import com.microsoft.azure.toolkit.lib.common.bundle.AzureString;
+import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
+import com.microsoft.azure.toolkit.lib.common.messager.IAzureMessager;
 import com.microsoft.azure.toolkit.lib.common.proxy.ProxyManager;
-import com.microsoft.azure.toolkit.lib.common.utils.TextUtils;
 
 import java.util.Objects;
 
@@ -16,9 +18,10 @@ public class GradleProxyUtils {
     public static void configureProxy() {
         final ProxyManager proxyManager = ProxyManager.getInstance();
         ProxyManager.getInstance().init();
+        final IAzureMessager messager = AzureMessager.getMessager();
         if (Objects.nonNull(proxyManager.getProxy())) {
-            System.out.printf("Use proxy: %s:%s%n", TextUtils.cyan(proxyManager.getHttpProxyHost()),
-                TextUtils.cyan(Integer.toString(proxyManager.getHttpProxyPort())));
+            messager.info(AzureString.format("Use proxy: %s:%s", proxyManager.getHttpProxyHost(),
+                Integer.toString(proxyManager.getHttpProxyPort())));
 
             Configuration.getGlobalConfiguration().put(Configuration.PROPERTY_HTTP_PROXY,
                 String.format("http://%s:%s", proxyManager.getHttpProxyHost(), proxyManager.getHttpProxyPort()));

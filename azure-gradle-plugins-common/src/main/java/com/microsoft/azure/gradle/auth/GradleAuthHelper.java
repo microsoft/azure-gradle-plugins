@@ -19,10 +19,9 @@ import com.microsoft.azure.toolkit.lib.auth.exception.InvalidConfigurationExcept
 import com.microsoft.azure.toolkit.lib.auth.model.AuthConfiguration;
 import com.microsoft.azure.toolkit.lib.auth.model.AuthType;
 import com.microsoft.azure.toolkit.lib.auth.util.AzureEnvironmentUtils;
-import com.microsoft.azure.toolkit.lib.common.logging.Log;
+import com.microsoft.azure.toolkit.lib.common.bundle.AzureString;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
 import com.microsoft.azure.toolkit.lib.common.model.Subscription;
-import com.microsoft.azure.toolkit.lib.common.utils.TextUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -62,8 +61,7 @@ public class GradleAuthHelper {
         }
         final Subscription subscription = account.getSelectedSubscriptions().get(0);
         if (subscription != null) {
-            AzureMessager.getMessager().info(String.format(SUBSCRIPTION_TEMPLATE,
-                TextUtils.cyan(subscription.getName()), TextUtils.cyan(subscription.getId())));
+            AzureMessager.getMessager().info(String.format(SUBSCRIPTION_TEMPLATE, subscription.getName(), subscription.getId()));
         }
     }
 
@@ -100,7 +98,7 @@ public class GradleAuthHelper {
         final AzureEnvironment env = account.getEnvironment();
         final String environmentName = AzureEnvironmentUtils.azureEnvironmentToString(env);
         if (env != AzureEnvironment.AZURE && env != auth.getEnvironment()) {
-            Log.prompt(String.format(USING_AZURE_ENVIRONMENT, TextUtils.cyan(environmentName)));
+            AzureMessager.getMessager().info(AzureString.format(USING_AZURE_ENVIRONMENT, environmentName));
         }
         printCredentialDescription(account, isInteractiveLogin);
         TelemetryAgent.getInstance().addDefaultProperty(TelemetryConstants.AUTH_TYPE_KEY, Objects.toString(auth.getType()));
@@ -114,13 +112,13 @@ public class GradleAuthHelper {
             if (CollectionUtils.isNotEmpty(account.getSubscriptions())) {
                 final List<Subscription> selectedSubscriptions = account.getSelectedSubscriptions();
                 if (selectedSubscriptions != null && selectedSubscriptions.size() == 1) {
-                    AzureMessager.getMessager().info(String.format("Default subscription: %s(%s)",
-                        TextUtils.cyan(selectedSubscriptions.get(0).getName()),
-                        TextUtils.cyan(selectedSubscriptions.get(0).getId())));
+                    AzureMessager.getMessager().info(AzureString.format("Default subscription: %s(%s)",
+                        selectedSubscriptions.get(0).getName(),
+                        selectedSubscriptions.get(0).getId()));
                 }
             }
             if (StringUtils.isNotEmpty(account.getEntity().getEmail())) {
-                AzureMessager.getMessager().info(String.format("Username: %s", TextUtils.cyan(account.getEntity().getEmail())));
+                AzureMessager.getMessager().info(AzureString.format("Username: %s", account.getEntity().getEmail()));
             }
         } else {
             AzureMessager.getMessager().info(account.toString());
@@ -129,7 +127,7 @@ public class GradleAuthHelper {
 
     private static void promptAzureEnvironment(AzureEnvironment env) {
         if (env != null && env != AzureEnvironment.AZURE) {
-            AzureMessager.getMessager().info(String.format("Auth environment: %s", TextUtils.cyan(AzureEnvironmentUtils.azureEnvironmentToString(env))));
+            AzureMessager.getMessager().info(AzureString.format("Auth environment: %s", AzureEnvironmentUtils.azureEnvironmentToString(env)));
         }
     }
 
@@ -163,15 +161,15 @@ public class GradleAuthHelper {
         if (account instanceof DeviceCodeAccount) {
             final DeviceCodeAccount deviceCodeAccount = (DeviceCodeAccount) account;
             final DeviceCodeInfo challenge = deviceCodeAccount.getDeviceCode();
-            AzureMessager.getMessager().info(StringUtils.replace(challenge.getMessage(), challenge.getUserCode(),
-                TextUtils.cyan(challenge.getUserCode())));
+            AzureMessager.getMessager().info(
+                AzureString.format(StringUtils.replace(challenge.getMessage(), challenge.getUserCode(), "%s"), challenge.getUserCode()));
         }
         return account.continueLogin().block();
     }
 
     private static void promptForOAuthOrDeviceCodeLogin(AuthType authType) {
         if (authType == AuthType.OAUTH2 || authType == AuthType.DEVICE_CODE) {
-            AzureMessager.getMessager().info(String.format("Auth type: %s", TextUtils.cyan(authType.toString())));
+            AzureMessager.getMessager().info(AzureString.format("Auth type: %s", authType.toString()));
         }
     }
 
