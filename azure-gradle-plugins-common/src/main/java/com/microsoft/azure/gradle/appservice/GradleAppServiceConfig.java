@@ -6,7 +6,6 @@
 package com.microsoft.azure.gradle.appservice;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.microsoft.azure.gradle.configuration.GradleRuntimeConfig;
 import lombok.Getter;
 import lombok.Setter;
