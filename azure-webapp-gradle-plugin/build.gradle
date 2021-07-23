@@ -27,6 +27,7 @@ plugins {
     id "com.gradle.plugin-publish" version "0.15.0"
     id "nu.studer.credentials" version "2.1"
     id "com.github.ben-manes.versions" version "0.39.0"
+    id "io.freefair.aspectj.post-compile-weaving" version "6.0.0-m2"
 }
 apply plugin: 'java-gradle-plugin'
 apply plugin: 'com.gradle.plugin-publish'
@@ -35,6 +36,7 @@ apply plugin: 'eclipse'
 apply plugin: 'idea'
 apply plugin: 'checkstyle'
 apply plugin: 'project-report'
+apply plugin: 'io.freefair.aspectj.post-compile-weaving'
 
 checkstyle {
     toolVersion '8.36.1';

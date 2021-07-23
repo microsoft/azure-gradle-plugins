@@ -163,7 +163,7 @@ public class GradleAuthHelper {
         if (account instanceof DeviceCodeAccount) {
             final DeviceCodeAccount deviceCodeAccount = (DeviceCodeAccount) account;
             final DeviceCodeInfo challenge = deviceCodeAccount.getDeviceCode();
-            System.out.println(StringUtils.replace(challenge.getMessage(), challenge.getUserCode(),
+            AzureMessager.getMessager().info(StringUtils.replace(challenge.getMessage(), challenge.getUserCode(),
                 TextUtils.cyan(challenge.getUserCode())));
         }
         return account.continueLogin().block();
