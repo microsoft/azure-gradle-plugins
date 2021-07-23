@@ -6,9 +6,6 @@
 package com.microsoft.azure.plugin.webapps.gradle;
 
 import com.azure.core.http.policy.HttpLogDetailLevel;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.azure.gradle.auth.GradleAuthHelper;
 import com.microsoft.azure.gradle.configuration.GradleRuntimeConfig;
 import com.microsoft.azure.gradle.configuration.GradleWebAppConfig;
@@ -31,10 +28,11 @@ import com.microsoft.azure.toolkit.lib.common.exception.AzureToolkitRuntimeExcep
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
 import com.microsoft.azure.toolkit.lib.common.model.Region;
 import com.microsoft.azure.toolkit.lib.common.proxy.ProxyManager;
+import com.microsoft.azure.toolkit.lib.common.validator.SchemaValidator;
+import com.microsoft.azure.toolkit.lib.common.validator.ValidationMessage;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
-import com.networknt.schema.ValidationMessage;
 import lombok.Setter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -49,15 +47,12 @@ import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static com.fasterxml.jackson.databind.MapperFeature.AUTO_DETECT_CREATORS;
-import static com.fasterxml.jackson.databind.MapperFeature.AUTO_DETECT_GETTERS;
-import static com.fasterxml.jackson.databind.MapperFeature.AUTO_DETECT_IS_GETTERS;
-
 public class DeployTask extends DefaultTask {
+    private static final String INVALID_PARAMETER_ERROR_MESSAGE = "Invalid values found in configuration, please correct the value with messages below:";
+
     @Setter
     private AzureWebappPluginExtension azureWebappExtension;
 
@@ -87,14 +82,12 @@ public class DeployTask extends DefaultTask {
     }
 
     protected void validateConfiguration(Consumer<ValidationMessage> validationMessageConsumer, Object rawConfig) {
-        final JsonSchema schema = getConfigurationSchema();
-        final ObjectMapper objectMapper = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
-            .disable(AUTO_DETECT_CREATORS, AUTO_DETECT_GETTERS, AUTO_DETECT_IS_GETTERS);
-        final JsonNode jsonConfig = objectMapper.convertValue(rawConfig, JsonNode.class);
-        final Set<ValidationMessage> validate = schema.validate(jsonConfig, jsonConfig, "azurewebapp");
-        validate.forEach(validationMessageConsumer);
+        final List<ValidationMessage> validate = SchemaValidator.getInstance().validate("GradleWebAppConfiguration",
+            rawConfig, "azurewebapp");
+        validate.forEach(validationMessageConsumer::accept);
         if (CollectionUtils.isNotEmpty(validate)) {
-            throw new AzureToolkitRuntimeException("Invalid values found in azurewebapp configuration, please correct the value with messages above");
+            final String errorDetails = validate.stream().map(message -> message.getMessage().toString()).collect(Collectors.joining(StringUtils.LF));
+            throw new AzureToolkitRuntimeException(String.join(StringUtils.LF, INVALID_PARAMETER_ERROR_MESSAGE, errorDetails));
         }
     }
 
