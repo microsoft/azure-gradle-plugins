@@ -28,6 +28,7 @@ import com.microsoft.azure.toolkit.lib.appservice.service.IAppServiceUpdater;
 import com.microsoft.azure.toolkit.lib.appservice.service.IFunctionApp;
 import com.microsoft.azure.toolkit.lib.appservice.service.IFunctionAppBase;
 import com.microsoft.azure.toolkit.lib.auth.AzureAccount;
+import com.microsoft.azure.toolkit.lib.common.bundle.AzureString;
 import com.microsoft.azure.toolkit.lib.common.exception.AzureExecutionException;
 import com.microsoft.azure.toolkit.lib.common.exception.AzureToolkitRuntimeException;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
@@ -41,13 +42,18 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.versioning.ComparableVersion;
 import org.zeroturnaround.zip.ZipUtil;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
+import reactor.util.retry.Retry;
 
 import java.io.File;
 import java.lang.management.ManagementFactory;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -126,7 +132,7 @@ public class DeployHandler {
     private static final String INVALID_JAVA_VERSION = "Unsupported value %s for 'javaVersion' in build.gradle";
     private static final String INVALID_PRICING_TIER = "Unsupported value %s for 'pricingTier' in build.gradle";
     private static final String FAILED_TO_LIST_TRIGGERS = "Deployment succeeded, but failed to list http trigger urls.";
-    private static final int LIST_TRIGGERS_MAX_RETRY = 3;
+    private static final int LIST_TRIGGERS_MAX_RETRY = 4;
     private static final String ARTIFACT_INCOMPATIBLE = "Your function app artifact compile version is higher than the java version in function host, " +
         "please downgrade the project compile version and try again.";
     private static final String HTTP_TRIGGER_URLS = "HTTP Trigger Urls:";
@@ -135,7 +141,8 @@ public class DeployHandler {
     private static final String HTTP_TRIGGER = "httpTrigger";
     private static final String UNABLE_TO_LIST_NONE_ANONYMOUS_HTTP_TRIGGERS = "Some http trigger urls cannot be displayed " +
         "because they are non-anonymous. To access the non-anonymous triggers, please refer https://aka.ms/azure-functions-key.";
-    private static final String SYNCING_TRIGGERS_AND_FETCH_FUNCTION_INFORMATION = "Syncing triggers and fetching function information (Attempt %d/%d)...";
+    private static final String SYNCING_TRIGGERS = "Syncing triggers and fetching function information";
+    private static final String SYNCING_TRIGGERS_WITH_RETRY = "Syncing triggers and fetching function information (Attempt {0}/{1})...";
     private static final int LIST_TRIGGERS_RETRY_PERIOD_IN_SECONDS = 10;
     private static final String NO_TRIGGERS_FOUNDED = "No triggers found in deployed function app, " +
         "please try to deploy the project again.";
@@ -191,24 +198,16 @@ public class DeployHandler {
     }
 
     private List<FunctionEntity> listFunctions(final IFunctionApp functionApp) {
-        for (int i = 0; i < LIST_TRIGGERS_MAX_RETRY; i++) {
-            try {
-                AzureMessager.getMessager().info(String.format(SYNCING_TRIGGERS_AND_FETCH_FUNCTION_INFORMATION, i + 1, LIST_TRIGGERS_MAX_RETRY));
-                functionApp.syncTriggers();
-                final List<FunctionEntity> triggers = functionApp.listFunctions();
-                if (CollectionUtils.isNotEmpty(triggers)) {
-                    return triggers;
-                }
-            } catch (RuntimeException e) {
-                // swallow service exception while list triggers
-            }
-            try {
-                Thread.sleep(LIST_TRIGGERS_RETRY_PERIOD_IN_SECONDS * 1000);
-            } catch (InterruptedException e) {
-                // swallow interrupted exception
-            }
-        }
-        throw new AzureToolkitRuntimeException(NO_TRIGGERS_FOUNDED);
+        final AtomicInteger count = new AtomicInteger(0);
+        return Mono.fromCallable(() -> {
+            final AzureString message = count.getAndAdd(1) == 0 ?
+                    AzureString.fromString(SYNCING_TRIGGERS) : AzureString.format(SYNCING_TRIGGERS_WITH_RETRY, count.get(), LIST_TRIGGERS_MAX_RETRY);
+            AzureMessager.getMessager().info(message);
+            return Optional.ofNullable(functionApp.listFunctions(true))
+                    .filter(CollectionUtils::isNotEmpty)
+                    .orElseThrow(() -> new AzureToolkitRuntimeException(NO_TRIGGERS_FOUNDED));
+        }).subscribeOn(Schedulers.boundedElastic())
+                .retryWhen(Retry.backoff(LIST_TRIGGERS_MAX_RETRY - 1, Duration.ofSeconds(LIST_TRIGGERS_RETRY_PERIOD_IN_SECONDS))).block();
     }
 
     protected void doValidate() throws AzureExecutionException {
