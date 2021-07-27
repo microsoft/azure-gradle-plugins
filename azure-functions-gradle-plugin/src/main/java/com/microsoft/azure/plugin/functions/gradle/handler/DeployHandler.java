@@ -53,7 +53,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -132,7 +131,7 @@ public class DeployHandler {
     private static final String INVALID_JAVA_VERSION = "Unsupported value %s for 'javaVersion' in build.gradle";
     private static final String INVALID_PRICING_TIER = "Unsupported value %s for 'pricingTier' in build.gradle";
     private static final String FAILED_TO_LIST_TRIGGERS = "Deployment succeeded, but failed to list http trigger urls.";
-    private static final int LIST_TRIGGERS_MAX_RETRY = 4;
+    private static final int LIST_TRIGGERS_MAX_RETRY = 5;
     private static final String ARTIFACT_INCOMPATIBLE = "Your function app artifact compile version is higher than the java version in function host, " +
         "please downgrade the project compile version and try again.";
     private static final String HTTP_TRIGGER_URLS = "HTTP Trigger Urls:";
@@ -198,16 +197,16 @@ public class DeployHandler {
     }
 
     private List<FunctionEntity> listFunctions(final IFunctionApp functionApp) {
-        final AtomicInteger count = new AtomicInteger(0);
+        final int[] count = {0};
         return Mono.fromCallable(() -> {
-            final AzureString message = count.getAndAdd(1) == 0 ?
-                    AzureString.fromString(SYNCING_TRIGGERS) : AzureString.format(SYNCING_TRIGGERS_WITH_RETRY, count.get(), LIST_TRIGGERS_MAX_RETRY);
+            final AzureString message = count[0]++ == 0 ?
+                    AzureString.fromString(SYNCING_TRIGGERS) : AzureString.format(SYNCING_TRIGGERS_WITH_RETRY, count[0], LIST_TRIGGERS_MAX_RETRY);
             AzureMessager.getMessager().info(message);
             return Optional.ofNullable(functionApp.listFunctions(true))
                     .filter(CollectionUtils::isNotEmpty)
                     .orElseThrow(() -> new AzureToolkitRuntimeException(NO_TRIGGERS_FOUNDED));
         }).subscribeOn(Schedulers.boundedElastic())
-                .retryWhen(Retry.backoff(LIST_TRIGGERS_MAX_RETRY - 1, Duration.ofSeconds(LIST_TRIGGERS_RETRY_PERIOD_IN_SECONDS))).block();
+                .retryWhen(Retry.fixedDelay(LIST_TRIGGERS_MAX_RETRY - 1, Duration.ofSeconds(LIST_TRIGGERS_RETRY_PERIOD_IN_SECONDS))).block();
     }
 
     protected void doValidate() throws AzureExecutionException {
