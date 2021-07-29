@@ -1,0 +1,54 @@
+plugins {
+    id "net.linguica.maven-settings" version "0.5" apply false
+    id "com.gradle.plugin-publish" version "0.15.0" apply false
+    id "nu.studer.credentials" version "2.1" apply false
+    id "com.github.ben-manes.versions" version "0.39.0"  apply false
+}
+
+class PrepareResourceTask extends DefaultTask {
+    @Option(option = "release", description = "whether this build is a release build.")
+    Boolean release;
+
+    Project currentProject
+
+    @TaskAction
+    void prepare() {
+        def templateFile = new File(project.projectDir, "src/main/resources/ApplicationInsightsTemplate.xml");
+        def targetFile = new File(project.projectDir, "src/main/resources/ApplicationInsights.xml");
+        if (templateFile.exists()) {
+            targetFile.text = templateFile.text.replaceAll("\\{AI_KEY}",
+                    (release != null && release) ? "435bdea7-d399-49ee-8d2d-b2792aa060d2" : "fda156f5-2eb8-48ab-8a3c-3e06b3c64b49")
+        }
+    }
+}
+
+subprojects {
+    apply plugin: 'maven-publish'
+    apply plugin: 'eclipse'
+    apply plugin: 'idea'
+    apply plugin: 'checkstyle'
+    apply plugin: 'project-report'
+
+    checkstyle {
+        toolVersion '8.36.1';
+        // Whether or not to allow the build to continue if there are warnings.
+        ignoreFailures = false
+
+        // Whether or not rule violations are to be displayed on the console.
+        showViolations = true
+    }
+
+    repositories {
+        mavenLocal()
+        mavenCentral()
+    }
+
+    task prepareResources(type: PrepareResourceTask) {
+        currentProject = project
+    }
+
+    task prepareReleaseResources(type: PrepareResourceTask) {
+        currentProject = project
+        release = true
+    }
+}
