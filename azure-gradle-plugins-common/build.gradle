@@ -1,29 +1,19 @@
 plugins {
-    id "net.linguica.maven-settings" version "0.5"
+    id "net.linguica.maven-settings"
     id 'java'
 }
-apply plugin: 'maven-publish'
-apply plugin: 'eclipse'
-apply plugin: 'idea'
-apply plugin: 'checkstyle'
 
-repositories {
-    mavenLocal()
-    mavenCentral()
-}
 
-checkstyle {
-    toolVersion '8.36.1';
-    // Whether or not to allow the build to continue if there are warnings.
-    ignoreFailures = false
-
-    // Whether or not rule violations are to be displayed on the console.
-    showViolations = true
-}
 
 publishing {
     repositories {
         mavenLocal()
+    }
+
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
     }
 }
 
@@ -42,14 +32,4 @@ dependencies {
 
     compileOnly 'org.projectlombok:lombok:1.18.20'
     annotationProcessor 'org.projectlombok:lombok:1.18.20'
-}
-
-
-
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
-        }
-    }
 }
