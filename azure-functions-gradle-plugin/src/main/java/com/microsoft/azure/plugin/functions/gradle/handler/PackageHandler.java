@@ -52,6 +52,7 @@ import java.util.Set;
 public class PackageHandler {
     public static final String HOST_JSON = "host.json";
     public static final String LOCAL_SETTINGS_JSON = "local.settings.json";
+    private static final String LINE_FEED = "\r\n";
     private static final String DOCS_LINK = "https://aka.ms/functions-local-settings";
     private static final String SEARCH_FUNCTIONS = "Step 1 of 8: Searching for Azure Functions entry points";
     private static final String FOUND_FUNCTIONS = " Azure Functions entry point(s) found.";
@@ -84,6 +85,7 @@ public class PackageHandler {
         "{ \"FUNCTIONS_WORKER_RUNTIME\": \"java\" } }";
     private static final String DEFAULT_HOST_JSON = "{\"version\":\"2.0\",\"extensionBundle\":" +
         "{\"id\":\"Microsoft.Azure.Functions.ExtensionBundle\",\"version\":\"[1.*, 2.0.0)\"}}\n";
+
     private final IProject project;
     private final String deploymentStagingDirectoryPath;
 
@@ -129,8 +131,7 @@ public class PackageHandler {
     }
 
     private Set<Method> findAnnotatedMethods(final AnnotationHandler handler) throws MalformedURLException {
-        AzureMessager.getMessager().info("");
-        AzureMessager.getMessager().info(SEARCH_FUNCTIONS);
+        AzureMessager.getMessager().info(LINE_FEED + SEARCH_FUNCTIONS);
         Set<Method> functions;
         try {
             log.debug("ClassPath to resolve: " + getArtifactFileUrl());
@@ -172,8 +173,7 @@ public class PackageHandler {
 
     private Map<String, FunctionConfiguration> getFunctionConfigurations(final AnnotationHandler handler,
                                                                          final Set<Method> methods) throws AzureExecutionException {
-        AzureMessager.getMessager().info("");
-        AzureMessager.getMessager().info(GENERATE_CONFIG);
+        AzureMessager.getMessager().info(LINE_FEED + GENERATE_CONFIG);
         final Map<String, FunctionConfiguration> configMap = handler.generateConfigurations(methods);
         if (configMap.size() == 0) {
             AzureMessager.getMessager().info(GENERATE_SKIP);
@@ -191,8 +191,7 @@ public class PackageHandler {
     }
 
     private void validateFunctionConfigurations(final Map<String, FunctionConfiguration> configMap) {
-        AzureMessager.getMessager().info("");
-        AzureMessager.getMessager().info(VALIDATE_CONFIG);
+        AzureMessager.getMessager().info(LINE_FEED + VALIDATE_CONFIG);
         if (configMap.size() == 0) {
             AzureMessager.getMessager().info(VALIDATE_SKIP);
         } else {
@@ -203,8 +202,7 @@ public class PackageHandler {
 
     private void writeFunctionJsonFiles(final ObjectWriter objectWriter,
                                         final Map<String, FunctionConfiguration> configMap) throws IOException {
-        AzureMessager.getMessager().info("");
-        AzureMessager.getMessager().info(SAVE_FUNCTION_JSONS);
+        AzureMessager.getMessager().info(LINE_FEED + SAVE_FUNCTION_JSONS);
         if (configMap.size() == 0) {
             AzureMessager.getMessager().info(SAVE_SKIP);
         } else {
@@ -224,8 +222,7 @@ public class PackageHandler {
     }
 
     private void copyHostJsonFile() throws IOException {
-        AzureMessager.getMessager().info("");
-        AzureMessager.getMessager().info(SAVE_HOST_JSON);
+        AzureMessager.getMessager().info(LINE_FEED + SAVE_HOST_JSON);
         final File sourceHostJsonFile = new File(project.getBaseDirectory().toFile(), HOST_JSON);
         final File hostJsonFile = Paths.get(this.deploymentStagingDirectoryPath, HOST_JSON).toFile();
         copyFilesWithDefaultContent(sourceHostJsonFile, hostJsonFile, DEFAULT_HOST_JSON);
@@ -233,8 +230,7 @@ public class PackageHandler {
     }
 
     private void copyLocalSettingJsonFile() throws AzureExecutionException, IOException {
-        AzureMessager.getMessager().info("");
-        AzureMessager.getMessager().info(SAVE_LOCAL_SETTINGS_JSON);
+        AzureMessager.getMessager().info(LINE_FEED + SAVE_LOCAL_SETTINGS_JSON);
         final File localSettingJsonTargetFile = Paths.get(this.deploymentStagingDirectoryPath, LOCAL_SETTINGS_JSON)
             .toFile();
         final File localSettingJsonSrcFile = new File(project.getBaseDirectory().toFile(), LOCAL_SETTINGS_JSON);
@@ -272,8 +268,7 @@ public class PackageHandler {
     }
 
     private void copyJarsToStageDirectory() throws IOException {
-        AzureMessager.getMessager().info("");
-        AzureMessager.getMessager().info(COPY_JARS + deploymentStagingDirectoryPath);
+        AzureMessager.getMessager().info(LINE_FEED + COPY_JARS + deploymentStagingDirectoryPath);
         final File libFolder = new File(deploymentStagingDirectoryPath, "lib");
         if (libFolder.exists()) {
             FileUtils.cleanDirectory(libFolder);
@@ -295,7 +290,7 @@ public class PackageHandler {
 
     private void installExtension(final FunctionCoreToolsHandler handler, Set<BindingEnum> bindingEnums)
         throws AzureExecutionException {
-        AzureMessager.getMessager().info(INSTALL_EXTENSIONS);
+        AzureMessager.getMessager().info(LINE_FEED + INSTALL_EXTENSIONS);
         if (!isInstallingExtensionNeeded(bindingEnums)) {
             return;
         }
