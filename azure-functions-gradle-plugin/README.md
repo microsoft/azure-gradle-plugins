@@ -8,7 +8,7 @@ This plugin provides seamless integration into Gradle projects. You can package 
 Tool | Required Version
 ---|---
 JDK | 1.8
-Gradle | 4.10 and above
+Gradle | 5.2 and above
 [.Net Core SDK](https://www.microsoft.com/net/core) | Latest version
 [Azure Functions Core Tools](https://www.npmjs.com/package/azure-functions-core-tools) | 2.0 and above
 >Note: [See how to install Azure Functions Core Tools - 2.x](https://aka.ms/azfunc-install)
@@ -18,13 +18,13 @@ Gradle | 4.10 and above
 In your Gradle Java project, add the plugin to your `build.gradle`:
 ```groovy
 plugins {
-  id "com.microsoft.azure.azurefunctions" version "1.5.0"
+  id "com.microsoft.azure.azurefunctions" version "1.6.0"
 }
 ```
 
 ## Configuration
 Here is a sample configuration, for details, please refer to this [document](https://github.com/microsoft/azure-gradle-plugins/wiki/Configuration).
-```groovy 
+```groovy
 azurefunctions {
     subscription = <your subscription id>
     resourceGroup = <your resource group>
@@ -39,9 +39,9 @@ azurefunctions {
     }
 
     authentication {
-        type = 'azure_cli' 
+        type = 'azure_cli'
     }
-    // enable local debug 
+    // enable local debug
     // localDebug = "transport=dt_socket,server=y,suspend=n,address=5005"
     deployment {
         type = 'run_from_blob'

@@ -1,10 +1,10 @@
-# Azure Plugins for Gradle 
+# Azure Plugins for Gradle
 This repository contains all Microsoft Azure plugins for Gradle.
 
 Azure Plugin | Gradle Plugin Portal | Build Status
 ---|---|---
-[Azure Functions Plugin for Gradle](./azure-functions-gradle-plugin/README.md) | [![Gradle Plugin Portal](https://img.shields.io/maven-metadata/v.svg?colorB=007ec6&label=Azure+Functions+Plugin+for+Gradle&metadataUrl=https%3A%2F%2Fplugins.gradle.org%2Fm2%2Fcom%2Fmicrosoft%2Fazure%2Fazure-functions-gradle-plugin%2Fmaven-metadata.xml)](https://plugins.gradle.org/plugin/com.microsoft.azure.azurefunctions) | [![Build Status](https://dev.azure.com/mseng/VSJava/_apis/build/status/Azure-Gradle-Plugin/VSCJava-Release-Azure-Gradle-Plugin?branchName=master)](https://dev.azure.com/mseng/VSJava/_build/latest?definitionId=9965&branchName=master)
-
+[Azure Functions Plugin for Gradle](./azure-functions-gradle-plugin/README.md) | [![Gradle Plugin Portal](https://img.shields.io/maven-metadata/v.svg?colorB=007ec6&label=Azure+Functions+Plugin+for+Gradle&metadataUrl=https%3A%2F%2Fplugins.gradle.org%2Fm2%2Fcom%2Fmicrosoft%2Fazure%2Fazure-functions-gradle-plugin%2Fmaven-metadata.xml)](https://plugins.gradle.org/plugin/com.microsoft.azure.azurefunctions) | [![Build Status](https://dev.azure.com/mseng/VSJava/_apis/build/status/Azure-Gradle-Plugin/VSCJava-Release-Azure-Gradle-Plugin?branchName=master)](https://dev.azure.com/mseng/VSJava/_build/latest?definitionId=10061&branchName=master)
+[Azure WebApp Plugin for Gradle](./azure-webapp-gradle-plugin/README.md) | [![Gradle Plugin Portal](https://img.shields.io/maven-metadata/v.svg?colorB=007ec6&label=Azure+WebApp+Plugin+for+Gradle&metadataUrl=https%3A%2F%2Fplugins.gradle.org%2Fm2%2Fcom%2Fmicrosoft%2Fazure%2Fazure-webapp-gradle-plugin%2Fmaven-metadata.xml)](https://plugins.gradle.org/plugin/com.microsoft.azure.azurewebapp) | [![Build Status](https://dev.azure.com/mseng/VSJava/_apis/build/status/Azure-Gradle-Plugin/VSCJava-Release-Azure-Gradle-Plugin?branchName=master)](https://dev.azure.com/mseng/VSJava/_build/latest?definitionId=10061&branchName=master)
 ## Feedback and Questions
 To report bugs or request new features, file issues on [Issues](https://github.com/microsoft/azure-gradle-plugins/issues). Or, ask questions on [Stack Overflow with tag azure-java-tools](https://stackoverflow.com/questions/tagged/azure-java-tools).
 
