@@ -10,9 +10,9 @@ All notable changes to the "Azure Function Plugin for Gradle" will be documented
   - [1.0.0](#100)
 
 ## 1.6.0
-- Support [proxy](https://github.com/microsoft/azure-gradle-plugins/wiki/Proxy)in azure function gradle plugin
+- Support [proxy](https://github.com/microsoft/azure-gradle-plugins/wiki/Proxy) in azure function gradle plugin
 - Create default files when there are no local.settings.json and host.json files instead of reporting errors.
-- Move to track2 function api
+- Use track2 SDK to manage azure functions
 
 ## 1.5.0
 - Fix issue [https://github.com/microsoft/azure-maven-plugins/issues/1110](https://github.com/microsoft/azure-gradle-plugins/issues/46): Cross-Site Scripting: Reflected
