@@ -89,6 +89,16 @@ configure(subprojects.findAll {it.name == 'azure-gradle-plugins-common'}) {
         mavenCentral()
     }
 
+    task myJavadoc(type: Jar, dependsOn: 'javadoc') {
+        from javadoc.destinationDir
+        archiveClassifier = 'javadoc'
+    }
+
+    task sourceJar(type: Jar) {
+        from sourceSets.main.allJava
+        archiveClassifier = "sources"
+    }
+
     publishing {
         repositories {
             mavenLocal()
@@ -97,6 +107,8 @@ configure(subprojects.findAll {it.name == 'azure-gradle-plugins-common'}) {
         publications {
             mavenJava(MavenPublication) {
                 from components.java
+                artifact sourceJar
+                artifact myJavadoc
             }
         }
     }
