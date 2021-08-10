@@ -1,22 +1,3 @@
-plugins {
-    id "net.linguica.maven-settings"
-    id 'java'
-}
-
-
-
-publishing {
-    repositories {
-        mavenLocal()
-    }
-
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
-        }
-    }
-}
-
 dependencies {
     compile gradleApi()
 

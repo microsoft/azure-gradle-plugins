@@ -22,12 +22,19 @@ class PrepareResourceTask extends DefaultTask {
     }
 }
 
-subprojects {
+configure(subprojects.findAll {it.name != 'azure-gradle-plugins-common'}) {
     apply plugin: 'maven-publish'
     apply plugin: 'eclipse'
     apply plugin: 'idea'
+    apply plugin: 'java'
     apply plugin: 'checkstyle'
     apply plugin: 'project-report'
+    apply plugin: 'java-gradle-plugin'
+    apply plugin: 'com.gradle.plugin-publish'
+    apply plugin: 'nu.studer.credentials'
+
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
 
     checkstyle {
         toolVersion '8.36.1';
@@ -50,5 +57,53 @@ subprojects {
     task prepareReleaseResources(type: PrepareResourceTask) {
         currentProject = project
         release = true
+    }
+
+    compileJava.doFirst {
+        if (targetCompatibility != '1.8') throw new RuntimeException("This project shall be compiled with targetCompatibility = 1.8 " +
+                "but targetCompatibility is actually "
+                + targetCompatibility)
+    }
+}
+
+configure(subprojects.findAll {it.name == 'azure-gradle-plugins-common'}) {
+    apply plugin: 'maven-publish'
+    apply plugin: 'java'
+    apply plugin: 'checkstyle'
+    apply plugin: 'project-report'
+
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+
+    checkstyle {
+        toolVersion '8.36.1';
+        // Whether or not to allow the build to continue if there are warnings.
+        ignoreFailures = false
+
+        // Whether or not rule violations are to be displayed on the console.
+        showViolations = true
+    }
+
+    repositories {
+        mavenLocal()
+        mavenCentral()
+    }
+
+    publishing {
+        repositories {
+            mavenLocal()
+        }
+
+        publications {
+            mavenJava(MavenPublication) {
+                from components.java
+            }
+        }
+    }
+
+    compileJava.doFirst {
+        if (targetCompatibility != '1.8') throw new RuntimeException("This project shall be compiled with targetCompatibility = 1.8 " +
+                "but targetCompatibility is actually "
+                + targetCompatibility)
     }
 }

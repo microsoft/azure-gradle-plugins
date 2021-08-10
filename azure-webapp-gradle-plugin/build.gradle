@@ -3,10 +3,6 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  */
 
-
-apply plugin: 'java-gradle-plugin'
-apply plugin: 'com.gradle.plugin-publish'
-
 dependencies {
     implementation 'commons-io:commons-io:2.10.0'
     implementation 'org.apache.commons:commons-exec:1.3'
