@@ -10,7 +10,6 @@ import com.microsoft.azure.gradle.auth.GradleAuthHelper;
 import com.microsoft.azure.gradle.configuration.GradleRuntimeConfig;
 import com.microsoft.azure.gradle.configuration.GradleWebAppConfig;
 import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
-import com.microsoft.azure.gradle.util.GradleProxyUtils;
 import com.microsoft.azure.toolkit.lib.Azure;
 import com.microsoft.azure.toolkit.lib.appservice.config.AppServiceConfig;
 import com.microsoft.azure.toolkit.lib.appservice.config.RuntimeConfig;
@@ -30,9 +29,6 @@ import com.microsoft.azure.toolkit.lib.common.model.Region;
 import com.microsoft.azure.toolkit.lib.common.proxy.ProxyManager;
 import com.microsoft.azure.toolkit.lib.common.validator.SchemaValidator;
 import com.microsoft.azure.toolkit.lib.common.validator.ValidationMessage;
-import com.networknt.schema.JsonSchema;
-import com.networknt.schema.JsonSchemaFactory;
-import com.networknt.schema.SpecVersion;
 import lombok.Setter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -42,8 +38,6 @@ import org.gradle.api.tasks.TaskAction;
 
 import javax.annotation.Nullable;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -61,7 +55,7 @@ public class DeployTask extends DefaultTask {
 
     @TaskAction
     public void deploy() throws GradleException {
-        GradleProxyUtils.configureProxy();
+        ProxyManager.getInstance().applyProxy();
         initTask();
         final GradleWebAppConfig config = parseConfiguration();
         normalizeConfigValue(config);
@@ -72,19 +66,10 @@ public class DeployTask extends DefaultTask {
         deployArtifact(target, config);
     }
 
-    private JsonSchema getConfigurationSchema() {
-        final JsonSchemaFactory factory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7);
-        try (InputStream inputStream = this.getClass().getResourceAsStream("/schema/WebAppConfiguration.json")) {
-            return factory.getSchema(inputStream);
-        } catch (IOException e) {
-            throw new AzureToolkitRuntimeException("Failed to load configuration schema");
-        }
-    }
-
     protected void validateConfiguration(Consumer<ValidationMessage> validationMessageConsumer, Object rawConfig) {
         final List<ValidationMessage> validate = SchemaValidator.getInstance().validate("GradleWebAppConfiguration",
             rawConfig, "azurewebapp");
-        validate.forEach(validationMessageConsumer::accept);
+        validate.forEach(validationMessageConsumer);
         if (CollectionUtils.isNotEmpty(validate)) {
             final String errorDetails = validate.stream().map(message -> message.getMessage().toString()).collect(Collectors.joining(StringUtils.LF));
             throw new AzureToolkitRuntimeException(String.join(StringUtils.LF, INVALID_PARAMETER_ERROR_MESSAGE, errorDetails));
@@ -142,7 +127,7 @@ public class DeployTask extends DefaultTask {
     }
 
     private void initTask() {
-        ProxyManager.getInstance().init();
+        ProxyManager.getInstance().applyProxy();
         Azure.az().config().setLogLevel(HttpLogDetailLevel.NONE.name());
         Azure.az().config().setUserAgent(TelemetryAgent.getInstance().getUserAgent());
     }

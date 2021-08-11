@@ -6,11 +6,11 @@ package com.microsoft.azure.plugin.functions.gradle.task;
 
 
 import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
-import com.microsoft.azure.gradle.util.GradleProxyUtils;
 import com.microsoft.azure.plugin.functions.gradle.AzureFunctionsExtension;
 import com.microsoft.azure.plugin.functions.gradle.GradleFunctionContext;
 import com.microsoft.azure.plugin.functions.gradle.handler.DeployHandler;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
+import com.microsoft.azure.toolkit.lib.common.proxy.ProxyManager;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.tasks.Nested;
@@ -39,7 +39,7 @@ public class DeployTask extends DefaultTask implements IFunctionTask {
     @TaskAction
     public void deploy() throws GradleException {
         try {
-            GradleProxyUtils.configureProxy();
+            ProxyManager.getInstance().applyProxy();
             TelemetryAgent.getInstance().trackTaskStart(this.getClass());
             final GradleFunctionContext ctx = new GradleFunctionContext(getProject(), this.getFunctionsExtension());
             final DeployHandler deployHandler = new DeployHandler(ctx);
