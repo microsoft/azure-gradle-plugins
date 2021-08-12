@@ -127,7 +127,6 @@ public class DeployTask extends DefaultTask {
     }
 
     private void initTask() {
-        ProxyManager.getInstance().applyProxy();
         Azure.az().config().setLogLevel(HttpLogDetailLevel.NONE.name());
         Azure.az().config().setUserAgent(TelemetryAgent.getInstance().getUserAgent());
     }
