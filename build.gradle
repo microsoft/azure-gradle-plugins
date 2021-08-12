@@ -109,6 +109,30 @@ configure(subprojects.findAll {it.name == 'azure-gradle-plugins-common'}) {
                 from components.java
                 artifact sourceJar
                 artifact myJavadoc
+                pom {
+                    name = "Common Lib for Azure Gradle Plugins"
+                    description = "A common lib for sharing code among azure gradle plugins"
+                    url = "https://github.com/microsoft/azure-gradle-plugins/tree/master/azure-gradle-plugins-common"
+                    licenses {
+                        license {
+                            name = "MIT License"
+                            url = "https://opensource.org/licenses/MIT"
+                            distribution = "repo"
+                        }
+                    }
+                    developers {
+                        developer {
+                            id = "andxu"
+                            name = "Andy Xu"
+                            email = "andxu@microsoft.com"
+                        }
+                    }
+                    scm {
+                        connection = "scm:git:https://github.com/microsoft/azure-gradle-plugins"
+                        developerConnection = "scm:git:git@github.com:microsoft/azure-gradle-plugins"
+                        url = "https://github.com/microsoft/azure-gradle-plugins/tree/master/azure-gradle-plugins-common"
+                    }
+                }
             }
         }
     }
