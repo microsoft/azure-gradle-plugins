@@ -89,7 +89,7 @@ configure(subprojects.findAll {it.name == 'azure-gradle-plugins-common'}) {
         mavenCentral()
     }
 
-    task myJavadoc(type: Jar, dependsOn: 'javadoc') {
+    task javadocJar(type: Jar, dependsOn: 'javadoc') {
         from javadoc.destinationDir
         archiveClassifier = 'javadoc'
     }
@@ -108,7 +108,7 @@ configure(subprojects.findAll {it.name == 'azure-gradle-plugins-common'}) {
             mavenJava(MavenPublication) {
                 from components.java
                 artifact sourceJar
-                artifact myJavadoc
+                artifact javadocJar
                 pom {
                     name = "Common Lib for Azure Gradle Plugins"
                     description = "A common lib for sharing code among azure gradle plugins"
