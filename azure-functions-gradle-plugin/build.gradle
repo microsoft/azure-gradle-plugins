@@ -3,10 +3,6 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  */
 
-
-apply plugin: 'java-gradle-plugin'
-apply plugin: 'com.gradle.plugin-publish'
-
 dependencies {
     implementation 'commons-io:commons-io:2.10.0'
     implementation 'org.apache.commons:commons-exec:1.3'
@@ -19,11 +15,11 @@ dependencies {
     implementation 'org.apache.maven:maven-artifact:3.8.1'
     implementation 'org.fusesource.jansi:jansi:1.18'
 
-    implementation 'com.microsoft.azure:azure-toolkit-common-lib:0.10.0'
-    implementation 'com.microsoft.azure:azure-toolkit-resource-lib:0.10.0'
-    implementation 'com.microsoft.azure:azure-toolkit-applicationinsights-lib:0.10.0'
-    implementation 'com.microsoft.azure:azure-toolkit-appservice-lib:0.10.0'
-    implementation 'com.microsoft.azure:azure-toolkit-applicationinsights-lib:0.10.0'
+    implementation 'com.microsoft.azure:azure-toolkit-common-lib:0.11.0-SNAPSHOT'
+    implementation 'com.microsoft.azure:azure-toolkit-resource-lib:0.11.0-SNAPSHOT'
+    implementation 'com.microsoft.azure:azure-toolkit-applicationinsights-lib:0.11.0-SNAPSHOT'
+    implementation 'com.microsoft.azure:azure-toolkit-appservice-lib:0.11.0-SNAPSHOT'
+    implementation 'com.microsoft.azure:azure-toolkit-applicationinsights-lib:0.11.0-SNAPSHOT'
 
     implementation project(':azure-gradle-plugins-common')
 
