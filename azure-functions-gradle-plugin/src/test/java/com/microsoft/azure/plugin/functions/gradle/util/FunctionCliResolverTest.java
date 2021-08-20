@@ -4,11 +4,12 @@
  */
 package com.microsoft.azure.plugin.functions.gradle.util;
 
+import com.microsoft.azure.toolkit.lib.appservice.utils.FunctionCliResolver;
 import org.junit.Test;
 
 public class FunctionCliResolverTest {
     @Test
-    public void testResolveFunc() throws Exception {
+    public void testResolveFunc() {
         final String funcCoreToolPath = FunctionCliResolver.resolveFunc();
         if (funcCoreToolPath != null) {
             System.out.println("Your function core tool is found at: " + funcCoreToolPath);
