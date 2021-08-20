@@ -15,11 +15,10 @@ dependencies {
     implementation 'org.apache.maven:maven-artifact:3.8.1'
     implementation 'org.fusesource.jansi:jansi:1.18'
 
-    implementation 'com.microsoft.azure:azure-toolkit-common-lib:0.11.0-SNAPSHOT'
-    implementation 'com.microsoft.azure:azure-toolkit-resource-lib:0.11.0-SNAPSHOT'
-    implementation 'com.microsoft.azure:azure-toolkit-applicationinsights-lib:0.11.0-SNAPSHOT'
-    implementation 'com.microsoft.azure:azure-toolkit-appservice-lib:0.11.0-SNAPSHOT'
-    implementation 'com.microsoft.azure:azure-toolkit-applicationinsights-lib:0.11.0-SNAPSHOT'
+    implementation 'com.microsoft.azure:azure-toolkit-common-lib:' + azureToolkitVersion
+    implementation 'com.microsoft.azure:azure-toolkit-resource-lib:'  + azureToolkitVersion
+    implementation 'com.microsoft.azure:azure-toolkit-appservice-lib:'  + azureToolkitVersion
+    implementation 'com.microsoft.azure:azure-toolkit-applicationinsights-lib:'  + azureToolkitVersion
 
     implementation project(':azure-gradle-plugins-common')
 
@@ -60,18 +59,3 @@ pluginBundle {
         }
     }
 }
-
-task setupPluginPublishSecret {
-    doLast {
-        def key = credentials['gradle.publish.key']
-        def secret = credentials['gradle.publish.secret']
-        if( !key || !secret) {
-            throw new RuntimeException("gradlePublishKey and/or gradlePublishSecret are not defined")
-        }
-
-        System.properties.setProperty("gradle.publish.key", key)
-        System.properties.setProperty("gradle.publish.secret", secret)
-    }
-}
-
-tasks.publishPlugins.dependsOn tasks.setupPluginPublishSecret

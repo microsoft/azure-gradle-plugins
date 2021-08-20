@@ -1,16 +1,62 @@
+ext {
+    projectShortName = "azure-gradle-plugins-common"
+    projectName = "Common Lib for Azure Gradle Plugins"
+    projectDescription = "A common lib for sharing code among azure gradle plugins"
+}
+
 dependencies {
     compile gradleApi()
 
     implementation 'commons-io:commons-io:2.10.0'
     implementation 'org.apache.commons:commons-lang3:3.12.0'
     implementation 'com.google.guava:guava:30.1.1-jre'
-    implementation 'com.microsoft.azure:azure-toolkit-common-lib:0.11.0-SNAPSHOT'
-    implementation 'com.microsoft.azure:azure-toolkit-resource-lib:0.11.0-SNAPSHOT'
-    implementation 'com.microsoft.azure:azure-toolkit-appservice-lib:0.11.0-SNAPSHOT'
-    implementation 'com.microsoft.azure:azure-toolkit-applicationinsights-lib:0.11.0-SNAPSHOT'
+    implementation 'com.microsoft.azure:azure-toolkit-common-lib:' + azureToolkitVersion
+    implementation 'com.microsoft.azure:azure-toolkit-resource-lib:'  + azureToolkitVersion
+    implementation 'com.microsoft.azure:azure-toolkit-appservice-lib:'  + azureToolkitVersion
+    implementation 'com.microsoft.azure:azure-toolkit-applicationinsights-lib:'  + azureToolkitVersion
     testImplementation "junit:junit:4.13.2"
     testImplementation "org.mockito:mockito-core:3.11.2"
 
     compileOnly 'org.projectlombok:lombok:1.18.20'
     annotationProcessor 'org.projectlombok:lombok:1.18.20'
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            artifact sourceJar
+            artifact javadocJar
+            pom {
+                name = projectName
+                description = projectDescription
+                url = "https://github.com/microsoft/azure-gradle-plugins/tree/master/" + projectShortName
+                licenses {
+                    license {
+                        name = "MIT License"
+                        url = "https://opensource.org/licenses/MIT"
+                        distribution = "repo"
+                    }
+                }
+                developers {
+                    developer {
+                        id = "andxu"
+                        name = "Andy Xu"
+                        email = "andxu@microsoft.com"
+                    }
+
+                    developer {
+                        id = "Flanker32"
+                        name = "Hanxiao Liu"
+                        email = "hanli@microsoft.com"
+                    }
+                }
+                scm {
+                    connection = "scm:git:https://github.com/microsoft/azure-gradle-plugins"
+                    developerConnection = "scm:git:git@github.com:microsoft/azure-gradle-plugins"
+                    url = "https://github.com/microsoft/azure-gradle-plugins/tree/master/" + projectShortName
+                }
+            }
+        }
+    }
 }
