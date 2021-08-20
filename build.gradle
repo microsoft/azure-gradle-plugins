@@ -22,51 +22,7 @@ class PrepareResourceTask extends DefaultTask {
     }
 }
 
-configure(subprojects.findAll {it.name != 'azure-gradle-plugins-common'}) {
-    apply plugin: 'maven-publish'
-    apply plugin: 'eclipse'
-    apply plugin: 'idea'
-    apply plugin: 'java'
-    apply plugin: 'checkstyle'
-    apply plugin: 'project-report'
-    apply plugin: 'java-gradle-plugin'
-    apply plugin: 'com.gradle.plugin-publish'
-    apply plugin: 'nu.studer.credentials'
-
-    sourceCompatibility = 1.8
-    targetCompatibility = 1.8
-
-    checkstyle {
-        toolVersion '8.36.1';
-        // Whether or not to allow the build to continue if there are warnings.
-        ignoreFailures = false
-
-        // Whether or not rule violations are to be displayed on the console.
-        showViolations = true
-    }
-
-    repositories {
-        mavenLocal()
-        mavenCentral()
-    }
-
-    task prepareResources(type: PrepareResourceTask) {
-        currentProject = project
-    }
-
-    task prepareReleaseResources(type: PrepareResourceTask) {
-        currentProject = project
-        release = true
-    }
-
-    compileJava.doFirst {
-        if (targetCompatibility != '1.8') throw new RuntimeException("This project shall be compiled with targetCompatibility = 1.8 " +
-                "but targetCompatibility is actually "
-                + targetCompatibility)
-    }
-}
-
-configure(subprojects.findAll {it.name == 'azure-gradle-plugins-common'}) {
+subprojects {
     apply plugin: 'maven-publish'
     apply plugin: 'java'
     apply plugin: 'checkstyle'
@@ -75,8 +31,13 @@ configure(subprojects.findAll {it.name == 'azure-gradle-plugins-common'}) {
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
 
+    ext {
+        azureToolkitVersion = "0.11.0-SNAPSHOT"
+    }
+
     checkstyle {
         toolVersion '8.36.1';
+
         // Whether or not to allow the build to continue if there are warnings.
         ignoreFailures = false
 
@@ -99,47 +60,39 @@ configure(subprojects.findAll {it.name == 'azure-gradle-plugins-common'}) {
         archiveClassifier = "sources"
     }
 
-    publishing {
-        repositories {
-            mavenLocal()
-        }
-
-        publications {
-            mavenJava(MavenPublication) {
-                from components.java
-                artifact sourceJar
-                artifact javadocJar
-                pom {
-                    name = "Common Lib for Azure Gradle Plugins"
-                    description = "A common lib for sharing code among azure gradle plugins"
-                    url = "https://github.com/microsoft/azure-gradle-plugins/tree/master/azure-gradle-plugins-common"
-                    licenses {
-                        license {
-                            name = "MIT License"
-                            url = "https://opensource.org/licenses/MIT"
-                            distribution = "repo"
-                        }
-                    }
-                    developers {
-                        developer {
-                            id = "andxu"
-                            name = "Andy Xu"
-                            email = "andxu@microsoft.com"
-                        }
-                    }
-                    scm {
-                        connection = "scm:git:https://github.com/microsoft/azure-gradle-plugins"
-                        developerConnection = "scm:git:git@github.com:microsoft/azure-gradle-plugins"
-                        url = "https://github.com/microsoft/azure-gradle-plugins/tree/master/azure-gradle-plugins-common"
-                    }
-                }
-            }
-        }
-    }
-
     compileJava.doFirst {
         if (targetCompatibility != '1.8') throw new RuntimeException("This project shall be compiled with targetCompatibility = 1.8 " +
                 "but targetCompatibility is actually "
                 + targetCompatibility)
     }
+}
+
+
+
+configure(subprojects.findAll {it.name != 'azure-gradle-plugins-common'}) {
+    apply plugin: 'java-gradle-plugin'
+    apply plugin: 'com.gradle.plugin-publish'
+
+    task prepareResources(type: PrepareResourceTask) {
+        currentProject = project
+    }
+
+    task prepareReleaseResources(type: PrepareResourceTask) {
+        currentProject = project
+        release = true
+    }
+
+    task setupPluginPublishSecret {
+        doLast {
+            def key = credentials['gradle.publish.key']
+            def secret = credentials['gradle.publish.secret']
+            if( !key || !secret) {
+                throw new RuntimeException("gradlePublishKey and/or gradlePublishSecret are not defined")
+            }
+
+            System.properties.setProperty("gradle.publish.key", key)
+            System.properties.setProperty("gradle.publish.secret", secret)
+        }
+    }
+    tasks.publishPlugins.dependsOn tasks.setupPluginPublishSecret
 }
