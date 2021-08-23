@@ -22,6 +22,7 @@ plugins {
 
 ## Configuration
 Here is a sample configuration, for details, please refer to this [document](https://github.com/microsoft/azure-gradle-plugins/wiki/Webapp-Configuration).
+### Groovy DSL
 ```groovy
 azurewebapp {
     subscription = '<your subscription id>'
@@ -37,10 +38,31 @@ azurewebapp {
     appSettings {
         <key> = <value>
     }
-
     auth {
         type = 'azure_cli' // support azure_cli, oauth2, device_code and service_principal
     }
+}
+```
+
+### Kotlin DSL
+```kotlin
+azurewebapp {
+  subscription = "<your subscription id>"
+  resourceGroup = "<your resource group>"
+  appName = "<your app name>"
+  pricingTier = "<price tier like 'P1v2'>"
+  region = "<region like 'westus'>"
+  setRuntime(closureOf<com.microsoft.azure.gradle.configuration.GradleRuntimeConfig> {
+    os("Linux")
+    webContainer("Java SE")
+    javaVersion("Java 11")
+  })
+  setAppSettings(closureOf<MutableMap<String, String>> {
+    put("key", "value")
+  })
+  setAuth(closureOf<com.microsoft.azure.gradle.auth.GradleAuthConfig> {
+    type = "azure_cli"
+  })
 }
 ```
 
