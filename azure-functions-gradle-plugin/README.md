@@ -24,6 +24,7 @@ plugins {
 
 ## Configuration
 Here is a sample configuration, for details, please refer to this [document](https://github.com/microsoft/azure-gradle-plugins/wiki/Configuration).
+### Groovy DSL
 ```groovy
 azurefunctions {
     subscription = <your subscription id>
@@ -46,6 +47,31 @@ azurefunctions {
     deployment {
         type = 'run_from_blob'
     }
+}
+```
+
+### Kotlin DSL
+```kotlin
+azurefunctions {
+  subscription = "<your subscription id>"
+  resourceGroup = "<your resource group>"
+  appName = "<your function app name>"
+  pricingTier = "<price tier like 'Consumption'>"
+  region = "<region like 'westus'>"
+  setRuntime(closureOf<com.microsoft.azure.gradle.configuration.GradleRuntimeConfig> {
+    os("Windows")
+  })
+  setAppSettings(closureOf<MutableMap<String, String>> {
+    put("key", "value")
+  })
+  setAuth(closureOf<com.microsoft.azure.gradle.auth.GradleAuthConfig> {
+    type = "azure_cli"
+  })
+  // enable local debug
+  // localDebug = "transport=dt_socket,server=y,suspend=n,address=5005"
+  setDeployment(closureOf<com.microsoft.azure.plugin.functions.gradle.configuration.deploy.Deployment> {
+    type = "run_from_blob"
+  })
 }
 ```
 
