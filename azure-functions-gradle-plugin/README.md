@@ -39,7 +39,7 @@ azurefunctions {
         <key> = <value>
     }
 
-    authentication {
+    auth {
         type = 'azure_cli'
     }
     // enable local debug

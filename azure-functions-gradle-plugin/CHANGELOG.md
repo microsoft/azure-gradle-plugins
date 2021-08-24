@@ -27,12 +27,12 @@ All notable changes to the "Azure Function Plugin for Gradle" will be documented
 - Support detach Application Insights from an existing function app
 
 ## 1.2.0
-- Update depdendencies
+- Update dependencies
 - Fix issue [46](https://github.com/microsoft/azure-gradle-plugins/issues/46): java.io.IOException: Resource not found: /version.txt
 
 
 ## 1.1.0
-- Update depdendencies
+- Update dependencies
 - Fix the plugin name in telemetry
 - Fix bug: Cannot resolve func.exe when it is located at a folder with SPACE
 

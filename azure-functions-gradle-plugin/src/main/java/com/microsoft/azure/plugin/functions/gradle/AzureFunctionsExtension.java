@@ -47,7 +47,7 @@ public class AzureFunctionsExtension {
     private String appServicePlanName;
 
     @Nullable
-    private GradleAuthConfig authentication;
+    private GradleAuthConfig auth;
 
     @Nullable
     private Deployment deployment;
@@ -121,8 +121,8 @@ public class AzureFunctionsExtension {
 
     @Input
     @Optional
-    public GradleAuthConfig getAuthentication() {
-        return authentication;
+    public GradleAuthConfig getAuth() {
+        return auth;
     }
 
     @Input
@@ -191,9 +191,15 @@ public class AzureFunctionsExtension {
         this.pricingTier = pricingTier;
     }
 
+    public void setAuth(Closure closure) {
+        this.auth = new GradleAuthConfig();
+        project.configure(auth, closure);
+    }
+
+    @Deprecated
     public void setAuthentication(Closure closure) {
-        this.authentication = new GradleAuthConfig();
-        project.configure(authentication, closure);
+        this.auth = new GradleAuthConfig();
+        project.configure(auth, closure);
     }
 
     public void setDeployment(Closure closure) {
