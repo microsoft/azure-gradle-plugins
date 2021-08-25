@@ -1,6 +1,7 @@
 # Change Log
 All notable changes to the "Azure Function Plugin for Gradle" will be documented in this file.
 - [Change Log](#change-log)
+  - [1.7.0](#160)
   - [1.6.0](#160)
   - [1.5.0](#150)
   - [1.4.0](#140)
@@ -8,6 +9,12 @@ All notable changes to the "Azure Function Plugin for Gradle" will be documented
   - [1.2.0](#120)
   - [1.1.0](#110)
   - [1.0.0](#100)
+
+## 1.7.0
+- Support [proxy](https://github.com/microsoft/azure-gradle-plugins/wiki/Proxy) with credential
+- Fix the unexpected gradle settings which will ignore the Java 1.8 settings
+- Fix the bug of cannot detect func installed by choco install
+- Change the configuration name from `authentication` to `auth`
 
 ## 1.6.0
 - Support [proxy](https://github.com/microsoft/azure-gradle-plugins/wiki/Proxy) in azure function gradle plugin
