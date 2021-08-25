@@ -72,6 +72,7 @@ subprojects {
 configure(subprojects.findAll {it.name != 'azure-gradle-plugins-common'}) {
     apply plugin: 'java-gradle-plugin'
     apply plugin: 'com.gradle.plugin-publish'
+    apply plugin: "nu.studer.credentials"
 
     task prepareResources(type: PrepareResourceTask) {
         currentProject = project

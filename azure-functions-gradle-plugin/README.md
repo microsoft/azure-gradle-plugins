@@ -18,7 +18,7 @@ Gradle | 5.2 and above
 In your Gradle Java project, add the plugin to your `build.gradle`:
 ```groovy
 plugins {
-  id "com.microsoft.azure.azurefunctions" version "1.6.0"
+  id "com.microsoft.azure.azurefunctions" version "1.7.0"
 }
 ```
 
