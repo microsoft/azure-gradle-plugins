@@ -11,6 +11,7 @@ import com.microsoft.azure.gradle.configuration.GradleRuntimeConfig;
 import com.microsoft.azure.gradle.configuration.GradleWebAppConfig;
 import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
 import com.microsoft.azure.toolkit.lib.Azure;
+import com.microsoft.azure.toolkit.lib.appservice.AzureAppService;
 import com.microsoft.azure.toolkit.lib.appservice.config.AppServiceConfig;
 import com.microsoft.azure.toolkit.lib.appservice.config.RuntimeConfig;
 import com.microsoft.azure.toolkit.lib.appservice.model.JavaVersion;
@@ -21,6 +22,7 @@ import com.microsoft.azure.toolkit.lib.appservice.model.WebContainer;
 import com.microsoft.azure.toolkit.lib.appservice.service.IWebApp;
 import com.microsoft.azure.toolkit.lib.appservice.task.CreateOrUpdateWebAppTask;
 import com.microsoft.azure.toolkit.lib.appservice.task.DeployWebAppTask;
+import com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigUtils;
 import com.microsoft.azure.toolkit.lib.appservice.utils.Utils;
 import com.microsoft.azure.toolkit.lib.auth.AzureAccount;
 import com.microsoft.azure.toolkit.lib.common.exception.AzureToolkitRuntimeException;
@@ -31,6 +33,7 @@ import com.microsoft.azure.toolkit.lib.common.validator.SchemaValidator;
 import com.microsoft.azure.toolkit.lib.common.validator.ValidationMessage;
 import lombok.Setter;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
@@ -43,6 +46,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import static com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigUtils.fromAppService;
+import static com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigUtils.mergeAppServiceConfig;
 
 public class DeployTask extends DefaultTask {
     private static final String INVALID_PARAMETER_ERROR_MESSAGE = "Invalid values found in configuration, please correct the value with messages below:";
@@ -96,7 +102,19 @@ public class DeployTask extends DefaultTask {
     }
 
     private IWebApp createOrUpdateWebapp(GradleWebAppConfig config) {
-        return new CreateOrUpdateWebAppTask(convert(config)).execute();
+        final AppServiceConfig appServiceConfig = convert(config);
+        IWebApp app = Azure.az(AzureAppService.class).webapp(appServiceConfig.resourceGroup(), appServiceConfig.appName());
+        AppServiceConfig defaultConfig = app.exists() ? fromAppService(app, app.plan()) : buildDefaultConfig(appServiceConfig.subscriptionId(),
+            appServiceConfig.resourceGroup(), appServiceConfig.appName());
+        mergeAppServiceConfig(appServiceConfig, defaultConfig);
+        return new CreateOrUpdateWebAppTask(appServiceConfig).execute();
+    }
+
+    private AppServiceConfig buildDefaultConfig(String subscriptionId, String resourceGroup, String appName) {
+        final String packaging = FilenameUtils.getExtension(StringUtils.firstNonBlank(this.artifactFile, ""));
+        // get java version according to project java version
+        JavaVersion javaVersion = org.gradle.api.JavaVersion.current().isJava8() ? JavaVersion.JAVA_8 : JavaVersion.JAVA_11;
+        return AppServiceConfigUtils.buildDefaultWebAppConfig(subscriptionId, resourceGroup, appName, packaging, javaVersion);
     }
 
     private AppServiceConfig convert(GradleWebAppConfig config) {
