@@ -57,43 +57,14 @@ import static com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigU
  */
 public class DeployHandler {
     private static final String PORTAL_URL_PATTERN = "%s/#@/resource%s";
-    private static final String FUNCTIONS_WORKER_RUNTIME_NAME = "FUNCTIONS_WORKER_RUNTIME";
-    private static final String FUNCTIONS_WORKER_RUNTIME_VALUE = "java";
-    private static final String SET_FUNCTIONS_WORKER_RUNTIME = "Set function worker runtime to java";
-    private static final String CHANGE_FUNCTIONS_WORKER_RUNTIME = "Function worker runtime doesn't " +
-        "meet the requirement, change it from %s to java";
-    private static final String FUNCTIONS_EXTENSION_VERSION_NAME = "FUNCTIONS_EXTENSION_VERSION";
-    private static final String FUNCTIONS_EXTENSION_VERSION_VALUE = "~3";
-    private static final String SET_FUNCTIONS_EXTENSION_VERSION = "Functions extension version " +
-        "isn't configured, setting up the default value";
     private static final String DEPLOY_START = "Trying to deploy the function app...";
     private static final String DEPLOY_FINISH =
         "Deployment done, you may access your resource through %s";
-    private static final String FUNCTION_APP_CREATE_START = "The specified function app does not exist. " +
-        "Creating a new function app...";
-    private static final String CREATE_FUNCTION_APP = "Creating function app %s...";
-    private static final String CREATE_FUNCTION_APP_DONE = "Successfully created function app %s.";
     private static final String UNKNOWN_DEPLOYMENT_TYPE = "The value of <deploymentType> is unknown, supported values are: " +
         "ftp, zip, msdeploy, run_from_blob and run_from_zip.";
-    private static final String APPINSIGHTS_INSTRUMENTATION_KEY = "APPINSIGHTS_INSTRUMENTATIONKEY";
     private static final String APPLICATION_INSIGHTS_CONFIGURATION_CONFLICT = "Contradictory configurations for application insights," +
         " specify 'appInsightsKey' or 'appInsightsInstance' if you want to enable it, and specify " +
         "'disableAppInsights=true' if you want to disable it.";
-    private static final String FAILED_TO_GET_APPLICATION_INSIGHTS = "The application insights %s cannot be found, " +
-        "will create it in resource group %s.";
-
-    private static final String SKIP_CREATING_APPLICATION_INSIGHTS = "Skip creating application insights";
-    private static final String APPLICATION_INSIGHTS_CREATE_START = "Creating application insights...";
-    private static final String APPLICATION_INSIGHTS_CREATED = "Successfully created the application insights %s " +
-        "for this Function App. You can visit %s/#@/resource%s/overview to view your " +
-        "Application Insights component.";
-    private static final String APPLICATION_INSIGHTS_CREATE_FAILED = "Unable to create the Application Insights " +
-        "for the Function App due to error %s. Please use the Azure Portal to manually create and configure the " +
-        "Application Insights if needed.";
-    private static final String INSTRUMENTATION_KEY_IS_NOT_VALID = "Instrumentation key is not valid, " +
-        "please update the application insights configuration";
-    private static final String CREATE_RESOURCE_GROUP = "Creating resource group %s in region %s...";
-    private static final String CREATE_RESOURCE_GROUP_DONE = "Successfully created resource group %s.";
 
     private static final String FUNCTION_JAVA_VERSION_KEY = "functionJavaVersion";
     private static final String DISABLE_APP_INSIGHTS_KEY = "disableAppInsights";
@@ -114,11 +85,7 @@ public class DeployHandler {
     private static final String INVALID_SERVICE_PLAN_NAME = "Invalid value for 'appServicePlanName', it need to match the pattern %s";
     private static final String INVALID_SERVICE_PLAN_RESOURCE_GROUP_NAME = "Invalid value for 'appServicePlanResourceGroup', " +
         "it only allow alphanumeric characters, periods, underscores, hyphens and parenthesis and cannot end in a period.";
-    private static final String INVALID_REGION = "The region '%s' might not be correct.";
-    private static final String EMPTY_IMAGE_NAME = "Please specify the 'image' under 'runtime' section in build.gradle.";
     private static final String INVALID_OS = "The value of 'os' is not correct, supported values are: 'windows', 'linux' and 'docker'.";
-    private static final String INVALID_JAVA_VERSION = "Unsupported value %s for 'javaVersion' in build.gradle";
-    private static final String INVALID_PRICING_TIER = "Unsupported value %s for 'pricingTier' in build.gradle";
     private static final String FAILED_TO_LIST_TRIGGERS = "Deployment succeeded, but failed to list http trigger urls.";
     private static final int LIST_TRIGGERS_MAX_RETRY = 5;
     private static final String ARTIFACT_INCOMPATIBLE = "Your function app artifact compile version is higher than the java version in function host, " +
