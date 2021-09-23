@@ -6,38 +6,32 @@ package com.microsoft.azure.plugin.functions.gradle.handler;
 
 
 import com.azure.core.management.AzureEnvironment;
-import com.azure.core.management.exception.ManagementException;
 import com.google.common.base.Preconditions;
 import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.gradle.configuration.GradleRuntimeConfig;
 import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
 import com.microsoft.azure.plugin.functions.gradle.IAppServiceContext;
 import com.microsoft.azure.toolkit.lib.Azure;
-import com.microsoft.azure.toolkit.lib.applicationinsights.ApplicationInsights;
-import com.microsoft.azure.toolkit.lib.applicationinsights.ApplicationInsightsEntity;
+import com.microsoft.azure.toolkit.lib.appservice.config.AppServiceConfig;
+import com.microsoft.azure.toolkit.lib.appservice.config.FunctionAppConfig;
+import com.microsoft.azure.toolkit.lib.appservice.config.RuntimeConfig;
 import com.microsoft.azure.toolkit.lib.appservice.entity.FunctionEntity;
-import com.microsoft.azure.toolkit.lib.appservice.model.DockerConfiguration;
 import com.microsoft.azure.toolkit.lib.appservice.model.FunctionDeployType;
 import com.microsoft.azure.toolkit.lib.appservice.model.JavaVersion;
 import com.microsoft.azure.toolkit.lib.appservice.model.OperatingSystem;
 import com.microsoft.azure.toolkit.lib.appservice.model.PricingTier;
-import com.microsoft.azure.toolkit.lib.appservice.model.Runtime;
 import com.microsoft.azure.toolkit.lib.appservice.model.WebContainer;
-import com.microsoft.azure.toolkit.lib.appservice.service.IAppServicePlan;
-import com.microsoft.azure.toolkit.lib.appservice.service.IAppServiceUpdater;
 import com.microsoft.azure.toolkit.lib.appservice.service.IFunctionApp;
 import com.microsoft.azure.toolkit.lib.appservice.service.IFunctionAppBase;
+import com.microsoft.azure.toolkit.lib.appservice.task.CreateOrUpdateFunctionAppTask;
+import com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigUtils;
 import com.microsoft.azure.toolkit.lib.auth.AzureAccount;
 import com.microsoft.azure.toolkit.lib.common.bundle.AzureString;
 import com.microsoft.azure.toolkit.lib.common.exception.AzureExecutionException;
 import com.microsoft.azure.toolkit.lib.common.exception.AzureToolkitRuntimeException;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
 import com.microsoft.azure.toolkit.lib.common.model.Region;
-import com.microsoft.azure.toolkit.lib.common.model.ResourceGroup;
 import com.microsoft.azure.toolkit.lib.common.utils.Utils;
-import com.microsoft.azure.toolkit.lib.legacy.function.configurations.FunctionExtensionVersion;
-import com.microsoft.azure.toolkit.lib.legacy.function.utils.FunctionUtils;
-import com.microsoft.azure.toolkit.lib.resource.AzureGroup;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.versioning.ComparableVersion;
@@ -50,11 +44,12 @@ import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import static com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigUtils.fromAppService;
+import static com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigUtils.mergeAppServiceConfig;
 
 /**
  * Deploy artifacts to target Azure Functions in Azure. If target Azure
@@ -103,13 +98,7 @@ public class DeployHandler {
     private static final String FUNCTION_JAVA_VERSION_KEY = "functionJavaVersion";
     private static final String DISABLE_APP_INSIGHTS_KEY = "disableAppInsights";
     private static final String JVM_UP_TIME = "jvmUpTime";
-    private static final String CREATE_NEW_APP_SERVICE_PLAN = "createNewAppServicePlan";
-    private static final String CREATE_NEW_FUNCTION_APP = "isCreateNewFunctionApp";
-    private static final String CREATE_APP_SERVICE_PLAN = "Creating app service plan...";
-    private static final String CREATE_APP_SERVICE_PLAN_DONE = "Successfully created app service plan %s.";
     private static final String CREATE_NEW_RESOURCE_GROUP = "createNewResourceGroup";
-    private static final String UPDATE_FUNCTION_APP = "Updating target Function App %s...";
-    private static final String UPDATE_FUNCTION_DONE = "Successfully updated Function App %s.";
     private static final String SKIP_DEPLOYMENT_FOR_DOCKER_APP_SERVICE = "Skip deployment for docker app service";
     private static final String LOCAL_SETTINGS_FILE = "local.settings.json";
     private static final String DEPLOY = "deploy";
@@ -153,17 +142,29 @@ public class DeployHandler {
     }
 
     public void execute() throws AzureExecutionException {
-
         TelemetryAgent.getInstance().addDefaultProperty(FUNCTION_JAVA_VERSION_KEY, String.valueOf(javaVersion()));
         TelemetryAgent.getInstance().addDefaultProperty(DISABLE_APP_INSIGHTS_KEY, String.valueOf(ctx.isDisableAppInsights()));
         doValidate();
-        final IFunctionApp app = createOrUpdateFunctionApp();
+        final IFunctionApp app = (IFunctionApp) createOrUpdateFunctionApp();
         if (app == null) {
             throw new AzureExecutionException(
                 String.format("Failed to get the function app with name: %s", ctx.getAppName()));
         }
         deployArtifact(app);
         listHTTPTriggerUrls(app);
+    }
+
+    private RuntimeConfig getRuntimeConfig() {
+        final GradleRuntimeConfig runtime = ctx.getRuntime();
+        if (runtime == null) {
+            return null;
+        }
+        final OperatingSystem os = Optional.ofNullable(runtime.os()).map(OperatingSystem::fromString).orElse(null);
+        final JavaVersion javaVersion = Optional.ofNullable(runtime.javaVersion()).map(JavaVersion::fromString).orElse(null);
+        final RuntimeConfig result = new RuntimeConfig().os(os).javaVersion(javaVersion).webContainer(WebContainer.JAVA_OFF)
+            .image(runtime.image()).registryUrl(runtime.registryUrl());
+        result.username(runtime.username()).password(runtime.password());
+        return result;
     }
 
     /**
@@ -275,13 +276,33 @@ public class DeployHandler {
         validateApplicationInsightsConfiguration();
     }
 
-    private IFunctionApp createOrUpdateFunctionApp() throws AzureExecutionException {
+    private IFunctionAppBase<?> createOrUpdateFunctionApp() throws AzureExecutionException {
         final IFunctionApp app = getFunctionApp();
-        if (!app.exists()) {
-            return createFunctionApp(app);
-        } else {
-            return updateFunctionApp(app);
+        final FunctionAppConfig functionConfig = (FunctionAppConfig) new FunctionAppConfig()
+            .disableAppInsights(ctx.isDisableAppInsights())
+            .appInsightsKey(ctx.getAppInsightsKey())
+            .appInsightsInstance(ctx.getAppInsightsInstance())
+            .subscriptionId(ctx.getSubscription())
+            .resourceGroup(ctx.getResourceGroup())
+            .appName(ctx.getAppName())
+            .servicePlanName(ctx.getAppServicePlanName())
+            .servicePlanResourceGroup(ctx.getAppServicePlanResourceGroup())
+            .deploymentSlotName(null) // gradle function plugin doesn't support deploy slot now
+            .deploymentSlotConfigurationSource(null)
+            .pricingTier(getParsedPricingTier())
+            .region(getParsedRegion())
+            .runtime(getRuntimeConfig())
+            .appSettings(ctx.getAppSettings());
+
+        boolean createFunctionApp = app.exists();
+        final AppServiceConfig defaultConfig = createFunctionApp ? buildDefaultConfig(functionConfig.subscriptionId(),
+            functionConfig.resourceGroup(), functionConfig.appName()) : fromAppService(app, app.plan());
+        mergeAppServiceConfig(functionConfig, defaultConfig);
+        if (!createFunctionApp && !functionConfig.disableAppInsights()) {
+            // fill ai key from existing app settings
+            functionConfig.appInsightsKey(app.entity().getAppSettings().get(CreateOrUpdateFunctionAppTask.APPINSIGHTS_INSTRUMENTATION_KEY));
         }
+        return new CreateOrUpdateFunctionAppTask(functionConfig).execute();
     }
 
     private void deployArtifact(IFunctionAppBase target) throws AzureExecutionException {
@@ -322,6 +343,7 @@ public class DeployHandler {
         } finally {
             final long endTime = System.currentTimeMillis();
             TelemetryAgent.getInstance().addDefaultProperty(String.format("%s-cost", name), String.valueOf(endTime - startTime));
+            TelemetryAgent.getInstance().addDefaultProperty(JVM_UP_TIME, String.valueOf(ManagementFactory.getRuntimeMXBean().getUptime()));
         }
     }
 
@@ -339,68 +361,10 @@ public class DeployHandler {
         return String.format(PORTAL_URL_PATTERN, getPortalUrl(environment), id);
     }
 
-    private IFunctionApp createFunctionApp(IFunctionApp functionApp) throws AzureExecutionException {
-        AzureMessager.getMessager().info(FUNCTION_APP_CREATE_START);
-        TelemetryAgent.getInstance().addDefaultProperty(CREATE_NEW_FUNCTION_APP, String.valueOf(true));
-
-        final ResourceGroup resourceGroup = getOrCreateResourceGroup(ctx.getResourceGroup(), ctx.getRegion());
-        final IAppServicePlan appServicePlan = getOrCreateAppServicePlan();
-        AzureMessager.getMessager().info(String.format(CREATE_FUNCTION_APP, ctx.getAppName()));
-        final Runtime runtime = getRuntimeOrDefault();
-        final Map appSettings = getAppSettingsWithDefaultValue();
-        // get/create ai instances only if user didn't specify ai connection string in app settings
-        bindApplicationInsights(appSettings, true);
-        final IFunctionApp result = (IFunctionApp) functionApp.create().withName(ctx.getAppName())
-            .withResourceGroup(resourceGroup.getName())
-            .withPlan(appServicePlan.id())
-            .withRuntime(runtime)
-            .withDockerConfiguration(getDockerConfiguration())
-            .withAppSettings(appSettings)
-            .commit();
-        AzureMessager.getMessager().info(String.format(CREATE_FUNCTION_APP_DONE, result.name()));
-        return result;
-    }
-
-    private DockerConfiguration getDockerConfiguration() {
-        GradleRuntimeConfig runtime = ctx.getRuntime();
-        final OperatingSystem os = Optional.ofNullable(runtime.os()).map(OperatingSystem::fromString).orElse(null);
-        if (os != OperatingSystem.DOCKER) {
-            return null;
-        }
-        return DockerConfiguration.builder()
-            .image(runtime.image())
-            .registryUrl(runtime.registryUrl())
-            .userName(runtime.username())
-            .password(runtime.password())
-            .build();
-    }
-
-    private IAppServicePlan getOrCreateAppServicePlan() {
-        final String servicePlanName = StringUtils.isEmpty(ctx.getAppServicePlanName()) ?
-            String.format("asp-%s", ctx.getAppName()) : ctx.getAppServicePlanName();
-        final String servicePlanGroup = StringUtils.firstNonBlank(ctx.getAppServicePlanResourceGroup(), ctx.getResourceGroup());
-        getOrCreateResourceGroup(servicePlanGroup, ctx.getRegion());
-        final IAppServicePlan appServicePlan = ctx.getOrCreateAzureAppServiceClient().appServicePlan(servicePlanGroup, servicePlanName);
-        if (!appServicePlan.exists()) {
-            AzureMessager.getMessager().info(CREATE_APP_SERVICE_PLAN);
-            TelemetryAgent.getInstance().addDefaultProperty(CREATE_NEW_APP_SERVICE_PLAN, String.valueOf(true));
-            appServicePlan.create()
-                .withName(servicePlanName)
-                .withResourceGroup(servicePlanGroup)
-                .withRegion(getParsedRegion())
-                .withPricingTier(getParsedPricingTier())
-                .withOperatingSystem(getRuntimeOrDefault().getOperatingSystem())
-                .commit();
-            AzureMessager.getMessager().info(String.format(CREATE_APP_SERVICE_PLAN_DONE, appServicePlan.name()));
-        }
-        return appServicePlan;
-    }
-
-    private Runtime getRuntimeOrDefault() {
-        final OperatingSystem os = Optional.ofNullable(ctx.getRuntime().os()).map(OperatingSystem::fromString).orElse(OperatingSystem.WINDOWS);
-        final JavaVersion javaVersion = Optional.ofNullable(ctx.getRuntime().javaVersion())
-            .map(JavaVersion::fromString).orElse(JavaVersion.JAVA_8);
-        return Runtime.getRuntime(os, WebContainer.JAVA_OFF, javaVersion);
+    private AppServiceConfig buildDefaultConfig(String subscriptionId, String resourceGroup, String appName) {
+        // get java version according to project java version
+        JavaVersion javaVersion = org.gradle.api.JavaVersion.current().isJava8() ? JavaVersion.JAVA_8 : JavaVersion.JAVA_11;
+        return AppServiceConfigUtils.buildDefaultFunctionConfig(subscriptionId, resourceGroup, appName, javaVersion);
     }
 
     private Region getParsedRegion() {
@@ -416,84 +380,12 @@ public class DeployHandler {
             .orElseThrow(() -> new AzureToolkitRuntimeException(String.format("Invalid pricing tier %s", pricingTier)));
     }
 
-    private static ResourceGroup getOrCreateResourceGroup(String resourceGroupName, String region) {
-        try {
-            return Azure.az(AzureGroup.class).getByName(resourceGroupName);
-        } catch (ManagementException e) {
-            if (e.getResponse().getStatusCode() != 404) {
-                throw e;
-            }
-            AzureMessager.getMessager().info(String.format(CREATE_RESOURCE_GROUP, resourceGroupName, region));
-            TelemetryAgent.getInstance().addDefaultProperty(CREATE_NEW_RESOURCE_GROUP, String.valueOf(true));
-            final ResourceGroup result = Azure.az(AzureGroup.class).create(resourceGroupName, region);
-            AzureMessager.getMessager().info(String.format(CREATE_RESOURCE_GROUP_DONE, result.getName()));
-            return result;
-        }
-    }
-
-    private Map<String, String> recordJvmUpTime(Map<String, String> properties) {
-        final long jvmUpTime = ManagementFactory.getRuntimeMXBean().getUptime();
-        properties.put(JVM_UP_TIME, String.valueOf(jvmUpTime));
-        return properties;
-    }
-
-    private IFunctionApp updateFunctionApp(final IFunctionApp functionApp) throws AzureExecutionException {
-        // Work around of https://github.com/Azure/azure-sdk-for-java/issues/1755
-        // update app service plan
-        AzureMessager.getMessager().info(String.format(UPDATE_FUNCTION_APP, functionApp.name()));
-        final IAppServicePlan currentPlan = functionApp.plan();
-        IAppServicePlan targetServicePlan = StringUtils.isEmpty(ctx.getAppServicePlanName()) ? currentPlan :
-            ctx.getOrCreateAzureAppServiceClient().appServicePlan(
-                StringUtils.firstNonBlank(ctx.getAppServicePlanResourceGroup(), ctx.getResourceGroup())
-                , ctx.getAppServicePlanName());
-        if (!targetServicePlan.exists()) {
-            targetServicePlan = getOrCreateAppServicePlan();
-        } else if (StringUtils.isNotEmpty(ctx.getPricingTier())) {
-            targetServicePlan.update().withPricingTier(getParsedPricingTier()).commit();
-        }
-
-        final Map<String, String> appSettings = getAppSettingsWithDefaultValue();
-
-        final IAppServiceUpdater<? extends IFunctionApp> update = functionApp.update();
-        if (ctx.isDisableAppInsights()) {
-            // Remove App Insights connection when `disableAppInsights` set to true
-            // Need to call `withoutAppSetting` as withAppSettings will only not remove parameters
-            update.withoutAppSettings(APPINSIGHTS_INSTRUMENTATION_KEY);
-        } else {
-            bindApplicationInsights(appSettings, false);
-        }
-
-        final IFunctionApp result = update.withPlan(targetServicePlan.id())
-            .withRuntime(getRuntime())
-            .withDockerConfiguration(getDockerConfiguration())
-            .withAppSettings(appSettings)
-            .commit();
-        AzureMessager.getMessager().info(String.format(UPDATE_FUNCTION_DONE, functionApp.name()));
-        return result;
-    }
-
-    private Runtime getRuntime() {
-        final GradleRuntimeConfig runtime = ctx.getRuntime();
-        if (StringUtils.isEmpty(runtime.os()) && StringUtils.isEmpty(runtime.javaVersion())) {
-            return null;
-        }
-        final OperatingSystem os = OperatingSystem.fromString(runtime.os());
-        final JavaVersion javaVersion = JavaVersion.fromString(runtime.javaVersion());
-        return Runtime.getRuntime(os, WebContainer.JAVA_OFF, javaVersion);
-    }
-
-    private void configureAppSettings(final Consumer<Map<String, String>> withAppSettings, final Map<String, String> appSettings) {
-        if (appSettings != null && !appSettings.isEmpty()) {
-            withAppSettings.accept(appSettings);
-        }
-    }
-
     protected void validateArtifactCompileVersion() throws AzureExecutionException {
-        final Runtime runtime = getRuntimeOrDefault();
-        if (runtime.isDocker()) {
+        final RuntimeConfig runtime = getRuntimeConfig();
+        if (runtime.os() == OperatingSystem.DOCKER) {
             return;
         }
-        final ComparableVersion runtimeVersion = new ComparableVersion(runtime.getJavaVersion().getValue());
+        final ComparableVersion runtimeVersion = new ComparableVersion(runtime.javaVersion().getValue());
         final File file = this.ctx.getProject().getArtifactFile().toFile();
         final ComparableVersion artifactVersion = new ComparableVersion(Utils.getArtifactCompileVersion(file));
         if (runtimeVersion.compareTo(artifactVersion) < 0) {
@@ -509,108 +401,9 @@ public class DeployHandler {
         return ctx.getOrCreateAzureAppServiceClient().functionApp(ctx.getResourceGroup(), ctx.getAppName());
     }
 
-    public FunctionExtensionVersion getFunctionExtensionVersion() throws AzureExecutionException {
-        final String extensionVersion = getAppSettingsWithDefaultValue().get(FUNCTIONS_EXTENSION_VERSION_NAME);
-        return FunctionUtils.parseFunctionExtensionVersion(extensionVersion);
-    }
-
-    public Map<String, String> getAppSettingsWithDefaultValue() {
-        final Map<String, String> settings = ctx.getAppSettings();
-        overrideDefaultAppSetting(settings, FUNCTIONS_WORKER_RUNTIME_NAME, SET_FUNCTIONS_WORKER_RUNTIME,
-            FUNCTIONS_WORKER_RUNTIME_VALUE, CHANGE_FUNCTIONS_WORKER_RUNTIME);
-        setDefaultAppSetting(settings, FUNCTIONS_EXTENSION_VERSION_NAME, SET_FUNCTIONS_EXTENSION_VERSION,
-            FUNCTIONS_EXTENSION_VERSION_VALUE);
-        return settings;
-    }
-
-    private void setDefaultAppSetting(Map<String, String> result, String settingName, String settingIsEmptyMessage,
-                                      String settingValue) {
-        final String setting = result.get(settingName);
-        if (StringUtils.isEmpty(setting)) {
-            AzureMessager.getMessager().info(settingIsEmptyMessage);
-            result.put(settingName, settingValue);
-        }
-    }
-
-    private void overrideDefaultAppSetting(Map<String, String> result, String settingName, String settingIsEmptyMessage,
-                                           String settingValue, String changeSettingMessage) {
-        final String setting = result.get(settingName);
-        if (StringUtils.isEmpty(setting)) {
-            AzureMessager.getMessager().info(settingIsEmptyMessage);
-        } else if (!setting.equals(settingValue)) {
-            AzureMessager.getMessager().warning(String.format(changeSettingMessage, setting));
-        }
-        result.put(settingName, settingValue);
-    }
-
-    /**
-     * Binding Function App with Application Insights
-     * Will follow the below sequence appInsightsKey -&gt; appInsightsInstance -&gt; Create New AI Instance (Function creation only)
-     *
-     * @param appSettings App settings map
-     * @param isCreation  Define the stage of function app, as we only create ai instance by default when create new function apps
-     * @throws AzureExecutionException When there are conflicts in configuration or meet errors while finding/creating application insights instance
-     */
-    private void bindApplicationInsights(Map<String, String> appSettings, boolean isCreation) throws AzureExecutionException {
-        // Skip app insights creation when user specify ai connection string in app settings
-        if (appSettings.containsKey(APPINSIGHTS_INSTRUMENTATION_KEY)) {
-            return;
-        }
-        final String instrumentationKey;
-        if (StringUtils.isNotEmpty(ctx.getAppInsightsKey())) {
-            instrumentationKey = ctx.getAppInsightsKey();
-            if (!Utils.isGUID(instrumentationKey)) {
-                throw new AzureExecutionException(INSTRUMENTATION_KEY_IS_NOT_VALID);
-            }
-        } else {
-            final ApplicationInsightsEntity applicationInsightsComponent = getOrCreateApplicationInsights(isCreation);
-            instrumentationKey = applicationInsightsComponent == null ? null : applicationInsightsComponent.getInstrumentationKey();
-        }
-        if (StringUtils.isNotEmpty(instrumentationKey)) {
-            appSettings.put(APPINSIGHTS_INSTRUMENTATION_KEY, instrumentationKey);
-        }
-    }
-
     private void validateApplicationInsightsConfiguration() {
         if (ctx.isDisableAppInsights() && (StringUtils.isNotEmpty(ctx.getAppInsightsKey()) || StringUtils.isNotEmpty(ctx.getAppInsightsInstance()))) {
             throw new AzureToolkitRuntimeException(APPLICATION_INSIGHTS_CONFIGURATION_CONFLICT);
-        }
-    }
-
-    private ApplicationInsightsEntity getOrCreateApplicationInsights(boolean enableCreation) {
-        return StringUtils.isNotEmpty(ctx.getAppInsightsInstance()) ? getApplicationInsights(ctx.getAppInsightsInstance()) :
-            enableCreation ? createApplicationInsights(ctx.getAppName()) : null;
-    }
-
-    private ApplicationInsightsEntity getApplicationInsights(String appInsightsInstance) {
-        ApplicationInsightsEntity resource;
-        try {
-            resource = Azure.az(ApplicationInsights.class).get(ctx.getResourceGroup(), appInsightsInstance);
-        } catch (ManagementException e) {
-            resource = null;
-        }
-        if (resource == null) {
-            AzureMessager.getMessager().warning(String.format(FAILED_TO_GET_APPLICATION_INSIGHTS, appInsightsInstance, ctx.getResourceGroup()));
-            return createApplicationInsights(appInsightsInstance);
-        }
-        return resource;
-    }
-
-    private ApplicationInsightsEntity createApplicationInsights(String name) {
-        if (ctx.isDisableAppInsights()) {
-            AzureMessager.getMessager().info(SKIP_CREATING_APPLICATION_INSIGHTS);
-            return null;
-        }
-        try {
-            AzureMessager.getMessager().info(APPLICATION_INSIGHTS_CREATE_START);
-            final AzureEnvironment environment = Azure.az(AzureAccount.class).account().getEnvironment();
-            final ApplicationInsightsEntity resource = Azure.az(ApplicationInsights.class)
-                .create(ctx.getResourceGroup(), Region.fromName(ctx.getRegion()), name);
-            AzureMessager.getMessager().info(String.format(APPLICATION_INSIGHTS_CREATED, resource.getName(), getPortalUrl(environment), resource.getId()));
-            return resource;
-        } catch (Exception e) {
-            AzureMessager.getMessager().warning(String.format(APPLICATION_INSIGHTS_CREATE_FAILED, e.getMessage()));
-            return null;
         }
     }
 
@@ -623,4 +416,5 @@ public class DeployHandler {
         }
         return azureEnvironment.getPortal();
     }
+
 }
