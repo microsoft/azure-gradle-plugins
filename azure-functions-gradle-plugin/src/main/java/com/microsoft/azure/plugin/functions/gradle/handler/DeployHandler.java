@@ -114,7 +114,7 @@ public class DeployHandler {
     private static final String INVALID_SERVICE_PLAN_NAME = "Invalid value for 'appServicePlanName', it need to match the pattern %s";
     private static final String INVALID_SERVICE_PLAN_RESOURCE_GROUP_NAME = "Invalid value for 'appServicePlanResourceGroup', " +
         "it only allow alphanumeric characters, periods, underscores, hyphens and parenthesis and cannot end in a period.";
-    private static final String INVALID_REGION = "The value of 'region' is not supported, please correct it in build.gradle.";
+    private static final String INVALID_REGION = "The region '%s' might not be correct.";
     private static final String EMPTY_IMAGE_NAME = "Please specify the 'image' under 'runtime' section in build.gradle.";
     private static final String INVALID_OS = "The value of 'os' is not correct, supported values are: 'windows', 'linux' and 'docker'.";
     private static final String INVALID_JAVA_VERSION = "Unsupported value %s for 'javaVersion' in build.gradle";
@@ -134,6 +134,11 @@ public class DeployHandler {
     private static final int LIST_TRIGGERS_RETRY_PERIOD_IN_SECONDS = 10;
     private static final String NO_TRIGGERS_FOUNDED = "No triggers found in deployed function app, " +
         "please try to deploy the project again.";
+    private static final String EXPANDABLE_JAVA_VERSION_WARNING = "'%s' may not be a valid java version, recommended values are `Java 8` and `Java 11`";
+    private static final String EXPANDABLE_PRICING_TIER_WARNING = "'%s' may not be a valid pricing tier, " +
+        "please refer to https://aka.ms/maven_function_configuration#supported-pricing-tiers for valid values";
+    private static final String EXPANDABLE_REGION_WARNING = "'%s' may not be a valid region, " +
+        "please refer to https://aka.ms/maven_function_configuration#supported-regions for valid values";
     private final IAppServiceContext ctx;
 
     public DeployHandler(IAppServiceContext ctx) {
@@ -210,10 +215,9 @@ public class DeployHandler {
                 .retryWhen(Retry.fixedDelay(LIST_TRIGGERS_MAX_RETRY - 1, Duration.ofSeconds(LIST_TRIGGERS_RETRY_PERIOD_IN_SECONDS))).block();
     }
 
-    protected void doValidate() throws AzureExecutionException {
+    protected void doValidate() {
         validateParameters();
         validateApplicationInsightsConfiguration();
-        validateArtifactCompileVersion();
     }
 
     protected void validateParameters() {
@@ -248,31 +252,28 @@ public class DeployHandler {
         }
 
         final String region = ctx.getRegion();
-        if (StringUtils.isNotEmpty(region) && Region.fromName(region) == null) {
+        if (StringUtils.isNotEmpty(region) && Region.fromName(region).isExpandedValue()) {
             // allow arbitrary region since the region can be changed
-            AzureMessager.getMessager().warning(INVALID_REGION);
+            AzureMessager.getMessager().warning(AzureString.format(EXPANDABLE_REGION_WARNING, region));
         }
 
         final GradleRuntimeConfig runtime = ctx.getRuntime();
-        // os
-        if (StringUtils.isNotEmpty(runtime.os()) && OperatingSystem.fromString(runtime.os()) == null) {
-            throw new AzureToolkitRuntimeException(INVALID_OS);
-        }
-        // java version
-        if (StringUtils.isNotEmpty(runtime.javaVersion()) && JavaVersion.fromString(runtime.javaVersion()) == JavaVersion.OFF) {
-            throw new AzureToolkitRuntimeException(String.format(INVALID_JAVA_VERSION, runtime.javaVersion()));
+        if (runtime != null) {
+            // os
+            if (StringUtils.isNotEmpty(runtime.os()) && OperatingSystem.fromString(runtime.os()) == null) {
+                throw new AzureToolkitRuntimeException(INVALID_OS);
+            }
+            // java version
+            if (StringUtils.isNotEmpty(runtime.javaVersion()) && JavaVersion.fromString(runtime.javaVersion()).isExpandedValue()) {
+                AzureMessager.getMessager().warning(AzureString.format(EXPANDABLE_JAVA_VERSION_WARNING, runtime.javaVersion()));
+            }
         }
 
         final String pricingTier = ctx.getPricingTier();
         // pricing tier
         if (StringUtils.isNotEmpty(pricingTier) && PricingTier.fromString(pricingTier) == null) {
-            throw new AzureToolkitRuntimeException(String.format(INVALID_PRICING_TIER, pricingTier));
+            throw new AzureToolkitRuntimeException(String.format(EXPANDABLE_PRICING_TIER_WARNING, pricingTier));
         }
-        // docker image
-        if (OperatingSystem.fromString(runtime.os()) == OperatingSystem.DOCKER && StringUtils.isEmpty(runtime.image())) {
-            throw new AzureToolkitRuntimeException(EMPTY_IMAGE_NAME);
-        }
-
         validateApplicationInsightsConfiguration();
     }
 
@@ -294,7 +295,7 @@ public class DeployHandler {
             .runtime(getRuntimeConfig())
             .appSettings(ctx.getAppSettings());
 
-        boolean createFunctionApp = app.exists();
+        boolean createFunctionApp = !app.exists();
         final AppServiceConfig defaultConfig = createFunctionApp ? buildDefaultConfig(functionConfig.subscriptionId(),
             functionConfig.resourceGroup(), functionConfig.appName()) : fromAppService(app, app.plan());
         mergeAppServiceConfig(functionConfig, defaultConfig);
@@ -302,6 +303,7 @@ public class DeployHandler {
             // fill ai key from existing app settings
             functionConfig.appInsightsKey(app.entity().getAppSettings().get(CreateOrUpdateFunctionAppTask.APPINSIGHTS_INSTRUMENTATION_KEY));
         }
+        validateArtifactCompileVersion(functionConfig.runtime());
         return new CreateOrUpdateFunctionAppTask(functionConfig).execute();
     }
 
@@ -380,8 +382,7 @@ public class DeployHandler {
             .orElseThrow(() -> new AzureToolkitRuntimeException(String.format("Invalid pricing tier %s", pricingTier)));
     }
 
-    protected void validateArtifactCompileVersion() throws AzureExecutionException {
-        final RuntimeConfig runtime = getRuntimeConfig();
+    protected void validateArtifactCompileVersion(RuntimeConfig runtime) throws AzureExecutionException {
         if (runtime.os() == OperatingSystem.DOCKER) {
             return;
         }
