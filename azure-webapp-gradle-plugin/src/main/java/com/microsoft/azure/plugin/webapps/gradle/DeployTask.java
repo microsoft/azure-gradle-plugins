@@ -109,6 +109,9 @@ public class DeployTask extends DefaultTask {
         AppServiceConfig defaultConfig = app.exists() ? fromAppService(app, app.plan()) : buildDefaultConfig(appServiceConfig.subscriptionId(),
             appServiceConfig.resourceGroup(), appServiceConfig.appName());
         mergeAppServiceConfig(appServiceConfig, defaultConfig);
+        if (appServiceConfig.pricingTier() == null) {
+            appServiceConfig.pricingTier(appServiceConfig.runtime().webContainer() == WebContainer.JBOSS_7 ? PricingTier.PREMIUM_P1V3 : PricingTier.PREMIUM_P1V2);
+        }
         CreateOrUpdateWebAppTask task = new CreateOrUpdateWebAppTask(appServiceConfig);
         task.setSkipCreateAzureResource(skipCreate);
         return task.execute();
