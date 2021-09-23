@@ -302,11 +302,7 @@ public class DeployHandler {
             // fill ai key from existing app settings
             functionConfig.appInsightsKey(app.entity().getAppSettings().get(CreateOrUpdateFunctionAppTask.APPINSIGHTS_INSTRUMENTATION_KEY));
         }
-        if (!createFunctionApp) {
-            return createFunctionApp(functionConfig);
-        } else {
-            return updateFunctionApp(functionConfig);
-        }
+        return new CreateOrUpdateFunctionAppTask(functionConfig).execute();
     }
 
     private void deployArtifact(IFunctionAppBase target) throws AzureExecutionException {
@@ -365,11 +361,6 @@ public class DeployHandler {
         return String.format(PORTAL_URL_PATTERN, getPortalUrl(environment), id);
     }
 
-    private IFunctionAppBase<?> createFunctionApp(FunctionAppConfig functionConfig) {
-        AzureMessager.getMessager().info(FUNCTION_APP_CREATE_START);
-        return new CreateOrUpdateFunctionAppTask(functionConfig).execute();
-    }
-
     private AppServiceConfig buildDefaultConfig(String subscriptionId, String resourceGroup, String appName) {
         // get java version according to project java version
         JavaVersion javaVersion = org.gradle.api.JavaVersion.current().isJava8() ? JavaVersion.JAVA_8 : JavaVersion.JAVA_11;
@@ -387,10 +378,6 @@ public class DeployHandler {
         }
         return Optional.ofNullable(PricingTier.fromString(pricingTier))
             .orElseThrow(() -> new AzureToolkitRuntimeException(String.format("Invalid pricing tier %s", pricingTier)));
-    }
-
-    private IFunctionApp updateFunctionApp(FunctionAppConfig functionAppConfig) {
-        return (IFunctionApp) new CreateOrUpdateFunctionAppTask(functionAppConfig).execute();
     }
 
     protected void validateArtifactCompileVersion() throws AzureExecutionException {
