@@ -161,10 +161,9 @@ public class DeployHandler {
         }
         final OperatingSystem os = Optional.ofNullable(runtime.os()).map(OperatingSystem::fromString).orElse(null);
         final JavaVersion javaVersion = Optional.ofNullable(runtime.javaVersion()).map(JavaVersion::fromString).orElse(null);
-        final RuntimeConfig result = new RuntimeConfig().os(os).javaVersion(javaVersion).webContainer(WebContainer.JAVA_OFF)
-            .image(runtime.image()).registryUrl(runtime.registryUrl());
-        result.username(runtime.username()).password(runtime.password());
-        return result;
+        return new RuntimeConfig().os(os).javaVersion(javaVersion).webContainer(WebContainer.JAVA_OFF)
+            .image(runtime.image()).registryUrl(runtime.registryUrl())
+            .username(runtime.username()).password(runtime.password());
     }
 
     /**

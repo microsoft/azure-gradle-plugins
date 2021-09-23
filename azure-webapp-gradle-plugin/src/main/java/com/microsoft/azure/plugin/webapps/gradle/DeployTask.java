@@ -34,6 +34,7 @@ import com.microsoft.azure.toolkit.lib.common.validator.ValidationMessage;
 import lombok.Setter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
@@ -104,10 +105,13 @@ public class DeployTask extends DefaultTask {
     private IWebApp createOrUpdateWebapp(GradleWebAppConfig config) {
         final AppServiceConfig appServiceConfig = convert(config);
         IWebApp app = Azure.az(AzureAppService.class).webapp(appServiceConfig.resourceGroup(), appServiceConfig.appName());
+        boolean skipCreate = BooleanUtils.toBoolean(System.getProperty("azure.resource.create.skip", "false"));
         AppServiceConfig defaultConfig = app.exists() ? fromAppService(app, app.plan()) : buildDefaultConfig(appServiceConfig.subscriptionId(),
             appServiceConfig.resourceGroup(), appServiceConfig.appName());
         mergeAppServiceConfig(appServiceConfig, defaultConfig);
-        return new CreateOrUpdateWebAppTask(appServiceConfig).execute();
+        CreateOrUpdateWebAppTask task = new CreateOrUpdateWebAppTask(appServiceConfig);
+        task.setSkipCreateAzureResource(skipCreate);
+        return task.execute();
     }
 
     private AppServiceConfig buildDefaultConfig(String subscriptionId, String resourceGroup, String appName) {
