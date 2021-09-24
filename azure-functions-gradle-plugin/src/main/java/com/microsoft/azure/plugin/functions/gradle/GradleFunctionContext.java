@@ -51,8 +51,8 @@ public class GradleFunctionContext implements IAppServiceContext {
     public AzureAppService getOrCreateAzureAppServiceClient() {
         if (appServiceClient == null) {
             try {
-                GradleAuthHelper.login(functionsExtension.getAuth(), functionsExtension.getSubscription());
-                appServiceClient = Azure.az(AzureAppService.class);
+                final String subscriptionId = GradleAuthHelper.login(functionsExtension.getAuth(), functionsExtension.getSubscription());
+                appServiceClient = Azure.az(AzureAppService.class).subscription(subscriptionId);
             } catch (AzureToolkitRuntimeException e) {
                 throw new AzureToolkitRuntimeException(String.format("Cannot authenticate due to error %s", e.getMessage()), e);
             }

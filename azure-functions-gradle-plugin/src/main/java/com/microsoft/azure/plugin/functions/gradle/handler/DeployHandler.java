@@ -57,48 +57,18 @@ import static com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigU
  */
 public class DeployHandler {
     private static final String PORTAL_URL_PATTERN = "%s/#@/resource%s";
-    private static final String FUNCTIONS_WORKER_RUNTIME_NAME = "FUNCTIONS_WORKER_RUNTIME";
-    private static final String FUNCTIONS_WORKER_RUNTIME_VALUE = "java";
-    private static final String SET_FUNCTIONS_WORKER_RUNTIME = "Set function worker runtime to java";
-    private static final String CHANGE_FUNCTIONS_WORKER_RUNTIME = "Function worker runtime doesn't " +
-        "meet the requirement, change it from %s to java";
-    private static final String FUNCTIONS_EXTENSION_VERSION_NAME = "FUNCTIONS_EXTENSION_VERSION";
-    private static final String FUNCTIONS_EXTENSION_VERSION_VALUE = "~3";
-    private static final String SET_FUNCTIONS_EXTENSION_VERSION = "Functions extension version " +
-        "isn't configured, setting up the default value";
     private static final String DEPLOY_START = "Trying to deploy the function app...";
     private static final String DEPLOY_FINISH =
         "Deployment done, you may access your resource through %s";
-    private static final String FUNCTION_APP_CREATE_START = "The specified function app does not exist. " +
-        "Creating a new function app...";
-    private static final String CREATE_FUNCTION_APP = "Creating function app %s...";
-    private static final String CREATE_FUNCTION_APP_DONE = "Successfully created function app %s.";
     private static final String UNKNOWN_DEPLOYMENT_TYPE = "The value of <deploymentType> is unknown, supported values are: " +
         "ftp, zip, msdeploy, run_from_blob and run_from_zip.";
-    private static final String APPINSIGHTS_INSTRUMENTATION_KEY = "APPINSIGHTS_INSTRUMENTATIONKEY";
     private static final String APPLICATION_INSIGHTS_CONFIGURATION_CONFLICT = "Contradictory configurations for application insights," +
         " specify 'appInsightsKey' or 'appInsightsInstance' if you want to enable it, and specify " +
         "'disableAppInsights=true' if you want to disable it.";
-    private static final String FAILED_TO_GET_APPLICATION_INSIGHTS = "The application insights %s cannot be found, " +
-        "will create it in resource group %s.";
-
-    private static final String SKIP_CREATING_APPLICATION_INSIGHTS = "Skip creating application insights";
-    private static final String APPLICATION_INSIGHTS_CREATE_START = "Creating application insights...";
-    private static final String APPLICATION_INSIGHTS_CREATED = "Successfully created the application insights %s " +
-        "for this Function App. You can visit %s/#@/resource%s/overview to view your " +
-        "Application Insights component.";
-    private static final String APPLICATION_INSIGHTS_CREATE_FAILED = "Unable to create the Application Insights " +
-        "for the Function App due to error %s. Please use the Azure Portal to manually create and configure the " +
-        "Application Insights if needed.";
-    private static final String INSTRUMENTATION_KEY_IS_NOT_VALID = "Instrumentation key is not valid, " +
-        "please update the application insights configuration";
-    private static final String CREATE_RESOURCE_GROUP = "Creating resource group %s in region %s...";
-    private static final String CREATE_RESOURCE_GROUP_DONE = "Successfully created resource group %s.";
 
     private static final String FUNCTION_JAVA_VERSION_KEY = "functionJavaVersion";
     private static final String DISABLE_APP_INSIGHTS_KEY = "disableAppInsights";
     private static final String JVM_UP_TIME = "jvmUpTime";
-    private static final String CREATE_NEW_RESOURCE_GROUP = "createNewResourceGroup";
     private static final String SKIP_DEPLOYMENT_FOR_DOCKER_APP_SERVICE = "Skip deployment for docker app service";
     private static final String LOCAL_SETTINGS_FILE = "local.settings.json";
     private static final String DEPLOY = "deploy";
@@ -114,11 +84,7 @@ public class DeployHandler {
     private static final String INVALID_SERVICE_PLAN_NAME = "Invalid value for 'appServicePlanName', it need to match the pattern %s";
     private static final String INVALID_SERVICE_PLAN_RESOURCE_GROUP_NAME = "Invalid value for 'appServicePlanResourceGroup', " +
         "it only allow alphanumeric characters, periods, underscores, hyphens and parenthesis and cannot end in a period.";
-    private static final String INVALID_REGION = "The value of 'region' is not supported, please correct it in build.gradle.";
-    private static final String EMPTY_IMAGE_NAME = "Please specify the 'image' under 'runtime' section in build.gradle.";
     private static final String INVALID_OS = "The value of 'os' is not correct, supported values are: 'windows', 'linux' and 'docker'.";
-    private static final String INVALID_JAVA_VERSION = "Unsupported value %s for 'javaVersion' in build.gradle";
-    private static final String INVALID_PRICING_TIER = "Unsupported value %s for 'pricingTier' in build.gradle";
     private static final String FAILED_TO_LIST_TRIGGERS = "Deployment succeeded, but failed to list http trigger urls.";
     private static final int LIST_TRIGGERS_MAX_RETRY = 5;
     private static final String ARTIFACT_INCOMPATIBLE = "Your function app artifact compile version is higher than the java version in function host, " +
@@ -134,6 +100,11 @@ public class DeployHandler {
     private static final int LIST_TRIGGERS_RETRY_PERIOD_IN_SECONDS = 10;
     private static final String NO_TRIGGERS_FOUNDED = "No triggers found in deployed function app, " +
         "please try to deploy the project again.";
+    private static final String EXPANDABLE_JAVA_VERSION_WARNING = "'%s' may not be a valid java version, recommended values are `Java 8` and `Java 11`";
+    private static final String EXPANDABLE_PRICING_TIER_WARNING = "'%s' may not be a valid pricing tier, " +
+        "please refer to https://aka.ms/maven_function_configuration#supported-pricing-tiers for valid values";
+    private static final String EXPANDABLE_REGION_WARNING = "'%s' may not be a valid region, " +
+        "please refer to https://aka.ms/maven_function_configuration#supported-regions for valid values";
     private final IAppServiceContext ctx;
 
     public DeployHandler(IAppServiceContext ctx) {
@@ -210,10 +181,9 @@ public class DeployHandler {
                 .retryWhen(Retry.fixedDelay(LIST_TRIGGERS_MAX_RETRY - 1, Duration.ofSeconds(LIST_TRIGGERS_RETRY_PERIOD_IN_SECONDS))).block();
     }
 
-    protected void doValidate() throws AzureExecutionException {
+    protected void doValidate() {
         validateParameters();
         validateApplicationInsightsConfiguration();
-        validateArtifactCompileVersion();
     }
 
     protected void validateParameters() {
@@ -248,31 +218,28 @@ public class DeployHandler {
         }
 
         final String region = ctx.getRegion();
-        if (StringUtils.isNotEmpty(region) && Region.fromName(region) == null) {
+        if (StringUtils.isNotEmpty(region) && Region.fromName(region).isExpandedValue()) {
             // allow arbitrary region since the region can be changed
-            AzureMessager.getMessager().warning(INVALID_REGION);
+            AzureMessager.getMessager().warning(AzureString.format(EXPANDABLE_REGION_WARNING, region));
         }
 
         final GradleRuntimeConfig runtime = ctx.getRuntime();
-        // os
-        if (StringUtils.isNotEmpty(runtime.os()) && OperatingSystem.fromString(runtime.os()) == null) {
-            throw new AzureToolkitRuntimeException(INVALID_OS);
-        }
-        // java version
-        if (StringUtils.isNotEmpty(runtime.javaVersion()) && JavaVersion.fromString(runtime.javaVersion()) == JavaVersion.OFF) {
-            throw new AzureToolkitRuntimeException(String.format(INVALID_JAVA_VERSION, runtime.javaVersion()));
+        if (runtime != null) {
+            // os
+            if (StringUtils.isNotEmpty(runtime.os()) && OperatingSystem.fromString(runtime.os()) == null) {
+                throw new AzureToolkitRuntimeException(INVALID_OS);
+            }
+            // java version
+            if (StringUtils.isNotEmpty(runtime.javaVersion()) && JavaVersion.fromString(runtime.javaVersion()).isExpandedValue()) {
+                AzureMessager.getMessager().warning(AzureString.format(EXPANDABLE_JAVA_VERSION_WARNING, runtime.javaVersion()));
+            }
         }
 
         final String pricingTier = ctx.getPricingTier();
         // pricing tier
         if (StringUtils.isNotEmpty(pricingTier) && PricingTier.fromString(pricingTier) == null) {
-            throw new AzureToolkitRuntimeException(String.format(INVALID_PRICING_TIER, pricingTier));
+            throw new AzureToolkitRuntimeException(String.format(EXPANDABLE_PRICING_TIER_WARNING, pricingTier));
         }
-        // docker image
-        if (OperatingSystem.fromString(runtime.os()) == OperatingSystem.DOCKER && StringUtils.isEmpty(runtime.image())) {
-            throw new AzureToolkitRuntimeException(EMPTY_IMAGE_NAME);
-        }
-
         validateApplicationInsightsConfiguration();
     }
 
@@ -282,7 +249,7 @@ public class DeployHandler {
             .disableAppInsights(ctx.isDisableAppInsights())
             .appInsightsKey(ctx.getAppInsightsKey())
             .appInsightsInstance(ctx.getAppInsightsInstance())
-            .subscriptionId(ctx.getSubscription())
+            .subscriptionId(ctx.getOrCreateAzureAppServiceClient().getDefaultSubscription().getId())
             .resourceGroup(ctx.getResourceGroup())
             .appName(ctx.getAppName())
             .servicePlanName(ctx.getAppServicePlanName())
@@ -294,7 +261,7 @@ public class DeployHandler {
             .runtime(getRuntimeConfig())
             .appSettings(ctx.getAppSettings());
 
-        boolean createFunctionApp = app.exists();
+        boolean createFunctionApp = !app.exists();
         final AppServiceConfig defaultConfig = createFunctionApp ? buildDefaultConfig(functionConfig.subscriptionId(),
             functionConfig.resourceGroup(), functionConfig.appName()) : fromAppService(app, app.plan());
         mergeAppServiceConfig(functionConfig, defaultConfig);
@@ -302,6 +269,7 @@ public class DeployHandler {
             // fill ai key from existing app settings
             functionConfig.appInsightsKey(app.entity().getAppSettings().get(CreateOrUpdateFunctionAppTask.APPINSIGHTS_INSTRUMENTATION_KEY));
         }
+        validateArtifactCompileVersion(functionConfig.runtime());
         return new CreateOrUpdateFunctionAppTask(functionConfig).execute();
     }
 
@@ -380,8 +348,7 @@ public class DeployHandler {
             .orElseThrow(() -> new AzureToolkitRuntimeException(String.format("Invalid pricing tier %s", pricingTier)));
     }
 
-    protected void validateArtifactCompileVersion() throws AzureExecutionException {
-        final RuntimeConfig runtime = getRuntimeConfig();
+    protected void validateArtifactCompileVersion(RuntimeConfig runtime) throws AzureExecutionException {
         if (runtime.os() == OperatingSystem.DOCKER) {
             return;
         }
