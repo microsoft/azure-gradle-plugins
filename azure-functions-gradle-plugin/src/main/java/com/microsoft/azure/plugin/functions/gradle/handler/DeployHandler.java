@@ -69,7 +69,6 @@ public class DeployHandler {
     private static final String FUNCTION_JAVA_VERSION_KEY = "functionJavaVersion";
     private static final String DISABLE_APP_INSIGHTS_KEY = "disableAppInsights";
     private static final String JVM_UP_TIME = "jvmUpTime";
-    private static final String CREATE_NEW_RESOURCE_GROUP = "createNewResourceGroup";
     private static final String SKIP_DEPLOYMENT_FOR_DOCKER_APP_SERVICE = "Skip deployment for docker app service";
     private static final String LOCAL_SETTINGS_FILE = "local.settings.json";
     private static final String DEPLOY = "deploy";
@@ -250,7 +249,7 @@ public class DeployHandler {
             .disableAppInsights(ctx.isDisableAppInsights())
             .appInsightsKey(ctx.getAppInsightsKey())
             .appInsightsInstance(ctx.getAppInsightsInstance())
-            .subscriptionId(ctx.getSubscription())
+            .subscriptionId(ctx.getOrCreateAzureAppServiceClient().getDefaultSubscription().getId())
             .resourceGroup(ctx.getResourceGroup())
             .appName(ctx.getAppName())
             .servicePlanName(ctx.getAppServicePlanName())
