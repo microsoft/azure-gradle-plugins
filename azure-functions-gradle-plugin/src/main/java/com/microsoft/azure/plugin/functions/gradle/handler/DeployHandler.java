@@ -264,7 +264,7 @@ public class DeployHandler {
         final AppServiceConfig defaultConfig = createFunctionApp ? buildDefaultConfig(functionConfig.subscriptionId(),
             functionConfig.resourceGroup(), functionConfig.appName()) : fromAppService(app, app.plan());
         mergeAppServiceConfig(functionConfig, defaultConfig);
-        if (!createFunctionApp && !functionConfig.disableAppInsights()) {
+        if (!createFunctionApp && !functionConfig.disableAppInsights() && StringUtils.isBlank(functionConfig.appInsightsKey())) {
             // fill ai key from existing app settings
             functionConfig.appInsightsKey(app.entity().getAppSettings().get(CreateOrUpdateFunctionAppTask.APPINSIGHTS_INSTRUMENTATION_KEY));
         }
