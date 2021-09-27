@@ -335,13 +335,13 @@ public class DeployHandler {
     }
 
     private Region getParsedRegion() {
-        return Optional.ofNullable(ctx.getRegion()).map(Region::fromName).orElse(Region.US_WEST);
+        return Optional.ofNullable(ctx.getRegion()).map(Region::fromName).orElse(null);
     }
 
     private PricingTier getParsedPricingTier() {
         String pricingTier = ctx.getPricingTier();
         if (StringUtils.isEmpty(pricingTier)) {
-            return PricingTier.CONSUMPTION;
+            return null;
         }
         return Optional.ofNullable(PricingTier.fromString(pricingTier))
             .orElseThrow(() -> new AzureToolkitRuntimeException(String.format("Invalid pricing tier %s", pricingTier)));
