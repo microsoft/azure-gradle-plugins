@@ -44,6 +44,7 @@ import javax.annotation.Nullable;
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -110,7 +111,8 @@ public class DeployTask extends DefaultTask {
             appServiceConfig.resourceGroup(), appServiceConfig.appName());
         mergeAppServiceConfig(appServiceConfig, defaultConfig);
         if (appServiceConfig.pricingTier() == null) {
-            appServiceConfig.pricingTier(appServiceConfig.runtime().webContainer() == WebContainer.JBOSS_7 ? PricingTier.PREMIUM_P1V3 : PricingTier.PREMIUM_P1V2);
+            appServiceConfig.pricingTier(
+                StringUtils.containsIgnoreCase(Objects.toString(appServiceConfig.runtime().webContainer()), "jboss") ? PricingTier.PREMIUM_P1V3 : PricingTier.PREMIUM_P1V2);
         }
         CreateOrUpdateWebAppTask task = new CreateOrUpdateWebAppTask(appServiceConfig);
         task.setSkipCreateAzureResource(skipCreate);
