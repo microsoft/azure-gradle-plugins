@@ -341,7 +341,7 @@ public class DeployHandler {
     private PricingTier getParsedPricingTier() {
         String pricingTier = ctx.getPricingTier();
         if (StringUtils.isEmpty(pricingTier)) {
-            return PricingTier.CONSUMPTION;
+            return null;
         }
         return Optional.ofNullable(PricingTier.fromString(pricingTier))
             .orElseThrow(() -> new AzureToolkitRuntimeException(String.format("Invalid pricing tier %s", pricingTier)));
