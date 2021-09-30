@@ -1,7 +1,8 @@
 # Change Log
 All notable changes to the "Azure Function Plugin for Gradle" will be documented in this file.
 - [Change Log](#change-log)
-  - [1.7.0](#160)
+  - [1.8.0](#180)  
+  - [1.7.0](#170)
   - [1.6.0](#160)
   - [1.5.0](#150)
   - [1.4.0](#140)
@@ -9,6 +10,10 @@ All notable changes to the "Azure Function Plugin for Gradle" will be documented
   - [1.2.0](#120)
   - [1.1.0](#110)
   - [1.0.0](#100)
+
+## 1.8.0
+- Support default value for region/pricing tier/javaVersion [#1755](https://github.com/microsoft/azure-maven-plugins/pull/1761)
+- Fix warning message of `illegal reflective access from groovy` [#1763](https://github.com/microsoft/azure-maven-plugins/pull/1763)
 
 ## 1.7.0
 - Support [proxy](https://github.com/microsoft/azure-gradle-plugins/wiki/Proxy) with credential
