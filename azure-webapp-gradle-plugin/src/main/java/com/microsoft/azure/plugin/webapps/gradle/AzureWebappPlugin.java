@@ -8,6 +8,8 @@ package com.microsoft.azure.plugin.webapps.gradle;
 import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
 import com.microsoft.azure.gradle.util.GradleAzureMessager;
 import com.microsoft.azure.toolkit.lib.appservice.model.OperatingSystem;
+import com.microsoft.azure.toolkit.lib.common.cache.CacheEvict;
+import com.microsoft.azure.toolkit.lib.common.cache.CacheManager;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.ObjectUtils;
@@ -24,6 +26,7 @@ import org.gradle.api.tasks.TaskOutputs;
 import org.gradle.api.tasks.TaskProvider;
 
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 
 public class AzureWebappPlugin implements Plugin<Project> {
     public static final String GRADLE_PLUGIN_NAME = "azure-webapp-gradle-plugin";
@@ -38,6 +41,12 @@ public class AzureWebappPlugin implements Plugin<Project> {
         String pluginVersion = StringUtils.firstNonBlank(AzureWebappPlugin.class.getPackage().getImplementationVersion(), "develop");
         TelemetryAgent.getInstance().initTelemetry(GRADLE_PLUGIN_NAME, pluginVersion, BooleanUtils.isNotFalse(extension.getAllowTelemetry()));
         TelemetryAgent.getInstance().showPrivacyStatement();
+
+        try {
+            CacheManager.evictCache(CacheEvict.ALL, CacheEvict.ALL);
+        } catch (ExecutionException e) {
+            //ignore
+        }
         final TaskContainer tasks = project.getTasks();
 
         final TaskProvider<DeployTask> deployTask = tasks.register("azureWebAppDeploy", DeployTask.class, task -> {

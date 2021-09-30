@@ -12,6 +12,8 @@ import com.microsoft.azure.plugin.functions.gradle.task.LocalRunTask;
 import com.microsoft.azure.plugin.functions.gradle.task.PackageTask;
 import com.microsoft.azure.plugin.functions.gradle.task.PackageZipTask;
 import com.microsoft.azure.toolkit.lib.Azure;
+import com.microsoft.azure.toolkit.lib.common.cache.CacheEvict;
+import com.microsoft.azure.toolkit.lib.common.cache.CacheManager;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -19,6 +21,8 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
+
+import java.util.concurrent.ExecutionException;
 
 public class AzureFunctionsPlugin implements Plugin<Project> {
     public static final String GRADLE_PLUGIN_NAME = "azure-functions-gradle-plugin";
@@ -34,6 +38,12 @@ public class AzureFunctionsPlugin implements Plugin<Project> {
             StringUtils.firstNonBlank(AzureFunctionsPlugin.class.getPackage().getImplementationVersion(), "develop"), // default version: develop
             BooleanUtils.isNotFalse(extension.getAllowTelemetry()));
         TelemetryAgent.getInstance().showPrivacyStatement();
+
+        try {
+            CacheManager.evictCache(CacheEvict.ALL, CacheEvict.ALL);
+        } catch (ExecutionException e) {
+            //ignore
+        }
 
         Azure.az().config().setLogLevel(HttpLogDetailLevel.NONE.name());
         Azure.az().config().setUserAgent(TelemetryAgent.getInstance().getUserAgent());
