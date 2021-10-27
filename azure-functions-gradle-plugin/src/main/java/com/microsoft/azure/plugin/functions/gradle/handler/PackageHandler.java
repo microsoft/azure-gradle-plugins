@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.base.Preconditions;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.microsoft.azure.toolkit.lib.common.IProject;
@@ -45,6 +46,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
 
@@ -80,6 +82,7 @@ public class PackageHandler {
     private static final BindingEnum[] FUNCTION_WITHOUT_FUNCTION_EXTENSION = { BindingEnum.HttpOutput,
         BindingEnum.HttpTrigger };
     private static final String EXTENSION_BUNDLE_ID = "Microsoft.Azure.Functions.ExtensionBundle";
+    private static final String EXTENSION_BUNDLE_PREVIEW_ID = "Microsoft.Azure.Functions.ExtensionBundle.Preview";
     private static final String SKIP_INSTALL_EXTENSIONS_BUNDLE = "Extension bundle specified, skip install extension";
     private static final String DEFAULT_LOCAL_SETTINGS_JSON = "{ \"IsEncrypted\": false, \"Values\": " +
         "{ \"FUNCTIONS_WORKER_RUNTIME\": \"java\" } }";
@@ -308,9 +311,11 @@ public class PackageHandler {
 
     private boolean isInstallingExtensionNeeded(Set<BindingEnum> bindingTypes) {
         final JsonObject hostJson = readHostJson();
-        final JsonObject extensionBundle = hostJson == null ? null : hostJson.getAsJsonObject(EXTENSION_BUNDLE);
-        if (extensionBundle != null && extensionBundle.has("id") &&
-            StringUtils.equalsIgnoreCase(extensionBundle.get("id").getAsString(), EXTENSION_BUNDLE_ID)) {
+        final String extensionBundleId = Optional.ofNullable(hostJson)
+                .map(host -> host.getAsJsonObject(EXTENSION_BUNDLE))
+                .map(extensionBundle -> extensionBundle.get("id"))
+                .map(JsonElement::getAsString).orElse(null);
+        if (StringUtils.equalsAnyIgnoreCase(extensionBundleId, EXTENSION_BUNDLE_ID, EXTENSION_BUNDLE_PREVIEW_ID)) {
             AzureMessager.getMessager().info(SKIP_INSTALL_EXTENSIONS_BUNDLE);
             return false;
         }
