@@ -5,7 +5,6 @@
 package com.microsoft.azure.plugin.functions.gradle.task;
 
 import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
-import com.microsoft.azure.plugin.functions.gradle.AzureFunctionsExtension;
 import com.microsoft.azure.plugin.functions.gradle.GradleFunctionContext;
 import com.microsoft.azure.plugin.functions.gradle.util.FunctionUtils;
 import com.microsoft.azure.toolkit.lib.appservice.utils.FunctionCliResolver;
@@ -13,15 +12,14 @@ import com.microsoft.azure.toolkit.lib.legacy.function.utils.CommandUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.GradleException;
-import org.gradle.api.tasks.Exec;
-import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
+import org.gradle.process.ExecOperations;
 
-import javax.annotation.Nullable;
+import javax.inject.Inject;
 import java.io.File;
 
-public class LocalRunTask extends Exec implements IFunctionTask {
+public abstract class LocalRunTask extends AbstractAzureTask {
 
     private static final String FUNC_CORE_CLI_NOT_FOUND = "Cannot run functions locally due to error: Azure Functions Core Tools can not be found.";
 
@@ -34,30 +32,18 @@ public class LocalRunTask extends Exec implements IFunctionTask {
     @Option(option = "enableDebug", description = "Enable debug when running functions")
     private Boolean enableDebug;
 
-    @Nullable
-    private AzureFunctionsExtension functionsExtension;
-
-    public IFunctionTask setFunctionsExtension(final AzureFunctionsExtension functionsExtension) {
-        this.functionsExtension = functionsExtension;
-        return this;
-    }
-
-    @Nested
-    @Nullable
-    public AzureFunctionsExtension getFunctionsExtension() {
-        return functionsExtension;
-    }
-
     public void setEnableDebug(Boolean enableDebug) {
         this.enableDebug = enableDebug;
     }
 
+    @Inject
+    protected abstract ExecOperations getExecOperations();
+
     @TaskAction
-    @Override
     public void exec() {
         try {
             TelemetryAgent.getInstance().trackTaskStart(this.getClass());
-            final GradleFunctionContext ctx = new GradleFunctionContext(getProject(), this.getFunctionsExtension());
+            final GradleFunctionContext ctx = createContext();
             final String cliExec = FunctionCliResolver.resolveFunc();
             if (StringUtils.isEmpty(cliExec)) {
                 throw new GradleException(FUNC_CORE_CLI_NOT_FOUND);
@@ -65,17 +51,17 @@ public class LocalRunTask extends Exec implements IFunctionTask {
 
             final String stagingFolder = ctx.getDeploymentStagingDirectoryPath();
             FunctionUtils.checkStagingDirectory(stagingFolder);
+            int code = getExecOperations().exec(spec -> {
+                if (BooleanUtils.isTrue(this.enableDebug) || StringUtils.isNotEmpty(ctx.getLocalDebugConfig())) {
+                    spec.commandLine(cliExec, "host", "start", "--language-worker", "--",
+                            getDebugJvmArgument(ctx.getLocalDebugConfig()));
+                } else {
+                    spec.commandLine(cliExec, "host", "start");
+                }
+                spec.setWorkingDir(new File(stagingFolder));
+                spec.setIgnoreExitValue(true);
+            }).getExitValue();
 
-            if (BooleanUtils.isTrue(this.enableDebug) || StringUtils.isNotEmpty(ctx.getLocalDebugConfig())) {
-                this.commandLine(cliExec, "host", "start", "--language-worker", "--",
-                    getDebugJvmArgument(ctx.getLocalDebugConfig()));
-            } else {
-                this.commandLine(cliExec, "host", "start");
-            }
-            this.setWorkingDir(new File(stagingFolder));
-            this.setIgnoreExitValue(true);
-            super.exec();
-            final int code = this.getExecResult().getExitValue();
             for (final Long validCode : CommandUtils.getValidReturnCodes()) {
                 if (validCode != null && validCode.intValue() == code) {
                     TelemetryAgent.getInstance().trackTaskSuccess(this.getClass());

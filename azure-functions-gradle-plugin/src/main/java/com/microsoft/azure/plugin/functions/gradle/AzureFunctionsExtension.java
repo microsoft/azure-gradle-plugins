@@ -9,16 +9,21 @@ import com.microsoft.azure.gradle.auth.GradleAuthConfig;
 import com.microsoft.azure.gradle.configuration.GradleRuntimeConfig;
 import com.microsoft.azure.plugin.functions.gradle.configuration.deploy.Deployment;
 import groovy.lang.Closure;
+import org.gradle.api.Named;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
 
 import javax.annotation.Nullable;
+import javax.inject.Inject;
 import java.util.HashMap;
 import java.util.Map;
 
 
-public class AzureFunctionsExtension {
+public abstract class AzureFunctionsExtension implements Named {
+
+    private final String binaryName;
 
     @Nullable
     private Boolean allowTelemetry;
@@ -68,7 +73,10 @@ public class AzureFunctionsExtension {
     @Nullable
     private Boolean disableAppInsights;
 
-    public AzureFunctionsExtension(Project project) {
+    @Inject
+    public AzureFunctionsExtension(String name, Project project) {
+        this.binaryName = name;
+        this.appName = name;
         this.project = project;
     }
 
@@ -239,5 +247,11 @@ public class AzureFunctionsExtension {
 
     public void setDisableAppInsights(@Nullable Boolean disableAppInsights) {
         this.disableAppInsights = disableAppInsights;
+    }
+
+    @Override
+    @Internal
+    public String getName() {
+        return binaryName;
     }
 }

@@ -18,7 +18,7 @@ public class AzureFunctionsExtensionTest {
     public void setUp() {
         fakeProject = ProjectBuilder.builder().build();
         testExtension = fakeProject.getExtensions().create("azurefunctions", AzureFunctionsExtension.class,
-                fakeProject);
+                "test", fakeProject);
 
     }
 
