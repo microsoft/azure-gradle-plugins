@@ -17,7 +17,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.Project;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
-import org.gradle.api.provider.Property;
 
 import java.io.File;
 import java.nio.file.Paths;
@@ -36,7 +35,6 @@ public class GradleFunctionContext implements IAppServiceContext {
     private static final String GRADLE_PLUGIN_POSTFIX = "-gradle-plugin";
     private final JavaProject javaProject;
     private final AzureFunctionsExtension functionsExtension;
-    private final Property<String> binaryName;
     private File stagingDirectory;
     private Map<String, String> appSettings;
     private AzureAppService appServiceClient;
@@ -44,11 +42,9 @@ public class GradleFunctionContext implements IAppServiceContext {
     public GradleFunctionContext(Project project,
                                  ConfigurableFileCollection runtimeClasspath,
                                  RegularFileProperty archiveFile,
-                                 Property<String> binaryName,
                                  AzureFunctionsExtension functionsExtension) {
         this.functionsExtension = functionsExtension;
         this.javaProject = GradleProjectUtils.convert(project.getLayout(), runtimeClasspath, archiveFile);
-        this.binaryName = binaryName;
     }
 
     @Override
@@ -77,7 +73,7 @@ public class GradleFunctionContext implements IAppServiceContext {
                     final String outputFolder = AzureFunctionsPlugin.GRADLE_PLUGIN_NAME.replaceAll(GRADLE_PLUGIN_POSTFIX, "");
 
                     final String stagingDirectoryPath = Paths.get(this.javaProject.getBuildDirectory().toString(),
-                        outputFolder, binaryName.get()).toString();
+                        outputFolder, functionsExtension.getName()).toString();
 
                     stagingDirectory = new File(stagingDirectoryPath);
                     // If staging directory doesn't exist, create one and delete it on exit
