@@ -15,6 +15,9 @@ import com.microsoft.azure.toolkit.lib.common.exception.AzureToolkitRuntimeExcep
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.Project;
+import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.Property;
 
 import java.io.File;
 import java.nio.file.Paths;
@@ -31,15 +34,21 @@ public class GradleFunctionContext implements IAppServiceContext {
     private static final String FUNCTION_REGION_KEY = "region";
     private static final String FUNCTION_PRICING_KEY = "pricingTier";
     private static final String GRADLE_PLUGIN_POSTFIX = "-gradle-plugin";
+    private final JavaProject javaProject;
+    private final AzureFunctionsExtension functionsExtension;
+    private final Property<String> binaryName;
     private File stagingDirectory;
-    private JavaProject javaProject;
-    private AzureFunctionsExtension functionsExtension;
     private Map<String, String> appSettings;
     private AzureAppService appServiceClient;
 
-    public GradleFunctionContext(Project project, AzureFunctionsExtension functionsExtension) {
+    public GradleFunctionContext(Project project,
+                                 ConfigurableFileCollection runtimeClasspath,
+                                 RegularFileProperty archiveFile,
+                                 Property<String> binaryName,
+                                 AzureFunctionsExtension functionsExtension) {
         this.functionsExtension = functionsExtension;
-        this.javaProject = GradleProjectUtils.convert(project);
+        this.javaProject = GradleProjectUtils.convert(project.getLayout(), runtimeClasspath, archiveFile);
+        this.binaryName = binaryName;
     }
 
     @Override
@@ -68,7 +77,7 @@ public class GradleFunctionContext implements IAppServiceContext {
                     final String outputFolder = AzureFunctionsPlugin.GRADLE_PLUGIN_NAME.replaceAll(GRADLE_PLUGIN_POSTFIX, "");
 
                     final String stagingDirectoryPath = Paths.get(this.javaProject.getBuildDirectory().toString(),
-                        outputFolder, this.functionsExtension.getAppName()).toString();
+                        outputFolder, binaryName.get()).toString();
 
                     stagingDirectory = new File(stagingDirectoryPath);
                     // If staging directory doesn't exist, create one and delete it on exit

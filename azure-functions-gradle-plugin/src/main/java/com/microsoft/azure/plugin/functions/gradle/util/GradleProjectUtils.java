@@ -5,50 +5,36 @@
 package com.microsoft.azure.plugin.functions.gradle.util;
 
 import com.microsoft.azure.plugin.functions.gradle.JavaProject;
-import org.gradle.api.Project;
-import org.gradle.api.file.FileCollection;
-import org.gradle.api.plugins.BasePluginConvention;
-import org.gradle.api.plugins.JavaPluginConvention;
-import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.ProjectLayout;
+import org.gradle.api.file.RegularFileProperty;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Convert a Gradle project to a common project
  */
 public class GradleProjectUtils {
-    private static final String MAIN_SOURCE_SET_NAME = "main";
 
-    public static JavaProject convert(final Project project) {
-        final JavaPluginConvention javaPluginConvention = project.getConvention().getPlugin(JavaPluginConvention.class);
-        Objects.requireNonNull(javaPluginConvention, "Project " + project.getName() + " is not java project.");
-
-        final SourceSet mainSourceSet = javaPluginConvention.getSourceSets().getByName(MAIN_SOURCE_SET_NAME);
-
-        final FileCollection classesOutputDirectories = mainSourceSet.getOutput().getClassesDirs().filter(File::exists);
-        final Path resourcesOutputDirectory = Objects.requireNonNull(mainSourceSet.getOutput().getResourcesDir()).toPath();
-        final FileCollection allFiles = mainSourceSet.getRuntimeClasspath().filter(File::exists);
-
-        final FileCollection allDependencies = allFiles.minus(classesOutputDirectories)
-            .filter(file -> !file.toPath().equals(resourcesOutputDirectory));
+    public static JavaProject convert(ProjectLayout layout, ConfigurableFileCollection runtimeClasspath, RegularFileProperty archive) {
         final JavaProject func = new JavaProject();
-        func.setBaseDirectory(project.getProjectDir().toPath());
-        func.setBuildDirectory(project.getBuildDir().toPath());
+        func.setBaseDirectory(layout.getProjectDirectory().getAsFile().toPath());
+        func.setBuildDirectory(layout.getBuildDirectory().get().getAsFile().toPath());
+        Path archivePath = archive.get().getAsFile().toPath();
         final List<Path> dependencies = new ArrayList<>();
         func.setDependencies(dependencies);
 
-        for (final File dependency : allDependencies) {
-            dependencies.add(dependency.toPath());
+        for (final File dependency : runtimeClasspath.getFiles()) {
+            Path dependencyPath = dependency.toPath();
+            if (!dependencyPath.equals(archivePath)) {
+                dependencies.add(dependencyPath);
+            }
         }
 
-        final BasePluginConvention basePlugin = project.getConvention().getPlugin(BasePluginConvention.class);
-        func.setArtifactFile(Paths.get(project.getBuildDir().getAbsolutePath(), basePlugin.getLibsDirName(),
-            basePlugin.getArchivesBaseName() + "-" + project.getVersion() + ".jar"));
+        func.setArtifactFile(archivePath);
         return func;
     }
 }

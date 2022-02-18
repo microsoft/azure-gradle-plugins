@@ -7,6 +7,7 @@ package com.microsoft.azure.plugin.functions.gradle;
 import com.azure.core.http.policy.HttpLogDetailLevel;
 import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
 import com.microsoft.azure.gradle.util.GradleAzureMessager;
+import com.microsoft.azure.plugin.functions.gradle.task.AbstractAzureTask;
 import com.microsoft.azure.plugin.functions.gradle.task.DeployTask;
 import com.microsoft.azure.plugin.functions.gradle.task.LocalRunTask;
 import com.microsoft.azure.plugin.functions.gradle.task.PackageTask;
@@ -19,8 +20,10 @@ import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
+import org.gradle.api.tasks.bundling.Jar;
 
 import java.util.concurrent.ExecutionException;
 
@@ -30,6 +33,7 @@ public class AzureFunctionsPlugin implements Plugin<Project> {
 
     @Override
     public void apply(final Project project) {
+        project.getPluginManager().apply(JavaPlugin.class);
         AzureMessager.setDefaultMessager(new GradleAzureMessager(project.getLogger()));
         final AzureFunctionsExtension extension = project.getExtensions().create(GRADLE_FUNCTION_EXTENSION,
                 AzureFunctionsExtension.class, project);
@@ -53,32 +57,36 @@ public class AzureFunctionsPlugin implements Plugin<Project> {
         final TaskProvider<PackageTask> packageTask = tasks.register("azureFunctionsPackage", PackageTask.class, task -> {
             task.setGroup("AzureFunctions");
             task.setDescription("Package current project to staging folder.");
-            task.setFunctionsExtension(extension);
+            configureDefaults(project, task, extension);
         });
 
         final TaskProvider<PackageZipTask> packageZipTask = tasks.register("azureFunctionsPackageZip", PackageZipTask.class, task -> {
             task.setGroup("AzureFunctions");
             task.setDescription("Package current project to staging folder.");
-            task.setFunctionsExtension(extension);
+            configureDefaults(project, task, extension);
+            task.dependsOn(packageTask);
         });
 
         final TaskProvider<LocalRunTask> runTask = tasks.register("azureFunctionsRun", LocalRunTask.class, task -> {
             task.setGroup("AzureFunctions");
             task.setDescription("Builds a local folder structure ready to run on azure functions environment.");
-            task.setFunctionsExtension(extension);
+            configureDefaults(project, task, extension);
+            task.dependsOn(packageTask);
         });
 
         final TaskProvider<DeployTask> deployTask = tasks.register("azureFunctionsDeploy", DeployTask.class, task -> {
             task.setGroup("AzureFunctions");
             task.setDescription("Deploy current project to azure cloud.");
-            task.setFunctionsExtension(extension);
+            configureDefaults(project, task, extension);
+            task.dependsOn(packageTask);
         });
 
-        project.afterEvaluate(projectAfterEvaluation -> {
-            packageTask.configure(task -> task.dependsOn("jar"));
-            packageZipTask.configure(task -> task.dependsOn(packageTask));
-            runTask.configure(task -> task.dependsOn(packageTask));
-            deployTask.configure(task -> task.dependsOn(packageTask));
-        });
+    }
+
+    private void configureDefaults(Project project, AbstractAzureTask task, AzureFunctionsExtension extension) {
+        task.setFunctionsExtension(extension);
+        task.getClasspath().from(project.getConfigurations().getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME));
+        task.getArchiveFile().convention(project.getTasks().named("jar", Jar.class).flatMap(Jar::getArchiveFile));
+        task.getBinaryName().convention(project.getProviders().provider(extension::getAppName));
     }
 }
