@@ -21,8 +21,8 @@ import com.microsoft.azure.toolkit.lib.appservice.model.JavaVersion;
 import com.microsoft.azure.toolkit.lib.appservice.model.OperatingSystem;
 import com.microsoft.azure.toolkit.lib.appservice.model.PricingTier;
 import com.microsoft.azure.toolkit.lib.appservice.model.WebContainer;
-import com.microsoft.azure.toolkit.lib.appservice.service.IFunctionApp;
 import com.microsoft.azure.toolkit.lib.appservice.service.IFunctionAppBase;
+import com.microsoft.azure.toolkit.lib.appservice.service.impl.FunctionApp;
 import com.microsoft.azure.toolkit.lib.appservice.task.CreateOrUpdateFunctionAppTask;
 import com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigUtils;
 import com.microsoft.azure.toolkit.lib.auth.AzureAccount;
@@ -116,7 +116,7 @@ public class DeployHandler {
         TelemetryAgent.getInstance().addDefaultProperty(FUNCTION_JAVA_VERSION_KEY, String.valueOf(javaVersion()));
         TelemetryAgent.getInstance().addDefaultProperty(DISABLE_APP_INSIGHTS_KEY, String.valueOf(ctx.isDisableAppInsights()));
         doValidate();
-        final IFunctionApp app = (IFunctionApp) createOrUpdateFunctionApp();
+        final FunctionApp app = (FunctionApp) createOrUpdateFunctionApp();
         if (app == null) {
             throw new AzureExecutionException(
                 String.format("Failed to get the function app with name: %s", ctx.getAppName()));
@@ -141,7 +141,7 @@ public class DeployHandler {
      * List anonymous HTTP Triggers url after deployment
      * @param target the target function
      */
-    protected void listHTTPTriggerUrls(IFunctionApp target) {
+    protected void listHTTPTriggerUrls(FunctionApp target) {
         try {
             final List<FunctionEntity> triggers = listFunctions(target);
             final List<FunctionEntity> httpFunction = triggers.stream()
@@ -167,7 +167,7 @@ public class DeployHandler {
         }
     }
 
-    private List<FunctionEntity> listFunctions(final IFunctionApp functionApp) {
+    private List<FunctionEntity> listFunctions(final FunctionApp functionApp) {
         final int[] count = {0};
         return Mono.fromCallable(() -> {
             final AzureString message = count[0]++ == 0 ?
@@ -243,7 +243,7 @@ public class DeployHandler {
     }
 
     private IFunctionAppBase<?> createOrUpdateFunctionApp() throws AzureExecutionException {
-        final IFunctionApp app = getFunctionApp();
+        final FunctionApp app = getFunctionApp();
         final FunctionAppConfig functionConfig = (FunctionAppConfig) new FunctionAppConfig()
             .disableAppInsights(ctx.isDisableAppInsights())
             .appInsightsKey(ctx.getAppInsightsKey())
@@ -363,7 +363,7 @@ public class DeployHandler {
         return Objects.isNull(ctx.getRuntime()) ? null : JavaVersion.fromString(ctx.getRuntime().javaVersion());
     }
 
-    public IFunctionApp getFunctionApp() {
+    public FunctionApp getFunctionApp() {
         return ctx.getOrCreateAzureAppServiceClient().functionApp(ctx.getResourceGroup(), ctx.getAppName());
     }
 

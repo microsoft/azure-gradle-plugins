@@ -11,7 +11,7 @@ import com.microsoft.azure.gradle.configuration.GradleRuntimeConfig;
 import com.microsoft.azure.gradle.configuration.GradleWebAppConfig;
 import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
 import com.microsoft.azure.toolkit.lib.Azure;
-import com.microsoft.azure.toolkit.lib.appservice.AzureAppService;
+import com.microsoft.azure.toolkit.lib.appservice.AzureWebApp;
 import com.microsoft.azure.toolkit.lib.appservice.config.AppServiceConfig;
 import com.microsoft.azure.toolkit.lib.appservice.config.RuntimeConfig;
 import com.microsoft.azure.toolkit.lib.appservice.model.JavaVersion;
@@ -19,7 +19,7 @@ import com.microsoft.azure.toolkit.lib.appservice.model.OperatingSystem;
 import com.microsoft.azure.toolkit.lib.appservice.model.PricingTier;
 import com.microsoft.azure.toolkit.lib.appservice.model.WebAppArtifact;
 import com.microsoft.azure.toolkit.lib.appservice.model.WebContainer;
-import com.microsoft.azure.toolkit.lib.appservice.service.IWebApp;
+import com.microsoft.azure.toolkit.lib.appservice.service.impl.WebApp;
 import com.microsoft.azure.toolkit.lib.appservice.task.CreateOrUpdateWebAppTask;
 import com.microsoft.azure.toolkit.lib.appservice.task.DeployWebAppTask;
 import com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigUtils;
@@ -70,7 +70,7 @@ public class DeployTask extends DefaultTask {
         validate(config);
         config.subscriptionId(GradleAuthHelper.login(azureWebappExtension.getAuth(), config.subscriptionId()));
         validateOnline(config);
-        final IWebApp target = createOrUpdateWebapp(config);
+        final WebApp target = createOrUpdateWebapp(config);
         deployArtifact(target, config);
     }
 
@@ -84,7 +84,7 @@ public class DeployTask extends DefaultTask {
         }
     }
 
-    private void deployArtifact(IWebApp target, GradleWebAppConfig config) {
+    private void deployArtifact(WebApp target, GradleWebAppConfig config) {
         new DeployWebAppTask(target, config.webAppArtifacts()).execute();
     }
 
@@ -103,9 +103,9 @@ public class DeployTask extends DefaultTask {
         validateConfiguration(message -> AzureMessager.getMessager().error(message.getMessage()), config);
     }
 
-    private IWebApp createOrUpdateWebapp(GradleWebAppConfig config) {
+    private WebApp createOrUpdateWebapp(GradleWebAppConfig config) {
         final AppServiceConfig appServiceConfig = convert(config);
-        IWebApp app = Azure.az(AzureAppService.class).webapp(appServiceConfig.resourceGroup(), appServiceConfig.appName());
+        WebApp app = Azure.az(AzureWebApp.class).get(appServiceConfig.resourceGroup(), appServiceConfig.appName());
         boolean skipCreate = BooleanUtils.toBoolean(System.getProperty("azure.resource.create.skip", "false"));
         AppServiceConfig defaultConfig = app.exists() ? fromAppService(app, app.plan()) : buildDefaultConfig(appServiceConfig.subscriptionId(),
             appServiceConfig.resourceGroup(), appServiceConfig.appName());
