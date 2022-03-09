@@ -5,6 +5,7 @@
 package com.microsoft.azure.plugin.functions.gradle;
 
 import com.azure.core.http.policy.HttpLogDetailLevel;
+import com.microsoft.azure.gradle.common.GradleAzureTaskManager;
 import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
 import com.microsoft.azure.gradle.util.GradleAzureMessager;
 import com.microsoft.azure.plugin.functions.gradle.task.DeployTask;
@@ -15,6 +16,7 @@ import com.microsoft.azure.toolkit.lib.Azure;
 import com.microsoft.azure.toolkit.lib.common.cache.CacheEvict;
 import com.microsoft.azure.toolkit.lib.common.cache.CacheManager;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
+import com.microsoft.azure.toolkit.lib.common.task.AzureTaskManager;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.Plugin;
@@ -30,6 +32,7 @@ public class AzureFunctionsPlugin implements Plugin<Project> {
 
     @Override
     public void apply(final Project project) {
+        AzureTaskManager.register(new GradleAzureTaskManager());
         AzureMessager.setDefaultMessager(new GradleAzureMessager(project.getLogger()));
         final AzureFunctionsExtension extension = project.getExtensions().create(GRADLE_FUNCTION_EXTENSION,
                 AzureFunctionsExtension.class, project);
