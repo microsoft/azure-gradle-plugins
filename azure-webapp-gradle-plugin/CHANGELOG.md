@@ -1,9 +1,13 @@
 # Change Log
 All notable changes to the "Azure WebApp Plugin for Gradle" will be documented in this file.
 - [Change Log](#change-log)
+  - [1.3.0](#130)
   - [1.2.0](#120)
   - [1.1.0](#110)
   - [1.0.0](#100)
+
+## 1.3.0
+- Support Tomcat 10.0 and Java SE 17 runtime
 
 ## 1.2.0
 - Support default value for region/pricing tier/webContainer/javaVersion [#1755](https://github.com/microsoft/azure-maven-plugins/pull/1755)
