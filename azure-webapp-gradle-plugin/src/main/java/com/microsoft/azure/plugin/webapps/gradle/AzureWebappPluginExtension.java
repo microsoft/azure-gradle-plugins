@@ -6,6 +6,7 @@
 package com.microsoft.azure.plugin.webapps.gradle;
 
 import com.microsoft.azure.gradle.auth.GradleAuthConfig;
+import com.microsoft.azure.gradle.configuration.GradleDeploymentSlotConfig;
 import com.microsoft.azure.gradle.configuration.GradleRuntimeConfig;
 import groovy.lang.Closure;
 import org.gradle.api.Project;
@@ -37,6 +38,8 @@ public class AzureWebappPluginExtension {
     private GradleAuthConfig auth;
 
     private GradleRuntimeConfig runtime;
+
+    private GradleDeploymentSlotConfig deploymentSlot;
 
     private Map<String, String> appSettings;
 
@@ -137,6 +140,16 @@ public class AzureWebappPluginExtension {
     @Optional
     public Boolean isDisableAppInsights() {
         return disableAppInsights;
+    }
+
+    @Input
+    @Optional
+    public GradleDeploymentSlotConfig getDeploymentSlot() {
+        return deploymentSlot;
+    }
+
+    public void setDeploymentSlot(GradleDeploymentSlotConfig deploymentSlot) {
+        this.deploymentSlot = deploymentSlot;
     }
 
     public void setAllowTelemetry(Boolean allowTelemetry) {

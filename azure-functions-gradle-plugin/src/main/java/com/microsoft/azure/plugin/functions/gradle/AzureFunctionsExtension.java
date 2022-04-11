@@ -6,6 +6,7 @@
 package com.microsoft.azure.plugin.functions.gradle;
 
 import com.microsoft.azure.gradle.auth.GradleAuthConfig;
+import com.microsoft.azure.gradle.configuration.GradleDeploymentSlotConfig;
 import com.microsoft.azure.gradle.configuration.GradleRuntimeConfig;
 import com.microsoft.azure.plugin.functions.gradle.configuration.deploy.Deployment;
 import groovy.lang.Closure;
@@ -54,6 +55,8 @@ public class AzureFunctionsExtension {
 
     @Nullable
     private GradleRuntimeConfig runtime;
+
+    private GradleDeploymentSlotConfig deploymentSlot;
 
     private Map<String, String> appSettings;
 
@@ -165,6 +168,16 @@ public class AzureFunctionsExtension {
     @Optional
     public Boolean isDisableAppInsights() {
         return disableAppInsights;
+    }
+
+    @Input
+    @Optional
+    public GradleDeploymentSlotConfig getDeploymentSlot() {
+        return deploymentSlot;
+    }
+
+    public void setDeploymentSlot(GradleDeploymentSlotConfig deploymentSlot) {
+        this.deploymentSlot = deploymentSlot;
     }
 
     public void setAllowTelemetry(Boolean allowTelemetry) {

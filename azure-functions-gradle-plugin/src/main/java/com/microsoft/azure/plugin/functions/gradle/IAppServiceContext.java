@@ -41,6 +41,10 @@ public interface IAppServiceContext {
 
     String getAppInsightsKey();
 
+    String getDeploymentSlotName();
+
+    String getDeploymentSlotConfigurationSource();
+
     boolean isDisableAppInsights();
 
     IProject getProject();

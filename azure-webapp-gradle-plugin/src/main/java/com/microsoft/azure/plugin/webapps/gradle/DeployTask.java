@@ -7,6 +7,7 @@ package com.microsoft.azure.plugin.webapps.gradle;
 
 import com.azure.core.http.policy.HttpLogDetailLevel;
 import com.microsoft.azure.gradle.auth.GradleAuthHelper;
+import com.microsoft.azure.gradle.configuration.GradleDeploymentSlotConfig;
 import com.microsoft.azure.gradle.configuration.GradleRuntimeConfig;
 import com.microsoft.azure.gradle.configuration.GradleWebAppConfig;
 import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
@@ -170,6 +171,9 @@ public class DeployTask extends DefaultTask {
         config.appSettings(ctx.getAppSettings());
         config.servicePlanName(ctx.getAppServicePlanName());
         config.servicePlanResourceGroup(ctx.getAppServicePlanResourceGroup());
+        config.deploymentSlotName(Optional.ofNullable(ctx.getDeploymentSlot()).map(GradleDeploymentSlotConfig::getName).orElse(null));
+        config.deploymentSlotConfigurationSource(Optional.ofNullable(ctx.getDeploymentSlot())
+                .map(GradleDeploymentSlotConfig::getConfigurationSource).orElse(null));
         if (StringUtils.isNotBlank(this.artifactFile)) {
             File file = new File(this.artifactFile);
             if (!file.exists()) {

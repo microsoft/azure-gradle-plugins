@@ -6,6 +6,7 @@ package com.microsoft.azure.plugin.functions.gradle;
 
 import com.microsoft.azure.gradle.auth.GradleAuthConfig;
 import com.microsoft.azure.gradle.auth.GradleAuthHelper;
+import com.microsoft.azure.gradle.configuration.GradleDeploymentSlotConfig;
 import com.microsoft.azure.gradle.configuration.GradleRuntimeConfig;
 import com.microsoft.azure.plugin.functions.gradle.util.GradleProjectUtils;
 import com.microsoft.azure.toolkit.lib.Azure;
@@ -21,6 +22,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class GradleFunctionContext implements IAppServiceContext {
@@ -31,9 +33,9 @@ public class GradleFunctionContext implements IAppServiceContext {
     private static final String FUNCTION_REGION_KEY = "region";
     private static final String FUNCTION_PRICING_KEY = "pricingTier";
     private static final String GRADLE_PLUGIN_POSTFIX = "-gradle-plugin";
-    private File stagingDirectory;
-    private JavaProject javaProject;
-    private AzureFunctionsExtension functionsExtension;
+    private volatile File stagingDirectory;
+    private final JavaProject javaProject;
+    private final AzureFunctionsExtension functionsExtension;
     private Map<String, String> appSettings;
     private AzureAppService appServiceClient;
 
@@ -155,6 +157,16 @@ public class GradleFunctionContext implements IAppServiceContext {
     @Override
     public String getAppInsightsKey() {
         return functionsExtension.getAppInsightsKey();
+    }
+
+    @Override
+    public String getDeploymentSlotName() {
+        return Optional.ofNullable(functionsExtension.getDeploymentSlot()).map(GradleDeploymentSlotConfig::getName).orElse(null);
+    }
+
+    @Override
+    public String getDeploymentSlotConfigurationSource() {
+        return Optional.ofNullable(functionsExtension.getDeploymentSlot()).map(GradleDeploymentSlotConfig::getConfigurationSource).orElse(null);
     }
 
     @Override

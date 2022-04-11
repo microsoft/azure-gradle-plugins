@@ -253,8 +253,8 @@ public class DeployHandler {
             .appName(ctx.getAppName())
             .servicePlanName(ctx.getAppServicePlanName())
             .servicePlanResourceGroup(ctx.getAppServicePlanResourceGroup())
-            .deploymentSlotName(null) // gradle function plugin doesn't support deploy slot now
-            .deploymentSlotConfigurationSource(null)
+            .deploymentSlotName(ctx.getDeploymentSlotName()) // gradle function plugin doesn't support deploy slot now
+            .deploymentSlotConfigurationSource(ctx.getDeploymentSlotConfigurationSource())
             .pricingTier(getParsedPricingTier())
             .region(getParsedRegion())
             .runtime(getRuntimeConfig())
