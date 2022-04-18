@@ -56,6 +56,7 @@ public class AzureFunctionsExtension {
     @Nullable
     private GradleRuntimeConfig runtime;
 
+    @Nullable
     private GradleDeploymentSlotConfig deploymentSlot;
 
     private Map<String, String> appSettings;
@@ -176,10 +177,6 @@ public class AzureFunctionsExtension {
         return deploymentSlot;
     }
 
-    public void setDeploymentSlot(GradleDeploymentSlotConfig deploymentSlot) {
-        this.deploymentSlot = deploymentSlot;
-    }
-
     public void setAllowTelemetry(Boolean allowTelemetry) {
         this.allowTelemetry = allowTelemetry;
     }
@@ -223,6 +220,11 @@ public class AzureFunctionsExtension {
     public void setRuntime(Closure closure) {
         runtime = new GradleRuntimeConfig();
         project.configure(runtime, closure);
+    }
+
+    public void setDeploymentSlot(Closure closure) {
+        deploymentSlot = new GradleDeploymentSlotConfig();
+        project.configure(deploymentSlot, closure);
     }
 
     public void setAppServicePlanName(String appServicePlanName) {

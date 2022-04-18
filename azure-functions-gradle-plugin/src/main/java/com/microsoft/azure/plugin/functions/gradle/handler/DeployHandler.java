@@ -10,19 +10,20 @@ import com.google.common.base.Preconditions;
 import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.gradle.configuration.GradleRuntimeConfig;
 import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
-import com.microsoft.azure.plugin.functions.gradle.IAppServiceContext;
+import com.microsoft.azure.plugin.functions.gradle.GradleFunctionContext;
 import com.microsoft.azure.toolkit.lib.Azure;
 import com.microsoft.azure.toolkit.lib.appservice.config.AppServiceConfig;
 import com.microsoft.azure.toolkit.lib.appservice.config.FunctionAppConfig;
 import com.microsoft.azure.toolkit.lib.appservice.config.RuntimeConfig;
 import com.microsoft.azure.toolkit.lib.appservice.entity.FunctionEntity;
+import com.microsoft.azure.toolkit.lib.appservice.function.FunctionApp;
+import com.microsoft.azure.toolkit.lib.appservice.function.FunctionAppBase;
 import com.microsoft.azure.toolkit.lib.appservice.model.FunctionDeployType;
 import com.microsoft.azure.toolkit.lib.appservice.model.JavaVersion;
 import com.microsoft.azure.toolkit.lib.appservice.model.OperatingSystem;
 import com.microsoft.azure.toolkit.lib.appservice.model.PricingTier;
+import com.microsoft.azure.toolkit.lib.appservice.model.Runtime;
 import com.microsoft.azure.toolkit.lib.appservice.model.WebContainer;
-import com.microsoft.azure.toolkit.lib.appservice.service.IFunctionAppBase;
-import com.microsoft.azure.toolkit.lib.appservice.service.impl.FunctionApp;
 import com.microsoft.azure.toolkit.lib.appservice.task.CreateOrUpdateFunctionAppTask;
 import com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigUtils;
 import com.microsoft.azure.toolkit.lib.auth.AzureAccount;
@@ -40,6 +41,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
 
+import javax.annotation.Nonnull;
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.time.Duration;
@@ -72,7 +74,6 @@ public class DeployHandler {
     private static final String SKIP_DEPLOYMENT_FOR_DOCKER_APP_SERVICE = "Skip deployment for docker app service";
     private static final String LOCAL_SETTINGS_FILE = "local.settings.json";
     private static final String DEPLOY = "deploy";
-    private static final String RUNNING = "Running";
     private static final String APP_NAME_PATTERN = "[a-zA-Z0-9\\-]{2,60}";
     private static final String RESOURCE_GROUP_PATTERN = "[a-zA-Z0-9._\\-()]{1,90}";
     private static final String APP_SERVICE_PLAN_NAME_PATTERN = "[a-zA-Z0-9\\-]{1,40}";
@@ -105,9 +106,9 @@ public class DeployHandler {
         "please refer to https://aka.ms/maven_function_configuration#supported-pricing-tiers for valid values";
     private static final String EXPANDABLE_REGION_WARNING = "'%s' may not be a valid region, " +
         "please refer to https://aka.ms/maven_function_configuration#supported-regions for valid values";
-    private final IAppServiceContext ctx;
+    private final GradleFunctionContext ctx;
 
-    public DeployHandler(IAppServiceContext ctx) {
+    public DeployHandler(final GradleFunctionContext ctx) {
         Preconditions.checkNotNull(ctx);
         this.ctx = ctx;
     }
@@ -116,13 +117,11 @@ public class DeployHandler {
         TelemetryAgent.getInstance().addDefaultProperty(FUNCTION_JAVA_VERSION_KEY, String.valueOf(javaVersion()));
         TelemetryAgent.getInstance().addDefaultProperty(DISABLE_APP_INSIGHTS_KEY, String.valueOf(ctx.isDisableAppInsights()));
         doValidate();
-        final FunctionApp app = (FunctionApp) createOrUpdateFunctionApp();
-        if (app == null) {
-            throw new AzureExecutionException(
-                String.format("Failed to get the function app with name: %s", ctx.getAppName()));
-        }
+        final FunctionAppBase<?, ?, ?> app = createOrUpdateFunctionApp();
         deployArtifact(app);
-        listHTTPTriggerUrls(app);
+        if (app instanceof FunctionApp) {
+            listHTTPTriggerUrls((FunctionApp) app);
+        }
     }
 
     private RuntimeConfig getRuntimeConfig() {
@@ -173,7 +172,7 @@ public class DeployHandler {
             final AzureString message = count[0]++ == 0 ?
                     AzureString.fromString(SYNCING_TRIGGERS) : AzureString.format(SYNCING_TRIGGERS_WITH_RETRY, count[0], LIST_TRIGGERS_MAX_RETRY);
             AzureMessager.getMessager().info(message);
-            return Optional.ofNullable(functionApp.listFunctions(true))
+            return Optional.of(functionApp.listFunctions(true))
                     .filter(CollectionUtils::isNotEmpty)
                     .orElseThrow(() -> new AzureToolkitRuntimeException(NO_TRIGGERS_FOUNDED));
         }).subscribeOn(Schedulers.boundedElastic())
@@ -242,13 +241,14 @@ public class DeployHandler {
         validateApplicationInsightsConfiguration();
     }
 
-    private IFunctionAppBase<?> createOrUpdateFunctionApp() throws AzureExecutionException {
+    @Nonnull
+    private FunctionAppBase<?, ?, ?> createOrUpdateFunctionApp() throws AzureExecutionException {
         final FunctionApp app = getFunctionApp();
         final FunctionAppConfig functionConfig = (FunctionAppConfig) new FunctionAppConfig()
             .disableAppInsights(ctx.isDisableAppInsights())
             .appInsightsKey(ctx.getAppInsightsKey())
             .appInsightsInstance(ctx.getAppInsightsInstance())
-            .subscriptionId(ctx.getOrCreateAzureAppServiceClient().getDefaultSubscription().getId())
+            .subscriptionId(ctx.getOrCreateAzureAppServiceClient().getSubscriptionId())
             .resourceGroup(ctx.getResourceGroup())
             .appName(ctx.getAppName())
             .servicePlanName(ctx.getAppServicePlanName())
@@ -260,20 +260,23 @@ public class DeployHandler {
             .runtime(getRuntimeConfig())
             .appSettings(ctx.getAppSettings());
 
-        boolean createFunctionApp = !app.exists();
+        final boolean createFunctionApp = Optional.ofNullable(app).map(function -> !function.exists()).orElse(true);
         final AppServiceConfig defaultConfig = createFunctionApp ? buildDefaultConfig(functionConfig.subscriptionId(),
-            functionConfig.resourceGroup(), functionConfig.appName()) : fromAppService(app, app.plan());
+            functionConfig.resourceGroup(), functionConfig.appName()) : fromAppService(app, Objects.requireNonNull(app.getAppServicePlan()));
         mergeAppServiceConfig(functionConfig, defaultConfig);
         if (!createFunctionApp && !functionConfig.disableAppInsights() && StringUtils.isBlank(functionConfig.appInsightsKey())) {
             // fill ai key from existing app settings
-            functionConfig.appInsightsKey(app.entity().getAppSettings().get(CreateOrUpdateFunctionAppTask.APPINSIGHTS_INSTRUMENTATION_KEY));
+            final String aiKey = Optional.ofNullable(app.getAppSettings())
+                    .map(map -> map.get(CreateOrUpdateFunctionAppTask.APPINSIGHTS_INSTRUMENTATION_KEY)).orElse(null);
+            functionConfig.appInsightsKey(aiKey);
         }
         validateArtifactCompileVersion(functionConfig.runtime());
         return new CreateOrUpdateFunctionAppTask(functionConfig).execute();
     }
 
-    private void deployArtifact(IFunctionAppBase target) throws AzureExecutionException {
-        if (target.getRuntime().isDocker()) {
+    private void deployArtifact(@Nonnull final FunctionAppBase<?, ?, ?> target) {
+        final boolean isDockerRuntime = Optional.ofNullable(target.getRuntime()).map(Runtime::isDocker).orElse(false);
+        if (isDockerRuntime) {
             AzureMessager.getMessager().info(SKIP_DEPLOYMENT_FOR_DOCKER_APP_SERVICE);
             return;
         }
@@ -283,7 +286,7 @@ public class DeployHandler {
         try {
             deployType = StringUtils.isEmpty(deploymentType) ? null : FunctionDeployType.fromString(deploymentType);
         } catch (AzureToolkitRuntimeException ex) {
-            throw new AzureExecutionException(UNKNOWN_DEPLOYMENT_TYPE);
+            throw new AzureToolkitRuntimeException(UNKNOWN_DEPLOYMENT_TYPE, ex);
         }
 
         // For ftp deploy, we need to upload entire staging directory not the zipped package
@@ -291,22 +294,22 @@ public class DeployHandler {
         final RunnableWithException deployRunnable = deployType == null ? () -> target.deploy(file) : () -> target.deploy(file, deployType);
         executeWithTimeRecorder(deployRunnable, DEPLOY);
         // todo: check function status after deployment
-        if (!StringUtils.equalsIgnoreCase(target.state(), RUNNING)) {
+        if (!target.getFormalStatus().isRunning()) {
             target.start();
         }
-        AzureMessager.getMessager().info(String.format(DEPLOY_FINISH, getResourcePortalUrl(target.id())));
+        AzureMessager.getMessager().info(String.format(DEPLOY_FINISH, getResourcePortalUrl(target.getId())));
     }
 
     private interface RunnableWithException {
         void run() throws Exception;
     }
 
-    private void executeWithTimeRecorder(RunnableWithException operation, String name) throws AzureExecutionException {
+    private void executeWithTimeRecorder(RunnableWithException operation, String name) {
         final long startTime = System.currentTimeMillis();
         try {
             operation.run();
         } catch (Exception e) {
-            throw new AzureExecutionException(e.getMessage(), e);
+            throw new AzureToolkitRuntimeException(e.getMessage(), e);
         } finally {
             final long endTime = System.currentTimeMillis();
             TelemetryAgent.getInstance().addDefaultProperty(String.format("%s-cost", name), String.valueOf(endTime - startTime));
@@ -355,7 +358,7 @@ public class DeployHandler {
         final File file = this.ctx.getProject().getArtifactFile().toFile();
         final ComparableVersion artifactVersion = new ComparableVersion(Utils.getArtifactCompileVersion(file));
         if (runtimeVersion.compareTo(artifactVersion) < 0) {
-            throw new AzureExecutionException(ARTIFACT_INCOMPATIBLE);
+            throw new AzureToolkitRuntimeException(ARTIFACT_INCOMPATIBLE);
         }
     }
 
@@ -364,7 +367,7 @@ public class DeployHandler {
     }
 
     public FunctionApp getFunctionApp() {
-        return ctx.getOrCreateAzureAppServiceClient().functionApp(ctx.getResourceGroup(), ctx.getAppName());
+        return ctx.getOrCreateAzureAppServiceClient().get(ctx.getResourceGroup(), ctx.getAppName());
     }
 
     private void validateApplicationInsightsConfiguration() {

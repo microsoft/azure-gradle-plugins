@@ -12,7 +12,7 @@ import com.microsoft.azure.gradle.configuration.GradleRuntimeConfig;
 import com.microsoft.azure.gradle.configuration.GradleWebAppConfig;
 import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
 import com.microsoft.azure.toolkit.lib.Azure;
-import com.microsoft.azure.toolkit.lib.appservice.AzureWebApp;
+import com.microsoft.azure.toolkit.lib.appservice.AzureAppService;
 import com.microsoft.azure.toolkit.lib.appservice.config.AppServiceConfig;
 import com.microsoft.azure.toolkit.lib.appservice.config.RuntimeConfig;
 import com.microsoft.azure.toolkit.lib.appservice.model.JavaVersion;
@@ -20,11 +20,12 @@ import com.microsoft.azure.toolkit.lib.appservice.model.OperatingSystem;
 import com.microsoft.azure.toolkit.lib.appservice.model.PricingTier;
 import com.microsoft.azure.toolkit.lib.appservice.model.WebAppArtifact;
 import com.microsoft.azure.toolkit.lib.appservice.model.WebContainer;
-import com.microsoft.azure.toolkit.lib.appservice.service.impl.WebApp;
 import com.microsoft.azure.toolkit.lib.appservice.task.CreateOrUpdateWebAppTask;
 import com.microsoft.azure.toolkit.lib.appservice.task.DeployWebAppTask;
 import com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigUtils;
 import com.microsoft.azure.toolkit.lib.appservice.utils.Utils;
+import com.microsoft.azure.toolkit.lib.appservice.webapp.WebApp;
+import com.microsoft.azure.toolkit.lib.appservice.webapp.WebAppBase;
 import com.microsoft.azure.toolkit.lib.auth.AzureAccount;
 import com.microsoft.azure.toolkit.lib.common.exception.AzureToolkitRuntimeException;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
@@ -71,7 +72,7 @@ public class DeployTask extends DefaultTask {
         validate(config);
         config.subscriptionId(GradleAuthHelper.login(azureWebappExtension.getAuth(), config.subscriptionId()));
         validateOnline(config);
-        final WebApp target = createOrUpdateWebapp(config);
+        final WebAppBase<?, ?, ?> target = createOrUpdateWebapp(config);
         deployArtifact(target, config);
     }
 
@@ -85,7 +86,7 @@ public class DeployTask extends DefaultTask {
         }
     }
 
-    private void deployArtifact(WebApp target, GradleWebAppConfig config) {
+    private void deployArtifact(WebAppBase<?, ?, ?> target, GradleWebAppConfig config) {
         new DeployWebAppTask(target, config.webAppArtifacts()).execute();
     }
 
@@ -104,12 +105,13 @@ public class DeployTask extends DefaultTask {
         validateConfiguration(message -> AzureMessager.getMessager().error(message.getMessage()), config);
     }
 
-    private WebApp createOrUpdateWebapp(GradleWebAppConfig config) {
+    private WebAppBase<?, ?, ?> createOrUpdateWebapp(GradleWebAppConfig config) {
         final AppServiceConfig appServiceConfig = convert(config);
-        WebApp app = Azure.az(AzureWebApp.class).get(appServiceConfig.resourceGroup(), appServiceConfig.appName());
+        final WebApp app = Azure.az(AzureAppService.class).webApps(appServiceConfig.subscriptionId())
+                .get(appServiceConfig.resourceGroup(), appServiceConfig.appName());
         boolean skipCreate = BooleanUtils.toBoolean(System.getProperty("azure.resource.create.skip", "false"));
-        AppServiceConfig defaultConfig = app.exists() ? fromAppService(app, app.plan()) : buildDefaultConfig(appServiceConfig.subscriptionId(),
-            appServiceConfig.resourceGroup(), appServiceConfig.appName());
+        final AppServiceConfig defaultConfig = app != null && app.exists() ? fromAppService(app, Objects.requireNonNull(app.getAppServicePlan())) :
+                buildDefaultConfig(appServiceConfig.subscriptionId(), appServiceConfig.resourceGroup(), appServiceConfig.appName());
         mergeAppServiceConfig(appServiceConfig, defaultConfig);
         if (appServiceConfig.pricingTier() == null) {
             appServiceConfig.pricingTier(
@@ -171,9 +173,9 @@ public class DeployTask extends DefaultTask {
         config.appSettings(ctx.getAppSettings());
         config.servicePlanName(ctx.getAppServicePlanName());
         config.servicePlanResourceGroup(ctx.getAppServicePlanResourceGroup());
-        config.deploymentSlotName(Optional.ofNullable(ctx.getDeploymentSlot()).map(GradleDeploymentSlotConfig::getName).orElse(null));
+        config.deploymentSlotName(Optional.ofNullable(ctx.getDeploymentSlot()).map(GradleDeploymentSlotConfig::name).orElse(null));
         config.deploymentSlotConfigurationSource(Optional.ofNullable(ctx.getDeploymentSlot())
-                .map(GradleDeploymentSlotConfig::getConfigurationSource).orElse(null));
+                .map(GradleDeploymentSlotConfig::configurationSource).orElse(null));
         if (StringUtils.isNotBlank(this.artifactFile)) {
             File file = new File(this.artifactFile);
             if (!file.exists()) {

@@ -11,6 +11,7 @@ import com.microsoft.azure.gradle.configuration.GradleRuntimeConfig;
 import com.microsoft.azure.plugin.functions.gradle.util.GradleProjectUtils;
 import com.microsoft.azure.toolkit.lib.Azure;
 import com.microsoft.azure.toolkit.lib.appservice.AzureAppService;
+import com.microsoft.azure.toolkit.lib.appservice.function.FunctionAppModule;
 import com.microsoft.azure.toolkit.lib.common.IProject;
 import com.microsoft.azure.toolkit.lib.common.exception.AzureToolkitRuntimeException;
 import org.apache.commons.lang3.BooleanUtils;
@@ -25,7 +26,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class GradleFunctionContext implements IAppServiceContext {
+public class GradleFunctionContext {
     private static final String FUNCTION_JAVA_VERSION_KEY = "functionJavaVersion";
     private static final String DISABLE_APP_INSIGHTS_KEY = "disableAppInsights";
     private static final String FUNCTION_RUNTIME_KEY = "os";
@@ -37,24 +38,22 @@ public class GradleFunctionContext implements IAppServiceContext {
     private final JavaProject javaProject;
     private final AzureFunctionsExtension functionsExtension;
     private Map<String, String> appSettings;
-    private AzureAppService appServiceClient;
+    private FunctionAppModule appServiceClient;
 
     public GradleFunctionContext(Project project, AzureFunctionsExtension functionsExtension) {
         this.functionsExtension = functionsExtension;
         this.javaProject = GradleProjectUtils.convert(project);
     }
 
-    @Override
     public IProject getProject() {
         return javaProject;
     }
 
-    @Override
-    public AzureAppService getOrCreateAzureAppServiceClient() {
+    public FunctionAppModule getOrCreateAzureAppServiceClient() {
         if (appServiceClient == null) {
             try {
                 final String subscriptionId = GradleAuthHelper.login(functionsExtension.getAuth(), functionsExtension.getSubscription());
-                appServiceClient = Azure.az(AzureAppService.class).subscription(subscriptionId);
+                appServiceClient = Azure.az(AzureAppService.class).functionApps(subscriptionId);
             } catch (AzureToolkitRuntimeException e) {
                 throw new AzureToolkitRuntimeException(String.format("Cannot authenticate due to error %s", e.getMessage()), e);
             }
@@ -62,7 +61,6 @@ public class GradleFunctionContext implements IAppServiceContext {
         return appServiceClient;
     }
 
-    @Override
     public String getDeploymentStagingDirectoryPath() {
         if (stagingDirectory == null) {
             synchronized (this) {
@@ -83,47 +81,38 @@ public class GradleFunctionContext implements IAppServiceContext {
         return stagingDirectory.getPath();
     }
 
-    @Override
     public String getSubscription() {
         return functionsExtension.getSubscription();
     }
 
-    @Override
     public String getAppName() {
         return functionsExtension.getAppName();
     }
 
-    @Override
     public String getResourceGroup() {
         return functionsExtension.getResourceGroup();
     }
 
-    @Override
     public GradleRuntimeConfig getRuntime() {
         return functionsExtension.getRuntime();
     }
 
-    @Override
     public String getRegion() {
         return functionsExtension.getRegion();
     }
 
-    @Override
     public String getPricingTier() {
         return functionsExtension.getPricingTier();
     }
 
-    @Override
     public String getAppServicePlanResourceGroup() {
         return functionsExtension.getAppServicePlanResourceGroup();
     }
 
-    @Override
     public String getAppServicePlanName() {
         return functionsExtension.getAppServicePlanName();
     }
 
-    @Override
     public Map<String, String> getAppSettings() {
         if (appSettings == null) {
             // we need to cache app settings since gradle will always return a new app settings.
@@ -135,12 +124,10 @@ public class GradleFunctionContext implements IAppServiceContext {
         return appSettings;
     }
 
-    @Override
     public GradleAuthConfig getAuth() {
         return functionsExtension.getAuth();
     }
 
-    @Override
     public String getDeploymentType() {
         if (this.functionsExtension.getDeployment() == null) {
             return null;
@@ -149,27 +136,22 @@ public class GradleFunctionContext implements IAppServiceContext {
         return functionsExtension.getDeployment().getType();
     }
 
-    @Override
     public String getAppInsightsInstance() {
         return functionsExtension.getAppInsightsInstance();
     }
 
-    @Override
     public String getAppInsightsKey() {
         return functionsExtension.getAppInsightsKey();
     }
 
-    @Override
     public String getDeploymentSlotName() {
-        return Optional.ofNullable(functionsExtension.getDeploymentSlot()).map(GradleDeploymentSlotConfig::getName).orElse(null);
+        return Optional.ofNullable(functionsExtension.getDeploymentSlot()).map(GradleDeploymentSlotConfig::name).orElse(null);
     }
 
-    @Override
     public String getDeploymentSlotConfigurationSource() {
-        return Optional.ofNullable(functionsExtension.getDeploymentSlot()).map(GradleDeploymentSlotConfig::getConfigurationSource).orElse(null);
+        return Optional.ofNullable(functionsExtension.getDeploymentSlot()).map(GradleDeploymentSlotConfig::configurationSource).orElse(null);
     }
 
-    @Override
     public boolean isDisableAppInsights() {
         return BooleanUtils.isTrue(functionsExtension.isDisableAppInsights());
     }

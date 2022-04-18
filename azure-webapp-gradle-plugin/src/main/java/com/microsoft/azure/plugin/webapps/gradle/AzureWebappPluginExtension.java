@@ -148,10 +148,6 @@ public class AzureWebappPluginExtension {
         return deploymentSlot;
     }
 
-    public void setDeploymentSlot(GradleDeploymentSlotConfig deploymentSlot) {
-        this.deploymentSlot = deploymentSlot;
-    }
-
     public void setAllowTelemetry(Boolean allowTelemetry) {
         this.allowTelemetry = allowTelemetry;
     }
@@ -190,6 +186,11 @@ public class AzureWebappPluginExtension {
     public void setRuntime(Closure closure) {
         runtime = new GradleRuntimeConfig();
         project.configure(runtime, closure);
+    }
+
+    public void setDeploymentSlot(Closure closure) {
+        deploymentSlot = new GradleDeploymentSlotConfig();
+        project.configure(deploymentSlot, closure);
     }
 
     public void setAppServicePlanName(String appServicePlanName) {

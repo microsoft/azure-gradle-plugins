@@ -8,11 +8,13 @@ package com.microsoft.azure.gradle.configuration;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.Accessors;
 
 @Getter
 @Setter
+@Accessors(fluent = true)
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class GradleDeploymentSlotConfig {
-    protected String name;
-    protected String configurationSource;
+    private String name;
+    private String configurationSource;
 }
