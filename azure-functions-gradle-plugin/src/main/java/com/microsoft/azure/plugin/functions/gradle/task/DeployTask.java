@@ -19,7 +19,7 @@ import org.gradle.api.tasks.TaskAction;
 import javax.annotation.Nullable;
 
 public class DeployTask extends DefaultTask implements IFunctionTask {
-
+    private static final String PROXY = "proxy";
     private static final String DEPLOY_FAILURE = "Cannot deploy functions due to error: ";
 
     @Nullable
@@ -40,8 +40,10 @@ public class DeployTask extends DefaultTask implements IFunctionTask {
     public void deploy() throws GradleException {
         try {
             ProxyManager.getInstance().applyProxy();
+            TelemetryAgent.getInstance().addDefaultProperty(PROXY, String.valueOf(ProxyManager.getInstance().isProxyEnabled()));
             TelemetryAgent.getInstance().trackTaskStart(this.getClass());
             final GradleFunctionContext ctx = new GradleFunctionContext(getProject(), this.getFunctionsExtension());
+            TelemetryAgent.getInstance().addDefaultProperties(ctx.getTelemetryProperties());
             final DeployHandler deployHandler = new DeployHandler(ctx);
             deployHandler.execute();
             TelemetryAgent.getInstance().trackTaskSuccess(this.getClass());

@@ -30,6 +30,7 @@ import com.microsoft.azure.toolkit.lib.auth.AzureAccount;
 import com.microsoft.azure.toolkit.lib.common.exception.AzureToolkitRuntimeException;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
 import com.microsoft.azure.toolkit.lib.common.model.Region;
+import com.microsoft.azure.toolkit.lib.common.operation.AzureOperation;
 import com.microsoft.azure.toolkit.lib.common.proxy.ProxyManager;
 import com.microsoft.azure.toolkit.lib.common.validator.SchemaValidator;
 import com.microsoft.azure.toolkit.lib.common.validator.ValidationMessage;
@@ -55,6 +56,7 @@ import static com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigU
 import static com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigUtils.mergeAppServiceConfig;
 
 public class DeployTask extends DefaultTask {
+    private static final String PROXY = "proxy";
     private static final String INVALID_PARAMETER_ERROR_MESSAGE = "Invalid values found in configuration, please correct the value with messages below:";
 
     @Setter
@@ -64,16 +66,25 @@ public class DeployTask extends DefaultTask {
     private String artifactFile;
 
     @TaskAction
+    @AzureOperation(name = "webapp.deploy_app", type = AzureOperation.Type.ACTION)
     public void deploy() throws GradleException {
-        ProxyManager.getInstance().applyProxy();
-        initTask();
-        final GradleWebAppConfig config = parseConfiguration();
-        normalizeConfigValue(config);
-        validate(config);
-        config.subscriptionId(GradleAuthHelper.login(azureWebappExtension.getAuth(), config.subscriptionId()));
-        validateOnline(config);
-        final WebAppBase<?, ?, ?> target = createOrUpdateWebapp(config);
-        deployArtifact(target, config);
+        try {
+            ProxyManager.getInstance().applyProxy();
+            TelemetryAgent.getInstance().addDefaultProperty(PROXY, String.valueOf(ProxyManager.getInstance().isProxyEnabled()));
+            initTask();
+            TelemetryAgent.getInstance().trackTaskStart(this.getClass());
+            final GradleWebAppConfig config = parseConfiguration();
+            normalizeConfigValue(config);
+            validate(config);
+            config.subscriptionId(GradleAuthHelper.login(azureWebappExtension.getAuth(), config.subscriptionId()));
+            validateOnline(config);
+            final WebAppBase<?, ?, ?> target = createOrUpdateWebapp(config);
+            deployArtifact(target, config);
+        } catch (Exception e) {
+            AzureMessager.getMessager().error(e);
+            TelemetryAgent.getInstance().traceException(this.getClass(), e);
+            throw new GradleException("Cannot deploy web app due to error: " + e.getMessage(), e);
+        }
     }
 
     protected void validateConfiguration(Consumer<ValidationMessage> validationMessageConsumer, Object rawConfig) {
