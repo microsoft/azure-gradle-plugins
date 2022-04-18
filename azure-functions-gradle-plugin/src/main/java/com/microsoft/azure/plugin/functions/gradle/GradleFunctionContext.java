@@ -33,6 +33,7 @@ public class GradleFunctionContext {
     private static final String FUNCTION_IS_DOCKER_KEY = "isDockerFunction";
     private static final String FUNCTION_REGION_KEY = "region";
     private static final String FUNCTION_PRICING_KEY = "pricingTier";
+    private static final String DEPLOY_TO_SLOT_KEY = "isDeployToFunctionSlot";
     private static final String GRADLE_PLUGIN_POSTFIX = "-gradle-plugin";
     private volatile File stagingDirectory;
     private final JavaProject javaProject;
@@ -172,6 +173,7 @@ public class GradleFunctionContext {
         result.put(FUNCTION_REGION_KEY, getRegion());
         result.put(FUNCTION_PRICING_KEY, getPricingTier());
         result.put(DISABLE_APP_INSIGHTS_KEY, String.valueOf(isDisableAppInsights()));
+        result.put(DEPLOY_TO_SLOT_KEY, String.valueOf(StringUtils.isEmpty(getDeploymentSlotName())));
         return result;
     }
 }
