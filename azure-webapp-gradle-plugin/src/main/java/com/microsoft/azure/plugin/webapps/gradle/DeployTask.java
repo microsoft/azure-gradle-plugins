@@ -71,6 +71,7 @@ public class DeployTask extends DefaultTask {
         try {
             ProxyManager.getInstance().applyProxy();
             TelemetryAgent.getInstance().addDefaultProperty(PROXY, String.valueOf(ProxyManager.getInstance().isProxyEnabled()));
+            TelemetryAgent.getInstance().addDefaultProperties(azureWebappExtension.getTelemetryProperties());
             initTask();
             TelemetryAgent.getInstance().trackTaskStart(this.getClass());
             final GradleWebAppConfig config = parseConfiguration();
@@ -80,6 +81,7 @@ public class DeployTask extends DefaultTask {
             validateOnline(config);
             final WebAppBase<?, ?, ?> target = createOrUpdateWebapp(config);
             deployArtifact(target, config);
+            TelemetryAgent.getInstance().trackTaskSuccess(this.getClass());
         } catch (Exception e) {
             AzureMessager.getMessager().error(e);
             TelemetryAgent.getInstance().traceException(this.getClass(), e);
