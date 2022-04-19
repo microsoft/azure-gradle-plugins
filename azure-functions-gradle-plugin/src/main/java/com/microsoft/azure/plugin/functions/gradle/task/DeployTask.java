@@ -10,6 +10,7 @@ import com.microsoft.azure.plugin.functions.gradle.AzureFunctionsExtension;
 import com.microsoft.azure.plugin.functions.gradle.GradleFunctionContext;
 import com.microsoft.azure.plugin.functions.gradle.handler.DeployHandler;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
+import com.microsoft.azure.toolkit.lib.common.operation.AzureOperation;
 import com.microsoft.azure.toolkit.lib.common.proxy.ProxyManager;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
@@ -37,6 +38,7 @@ public class DeployTask extends DefaultTask implements IFunctionTask {
     }
 
     @TaskAction
+    @AzureOperation(name = "functionapp.deploy_app", type = AzureOperation.Type.ACTION)
     public void deploy() throws GradleException {
         try {
             ProxyManager.getInstance().applyProxy();

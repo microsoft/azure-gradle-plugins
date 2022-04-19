@@ -12,7 +12,6 @@ import com.microsoft.azure.gradle.configuration.GradleRuntimeConfig;
 import com.microsoft.azure.gradle.configuration.GradleWebAppConfig;
 import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
 import com.microsoft.azure.toolkit.lib.Azure;
-import com.microsoft.azure.toolkit.lib.appservice.AzureAppService;
 import com.microsoft.azure.toolkit.lib.appservice.config.AppServiceConfig;
 import com.microsoft.azure.toolkit.lib.appservice.config.RuntimeConfig;
 import com.microsoft.azure.toolkit.lib.appservice.model.JavaVersion;
@@ -24,6 +23,7 @@ import com.microsoft.azure.toolkit.lib.appservice.task.CreateOrUpdateWebAppTask;
 import com.microsoft.azure.toolkit.lib.appservice.task.DeployWebAppTask;
 import com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigUtils;
 import com.microsoft.azure.toolkit.lib.appservice.utils.Utils;
+import com.microsoft.azure.toolkit.lib.appservice.webapp.AzureWebApp;
 import com.microsoft.azure.toolkit.lib.appservice.webapp.WebApp;
 import com.microsoft.azure.toolkit.lib.appservice.webapp.WebAppBase;
 import com.microsoft.azure.toolkit.lib.auth.AzureAccount;
@@ -120,7 +120,7 @@ public class DeployTask extends DefaultTask {
 
     private WebAppBase<?, ?, ?> createOrUpdateWebapp(GradleWebAppConfig config) {
         final AppServiceConfig appServiceConfig = convert(config);
-        final WebApp app = Azure.az(AzureAppService.class).webApps(appServiceConfig.subscriptionId())
+        final WebApp app = Azure.az(AzureWebApp.class).webApps(appServiceConfig.subscriptionId())
                 .get(appServiceConfig.resourceGroup(), appServiceConfig.appName());
         boolean skipCreate = BooleanUtils.toBoolean(System.getProperty("azure.resource.create.skip", "false"));
         final AppServiceConfig defaultConfig = app != null && app.exists() ? fromAppService(app, Objects.requireNonNull(app.getAppServicePlan())) :

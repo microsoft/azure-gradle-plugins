@@ -8,6 +8,7 @@ import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
 import com.microsoft.azure.plugin.functions.gradle.AzureFunctionsExtension;
 import com.microsoft.azure.plugin.functions.gradle.GradleFunctionContext;
 import com.microsoft.azure.plugin.functions.gradle.handler.PackageHandler;
+import com.microsoft.azure.toolkit.lib.common.operation.AzureOperation;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
@@ -34,6 +35,7 @@ public class PackageTask extends DefaultTask implements IFunctionTask {
     }
 
     @TaskAction
+    @AzureOperation(name = "functionapp.package", type = AzureOperation.Type.ACTION)
     public void build() throws GradleException {
         try {
             TelemetryAgent.getInstance().trackTaskStart(this.getClass());

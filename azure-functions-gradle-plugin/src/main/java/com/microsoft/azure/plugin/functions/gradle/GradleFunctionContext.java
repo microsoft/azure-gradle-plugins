@@ -10,7 +10,7 @@ import com.microsoft.azure.gradle.configuration.GradleDeploymentSlotConfig;
 import com.microsoft.azure.gradle.configuration.GradleRuntimeConfig;
 import com.microsoft.azure.plugin.functions.gradle.util.GradleProjectUtils;
 import com.microsoft.azure.toolkit.lib.Azure;
-import com.microsoft.azure.toolkit.lib.appservice.AzureAppService;
+import com.microsoft.azure.toolkit.lib.appservice.function.AzureFunctions;
 import com.microsoft.azure.toolkit.lib.appservice.function.FunctionAppModule;
 import com.microsoft.azure.toolkit.lib.common.IProject;
 import com.microsoft.azure.toolkit.lib.common.exception.AzureToolkitRuntimeException;
@@ -54,7 +54,7 @@ public class GradleFunctionContext {
         if (appServiceClient == null) {
             try {
                 final String subscriptionId = GradleAuthHelper.login(functionsExtension.getAuth(), functionsExtension.getSubscription());
-                appServiceClient = Azure.az(AzureAppService.class).functionApps(subscriptionId);
+                appServiceClient = Azure.az(AzureFunctions.class).functionApps(subscriptionId);
             } catch (AzureToolkitRuntimeException e) {
                 throw new AzureToolkitRuntimeException(String.format("Cannot authenticate due to error %s", e.getMessage()), e);
             }
