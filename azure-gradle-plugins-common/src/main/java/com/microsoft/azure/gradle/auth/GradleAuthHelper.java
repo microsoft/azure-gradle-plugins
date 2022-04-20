@@ -39,7 +39,7 @@ public class GradleAuthHelper {
     private static final String USING_AZURE_ENVIRONMENT = "Using Azure environment: %s.";
     private static final String SUBSCRIPTION_NOT_FOUND = "Subscription %s was not found in current account.";
     private static final String INVALID_AZURE_ENVIRONMENT = "Invalid environment string '%s', please replace it with one of " +
-        AzureEnvironment.knownEnvironments().stream().map(AzureEnvironmentUtils::getCloudNameForAzureCli).collect(Collectors.joining(",")) + ".";
+        AzureEnvironment.knownEnvironments().stream().map(AzureEnvironmentUtils::getCloudName).collect(Collectors.joining(",")) + ".";
 
     public static String login(GradleAuthConfig auth, String subscriptionId) {
         try {

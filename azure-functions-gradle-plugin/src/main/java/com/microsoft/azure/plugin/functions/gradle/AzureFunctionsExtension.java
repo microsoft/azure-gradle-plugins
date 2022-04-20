@@ -6,6 +6,7 @@
 package com.microsoft.azure.plugin.functions.gradle;
 
 import com.microsoft.azure.gradle.auth.GradleAuthConfig;
+import com.microsoft.azure.gradle.configuration.GradleDeploymentSlotConfig;
 import com.microsoft.azure.gradle.configuration.GradleRuntimeConfig;
 import com.microsoft.azure.plugin.functions.gradle.configuration.deploy.Deployment;
 import groovy.lang.Closure;
@@ -54,6 +55,9 @@ public class AzureFunctionsExtension {
 
     @Nullable
     private GradleRuntimeConfig runtime;
+
+    @Nullable
+    private GradleDeploymentSlotConfig deploymentSlot;
 
     private Map<String, String> appSettings;
 
@@ -167,6 +171,12 @@ public class AzureFunctionsExtension {
         return disableAppInsights;
     }
 
+    @Input
+    @Optional
+    public GradleDeploymentSlotConfig getDeploymentSlot() {
+        return deploymentSlot;
+    }
+
     public void setAllowTelemetry(Boolean allowTelemetry) {
         this.allowTelemetry = allowTelemetry;
     }
@@ -210,6 +220,11 @@ public class AzureFunctionsExtension {
     public void setRuntime(Closure closure) {
         runtime = new GradleRuntimeConfig();
         project.configure(runtime, closure);
+    }
+
+    public void setDeploymentSlot(Closure closure) {
+        deploymentSlot = new GradleDeploymentSlotConfig();
+        project.configure(deploymentSlot, closure);
     }
 
     public void setAppServicePlanName(String appServicePlanName) {
