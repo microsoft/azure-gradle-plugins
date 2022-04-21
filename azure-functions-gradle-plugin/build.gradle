@@ -2,6 +2,7 @@
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  */
+apply plugin: "io.freefair.aspectj.post-compile-weaving"
 
 dependencies {
     implementation 'commons-io:commons-io:2.10.0'
@@ -16,7 +17,8 @@ dependencies {
     implementation 'org.fusesource.jansi:jansi:1.18'
 
     implementation 'com.microsoft.azure:azure-toolkit-common-lib:' + azureToolkitVersion
-    implementation 'com.microsoft.azure:azure-toolkit-resource-lib:'  + azureToolkitVersion
+    aspect 'com.microsoft.azure:azure-toolkit-common-lib:' + azureToolkitVersion
+
     implementation 'com.microsoft.azure:azure-toolkit-appservice-lib:'  + azureToolkitVersion
     implementation 'com.microsoft.azure:azure-toolkit-applicationinsights-lib:'  + azureToolkitVersion
 

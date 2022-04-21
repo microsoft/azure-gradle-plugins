@@ -9,6 +9,7 @@ import com.microsoft.azure.plugin.functions.gradle.AzureFunctionsExtension;
 import com.microsoft.azure.plugin.functions.gradle.GradleFunctionContext;
 import com.microsoft.azure.plugin.functions.gradle.util.FunctionUtils;
 import com.microsoft.azure.toolkit.lib.appservice.utils.FunctionCliResolver;
+import com.microsoft.azure.toolkit.lib.common.operation.AzureOperation;
 import com.microsoft.azure.toolkit.lib.legacy.function.utils.CommandUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -54,6 +55,7 @@ public class LocalRunTask extends Exec implements IFunctionTask {
 
     @TaskAction
     @Override
+    @AzureOperation(name = "functionapp.run", type = AzureOperation.Type.ACTION)
     public void exec() {
         try {
             TelemetryAgent.getInstance().trackTaskStart(this.getClass());

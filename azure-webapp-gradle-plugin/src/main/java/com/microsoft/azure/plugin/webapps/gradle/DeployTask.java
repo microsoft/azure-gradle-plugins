@@ -12,7 +12,6 @@ import com.microsoft.azure.gradle.configuration.GradleRuntimeConfig;
 import com.microsoft.azure.gradle.configuration.GradleWebAppConfig;
 import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
 import com.microsoft.azure.toolkit.lib.Azure;
-import com.microsoft.azure.toolkit.lib.appservice.AzureAppService;
 import com.microsoft.azure.toolkit.lib.appservice.config.AppServiceConfig;
 import com.microsoft.azure.toolkit.lib.appservice.config.RuntimeConfig;
 import com.microsoft.azure.toolkit.lib.appservice.model.JavaVersion;
@@ -24,12 +23,14 @@ import com.microsoft.azure.toolkit.lib.appservice.task.CreateOrUpdateWebAppTask;
 import com.microsoft.azure.toolkit.lib.appservice.task.DeployWebAppTask;
 import com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigUtils;
 import com.microsoft.azure.toolkit.lib.appservice.utils.Utils;
+import com.microsoft.azure.toolkit.lib.appservice.webapp.AzureWebApp;
 import com.microsoft.azure.toolkit.lib.appservice.webapp.WebApp;
 import com.microsoft.azure.toolkit.lib.appservice.webapp.WebAppBase;
 import com.microsoft.azure.toolkit.lib.auth.AzureAccount;
 import com.microsoft.azure.toolkit.lib.common.exception.AzureToolkitRuntimeException;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
 import com.microsoft.azure.toolkit.lib.common.model.Region;
+import com.microsoft.azure.toolkit.lib.common.operation.AzureOperation;
 import com.microsoft.azure.toolkit.lib.common.proxy.ProxyManager;
 import com.microsoft.azure.toolkit.lib.common.validator.SchemaValidator;
 import com.microsoft.azure.toolkit.lib.common.validator.ValidationMessage;
@@ -55,6 +56,7 @@ import static com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigU
 import static com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigUtils.mergeAppServiceConfig;
 
 public class DeployTask extends DefaultTask {
+    private static final String PROXY = "proxy";
     private static final String INVALID_PARAMETER_ERROR_MESSAGE = "Invalid values found in configuration, please correct the value with messages below:";
 
     @Setter
@@ -64,16 +66,27 @@ public class DeployTask extends DefaultTask {
     private String artifactFile;
 
     @TaskAction
+    @AzureOperation(name = "webapp.deploy_app", type = AzureOperation.Type.ACTION)
     public void deploy() throws GradleException {
-        ProxyManager.getInstance().applyProxy();
-        initTask();
-        final GradleWebAppConfig config = parseConfiguration();
-        normalizeConfigValue(config);
-        validate(config);
-        config.subscriptionId(GradleAuthHelper.login(azureWebappExtension.getAuth(), config.subscriptionId()));
-        validateOnline(config);
-        final WebAppBase<?, ?, ?> target = createOrUpdateWebapp(config);
-        deployArtifact(target, config);
+        try {
+            ProxyManager.getInstance().applyProxy();
+            TelemetryAgent.getInstance().addDefaultProperty(PROXY, String.valueOf(ProxyManager.getInstance().isProxyEnabled()));
+            TelemetryAgent.getInstance().addDefaultProperties(azureWebappExtension.getTelemetryProperties());
+            initTask();
+            TelemetryAgent.getInstance().trackTaskStart(this.getClass());
+            final GradleWebAppConfig config = parseConfiguration();
+            normalizeConfigValue(config);
+            validate(config);
+            config.subscriptionId(GradleAuthHelper.login(azureWebappExtension.getAuth(), config.subscriptionId()));
+            validateOnline(config);
+            final WebAppBase<?, ?, ?> target = createOrUpdateWebapp(config);
+            deployArtifact(target, config);
+            TelemetryAgent.getInstance().trackTaskSuccess(this.getClass());
+        } catch (Exception e) {
+            AzureMessager.getMessager().error(e);
+            TelemetryAgent.getInstance().traceException(this.getClass(), e);
+            throw new GradleException("Cannot deploy web app due to error: " + e.getMessage(), e);
+        }
     }
 
     protected void validateConfiguration(Consumer<ValidationMessage> validationMessageConsumer, Object rawConfig) {
@@ -107,7 +120,7 @@ public class DeployTask extends DefaultTask {
 
     private WebAppBase<?, ?, ?> createOrUpdateWebapp(GradleWebAppConfig config) {
         final AppServiceConfig appServiceConfig = convert(config);
-        final WebApp app = Azure.az(AzureAppService.class).webApps(appServiceConfig.subscriptionId())
+        final WebApp app = Azure.az(AzureWebApp.class).webApps(appServiceConfig.subscriptionId())
                 .get(appServiceConfig.resourceGroup(), appServiceConfig.appName());
         boolean skipCreate = BooleanUtils.toBoolean(System.getProperty("azure.resource.create.skip", "false"));
         final AppServiceConfig defaultConfig = app != null && app.exists() ? fromAppService(app, Objects.requireNonNull(app.getAppServicePlan())) :

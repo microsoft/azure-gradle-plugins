@@ -10,7 +10,7 @@ import com.microsoft.azure.gradle.configuration.GradleDeploymentSlotConfig;
 import com.microsoft.azure.gradle.configuration.GradleRuntimeConfig;
 import com.microsoft.azure.plugin.functions.gradle.util.GradleProjectUtils;
 import com.microsoft.azure.toolkit.lib.Azure;
-import com.microsoft.azure.toolkit.lib.appservice.AzureAppService;
+import com.microsoft.azure.toolkit.lib.appservice.function.AzureFunctions;
 import com.microsoft.azure.toolkit.lib.appservice.function.FunctionAppModule;
 import com.microsoft.azure.toolkit.lib.common.IProject;
 import com.microsoft.azure.toolkit.lib.common.exception.AzureToolkitRuntimeException;
@@ -33,6 +33,7 @@ public class GradleFunctionContext {
     private static final String FUNCTION_IS_DOCKER_KEY = "isDockerFunction";
     private static final String FUNCTION_REGION_KEY = "region";
     private static final String FUNCTION_PRICING_KEY = "pricingTier";
+    private static final String DEPLOY_TO_SLOT_KEY = "isDeployToFunctionSlot";
     private static final String GRADLE_PLUGIN_POSTFIX = "-gradle-plugin";
     private volatile File stagingDirectory;
     private final JavaProject javaProject;
@@ -53,7 +54,7 @@ public class GradleFunctionContext {
         if (appServiceClient == null) {
             try {
                 final String subscriptionId = GradleAuthHelper.login(functionsExtension.getAuth(), functionsExtension.getSubscription());
-                appServiceClient = Azure.az(AzureAppService.class).functionApps(subscriptionId);
+                appServiceClient = Azure.az(AzureFunctions.class).functionApps(subscriptionId);
             } catch (AzureToolkitRuntimeException e) {
                 throw new AzureToolkitRuntimeException(String.format("Cannot authenticate due to error %s", e.getMessage()), e);
             }
@@ -172,6 +173,7 @@ public class GradleFunctionContext {
         result.put(FUNCTION_REGION_KEY, getRegion());
         result.put(FUNCTION_PRICING_KEY, getPricingTier());
         result.put(DISABLE_APP_INSIGHTS_KEY, String.valueOf(isDisableAppInsights()));
+        result.put(DEPLOY_TO_SLOT_KEY, String.valueOf(StringUtils.isEmpty(getDeploymentSlotName())));
         return result;
     }
 }

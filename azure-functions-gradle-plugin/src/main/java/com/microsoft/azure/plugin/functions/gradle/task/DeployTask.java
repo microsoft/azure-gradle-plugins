@@ -10,6 +10,7 @@ import com.microsoft.azure.plugin.functions.gradle.AzureFunctionsExtension;
 import com.microsoft.azure.plugin.functions.gradle.GradleFunctionContext;
 import com.microsoft.azure.plugin.functions.gradle.handler.DeployHandler;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
+import com.microsoft.azure.toolkit.lib.common.operation.AzureOperation;
 import com.microsoft.azure.toolkit.lib.common.proxy.ProxyManager;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
@@ -19,7 +20,7 @@ import org.gradle.api.tasks.TaskAction;
 import javax.annotation.Nullable;
 
 public class DeployTask extends DefaultTask implements IFunctionTask {
-
+    private static final String PROXY = "proxy";
     private static final String DEPLOY_FAILURE = "Cannot deploy functions due to error: ";
 
     @Nullable
@@ -37,11 +38,14 @@ public class DeployTask extends DefaultTask implements IFunctionTask {
     }
 
     @TaskAction
+    @AzureOperation(name = "functionapp.deploy_app", type = AzureOperation.Type.ACTION)
     public void deploy() throws GradleException {
         try {
             ProxyManager.getInstance().applyProxy();
+            TelemetryAgent.getInstance().addDefaultProperty(PROXY, String.valueOf(ProxyManager.getInstance().isProxyEnabled()));
             TelemetryAgent.getInstance().trackTaskStart(this.getClass());
             final GradleFunctionContext ctx = new GradleFunctionContext(getProject(), this.getFunctionsExtension());
+            TelemetryAgent.getInstance().addDefaultProperties(ctx.getTelemetryProperties());
             final DeployHandler deployHandler = new DeployHandler(ctx);
             deployHandler.execute();
             TelemetryAgent.getInstance().trackTaskSuccess(this.getClass());

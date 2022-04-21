@@ -14,10 +14,12 @@ import com.google.common.base.Preconditions;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
 import com.microsoft.azure.toolkit.lib.common.IProject;
 import com.microsoft.azure.toolkit.lib.common.exception.AzureExecutionException;
 import com.microsoft.azure.toolkit.lib.common.exception.AzureToolkitRuntimeException;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
+import com.microsoft.azure.toolkit.lib.legacy.function.bindings.Binding;
 import com.microsoft.azure.toolkit.lib.legacy.function.bindings.BindingEnum;
 import com.microsoft.azure.toolkit.lib.legacy.function.configurations.FunctionConfiguration;
 import com.microsoft.azure.toolkit.lib.legacy.function.handlers.AnnotationHandler;
@@ -49,6 +51,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class PackageHandler {
@@ -88,6 +91,7 @@ public class PackageHandler {
         "{ \"FUNCTIONS_WORKER_RUNTIME\": \"java\" } }";
     private static final String DEFAULT_HOST_JSON = "{\"version\":\"2.0\",\"extensionBundle\":" +
         "{\"id\":\"Microsoft.Azure.Functions.ExtensionBundle\",\"version\":\"[1.*, 2.0.0)\"}}\n";
+    private static final String TRIGGER_TYPE = "triggerType";
 
     private final IProject project;
     private final String deploymentStagingDirectoryPath;
@@ -201,6 +205,7 @@ public class PackageHandler {
             configMap.values().forEach(FunctionConfiguration::validate);
             AzureMessager.getMessager().info(VALIDATE_DONE);
         }
+        trackFunctionProperties(configMap);
     }
 
     private void writeFunctionJsonFiles(final ObjectWriter objectWriter,
@@ -337,5 +342,14 @@ public class PackageHandler {
         } catch (IOException e) {
             return null;
         }
+    }
+
+    private void trackFunctionProperties(Map<String, FunctionConfiguration> configMap) {
+        final List<String> bindingTypeSet = configMap.values().stream().flatMap(configuration -> configuration.getBindings().stream())
+                .map(Binding::getType)
+                .sorted()
+                .distinct()
+                .collect(Collectors.toList());
+        TelemetryAgent.getInstance().addDefaultProperty(TRIGGER_TYPE, StringUtils.join(bindingTypeSet, ","));
     }
 }
