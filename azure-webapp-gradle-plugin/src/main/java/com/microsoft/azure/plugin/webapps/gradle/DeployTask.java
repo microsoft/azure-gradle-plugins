@@ -144,17 +144,18 @@ public class DeployTask extends DefaultTask {
 
     private AppServiceConfig convert(GradleWebAppConfig config) {
         return new AppServiceConfig()
-            .subscriptionId(config.subscriptionId())
-            .resourceGroup(config.resourceGroup())
-            .appName(config.appName())
-            .servicePlanResourceGroup(config.servicePlanResourceGroup())
-            .deploymentSlotName(config.deploymentSlotName())
-            .deploymentSlotConfigurationSource(config.deploymentSlotConfigurationSource())
-            .pricingTier(Optional.ofNullable(config.pricingTier()).map(PricingTier::fromString).orElse(null))
-            .region(Optional.ofNullable(config.region()).map(Region::fromName).orElse(null))
-            .runtime(convert(config.runtime()))
-            .servicePlanName(config.servicePlanName())
-            .appSettings(config.appSettings());
+                .subscriptionId(config.subscriptionId())
+                .resourceGroup(config.resourceGroup())
+                .appName(config.appName())
+                .servicePlanName(config.servicePlanName())
+                .servicePlanResourceGroup(config.servicePlanResourceGroup())
+                .deploymentSlotName(config.deploymentSlotName())
+                .deploymentSlotConfigurationSource(config.deploymentSlotConfigurationSource())
+                .pricingTier(Optional.ofNullable(config.pricingTier()).map(PricingTier::fromString).orElse(null))
+                .region(Optional.ofNullable(config.region()).map(Region::fromName).orElse(null))
+                .runtime(convert(config.runtime()))
+                .servicePlanName(config.servicePlanName())
+                .appSettings(config.appSettings());
     }
 
     private RuntimeConfig convert(@Nullable GradleRuntimeConfig configNullable) {
