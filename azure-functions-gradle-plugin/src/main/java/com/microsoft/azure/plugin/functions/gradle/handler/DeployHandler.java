@@ -32,6 +32,7 @@ import com.microsoft.azure.toolkit.lib.common.exception.AzureExecutionException;
 import com.microsoft.azure.toolkit.lib.common.exception.AzureToolkitRuntimeException;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
 import com.microsoft.azure.toolkit.lib.common.model.Region;
+import com.microsoft.azure.toolkit.lib.common.operation.AzureOperation;
 import com.microsoft.azure.toolkit.lib.common.utils.Utils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -142,7 +143,7 @@ public class DeployHandler {
      */
     protected void listHTTPTriggerUrls(FunctionApp target) {
         try {
-            final List<FunctionEntity> triggers = listFunctions(target);
+            final List<FunctionEntity> triggers = listFunctionsWithRetry(target);
             final List<FunctionEntity> httpFunction = triggers.stream()
                 .filter(function -> function.getTrigger() != null &&
                     StringUtils.equalsIgnoreCase(function.getTrigger().getType(), HTTP_TRIGGER))
@@ -166,17 +167,20 @@ public class DeployHandler {
         }
     }
 
-    private List<FunctionEntity> listFunctions(final FunctionApp functionApp) {
+    private List<FunctionEntity> listFunctionsWithRetry(final FunctionApp functionApp) {
         final int[] count = {0};
-        return Mono.fromCallable(() -> {
-            final AzureString message = count[0]++ == 0 ?
-                    AzureString.fromString(SYNCING_TRIGGERS) : AzureString.format(SYNCING_TRIGGERS_WITH_RETRY, count[0], LIST_TRIGGERS_MAX_RETRY);
-            AzureMessager.getMessager().info(message);
-            return Optional.of(functionApp.listFunctions(true))
-                    .filter(CollectionUtils::isNotEmpty)
-                    .orElseThrow(() -> new AzureToolkitRuntimeException(NO_TRIGGERS_FOUNDED));
-        }).subscribeOn(Schedulers.boundedElastic())
+        return Mono.fromCallable(() -> listFunctions(functionApp, count[0]++)).subscribeOn(Schedulers.boundedElastic())
                 .retryWhen(Retry.fixedDelay(LIST_TRIGGERS_MAX_RETRY - 1, Duration.ofSeconds(LIST_TRIGGERS_RETRY_PERIOD_IN_SECONDS))).block();
+    }
+
+    @AzureOperation(name = "functionapp.list_function.app", params = {"functionApp.getName()"}, type = AzureOperation.Type.TASK)
+    private List<FunctionEntity> listFunctions(final FunctionApp functionApp, int count) {
+        final AzureString message = count == 0 ?
+                AzureString.fromString(SYNCING_TRIGGERS) : AzureString.format(SYNCING_TRIGGERS_WITH_RETRY, count, LIST_TRIGGERS_MAX_RETRY);
+        AzureMessager.getDefaultMessager().info(message);
+        return Optional.of(functionApp.listFunctions(true))
+                .filter(CollectionUtils::isNotEmpty)
+                .orElseThrow(() -> new AzureToolkitRuntimeException(NO_TRIGGERS_FOUNDED));
     }
 
     protected void doValidate() {
