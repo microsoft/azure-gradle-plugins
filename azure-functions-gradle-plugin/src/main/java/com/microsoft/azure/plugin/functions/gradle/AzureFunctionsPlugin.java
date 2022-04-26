@@ -16,6 +16,7 @@ import com.microsoft.azure.toolkit.lib.Azure;
 import com.microsoft.azure.toolkit.lib.common.cache.CacheEvict;
 import com.microsoft.azure.toolkit.lib.common.cache.CacheManager;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
+import com.microsoft.azure.toolkit.lib.common.operation.AzureOperation;
 import com.microsoft.azure.toolkit.lib.common.task.AzureTaskManager;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -31,6 +32,7 @@ public class AzureFunctionsPlugin implements Plugin<Project> {
     private static final String GRADLE_FUNCTION_EXTENSION = "azurefunctions";
 
     @Override
+    @AzureOperation(name = "functionapp.init_gradle_plugin", type = AzureOperation.Type.ACTION)
     public void apply(final Project project) {
         AzureTaskManager.register(new GradleAzureTaskManager());
         AzureMessager.setDefaultMessager(new GradleAzureMessager(project.getLogger()));
