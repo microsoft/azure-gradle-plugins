@@ -7,7 +7,6 @@ package com.microsoft.azure.plugin.functions.gradle.handler;
 
 import com.azure.core.management.AzureEnvironment;
 import com.google.common.base.Preconditions;
-import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.gradle.configuration.GradleRuntimeConfig;
 import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
 import com.microsoft.azure.plugin.functions.gradle.GradleFunctionContext;
@@ -18,6 +17,7 @@ import com.microsoft.azure.toolkit.lib.appservice.config.RuntimeConfig;
 import com.microsoft.azure.toolkit.lib.appservice.entity.FunctionEntity;
 import com.microsoft.azure.toolkit.lib.appservice.function.FunctionApp;
 import com.microsoft.azure.toolkit.lib.appservice.function.FunctionAppBase;
+import com.microsoft.azure.toolkit.lib.appservice.function.core.AzureFunctionsAnnotationConstants;
 import com.microsoft.azure.toolkit.lib.appservice.model.FunctionDeployType;
 import com.microsoft.azure.toolkit.lib.appservice.model.JavaVersion;
 import com.microsoft.azure.toolkit.lib.appservice.model.OperatingSystem;
@@ -150,7 +150,7 @@ public class DeployHandler {
                 .collect(Collectors.toList());
             final List<FunctionEntity> anonymousTriggers = httpFunction.stream()
                 .filter(bindingResource -> bindingResource.getTrigger() != null &&
-                    StringUtils.equalsIgnoreCase(bindingResource.getTrigger().getProperty(AUTH_LEVEL), AuthorizationLevel.ANONYMOUS.toString()))
+                    StringUtils.equalsIgnoreCase(bindingResource.getTrigger().getProperty(AUTH_LEVEL), AzureFunctionsAnnotationConstants.ANONYMOUS))
                 .collect(Collectors.toList());
             if (CollectionUtils.isEmpty(httpFunction) || CollectionUtils.isEmpty(anonymousTriggers)) {
                 AzureMessager.getMessager().info(NO_ANONYMOUS_HTTP_TRIGGER);

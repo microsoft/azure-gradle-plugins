@@ -82,6 +82,8 @@ public class PackageHandler {
     private static final String BUILD_SUCCESS = "Successfully built Azure Functions.";
     private static final String FUNCTION_JSON = "function.json";
     private static final String EXTENSION_BUNDLE = "extensionBundle";
+    private static final String AZURE_FUNCTIONS_JAVA_LIBRARY = "azure-functions-java-library";
+    private static final String AZURE_FUNCTIONS_JAVA_CORE_LIBRARY = "azure-functions-java-core-library";
     private static final BindingEnum[] FUNCTION_WITHOUT_FUNCTION_EXTENSION = { BindingEnum.HttpOutput,
         BindingEnum.HttpTrigger };
     private static final String EXTENSION_BUNDLE_ID = "Microsoft.Azure.Functions.ExtensionBundle";
@@ -281,13 +283,15 @@ public class PackageHandler {
         if (libFolder.exists()) {
             FileUtils.cleanDirectory(libFolder);
         }
-
-        for (final Path jarFilePath : project.getProjectDependencies()) {
-            if (!jarFilePath.getFileName().toString().startsWith("azure-functions-java-library-")) {
-                FileUtils.copyFileToDirectory(jarFilePath.toFile(), libFolder);
+        final List<File> artifacts = project.getProjectDependencies().stream().map(Path::toFile).collect(Collectors.toList());
+        final String libraryToExclude = artifacts.stream()
+                .filter(artifact -> StringUtils.equalsAnyIgnoreCase(artifact.getName(), AZURE_FUNCTIONS_JAVA_CORE_LIBRARY))
+                .map(File::getName).findFirst().orElse(AZURE_FUNCTIONS_JAVA_LIBRARY);
+        for (final File file : artifacts) {
+            if (!StringUtils.containsIgnoreCase(file.getName(), libraryToExclude)) {
+                FileUtils.copyFileToDirectory(file, libFolder);
             }
         }
-
         FileUtils.copyFileToDirectory(project.getArtifactFile().toFile(), new File(deploymentStagingDirectoryPath));
         AzureMessager.getMessager().info(COPY_SUCCESS);
     }
