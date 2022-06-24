@@ -137,7 +137,7 @@ public class GradleAuthHelper {
         }
         if (auth.getType() == null || auth.getType() == AuthType.AUTO) {
             if (StringUtils.isAllBlank(auth.getCertificate(), auth.getCertificatePassword(), auth.getKey())) {
-                final Account account = findFirstAvailableAccount().block();
+                final Account account = findFirstAvailableAccount(auth).block();
                 if (account == null) {
                     throw new AzureToolkitAuthenticationException("There are no accounts available.");
                 }
@@ -173,8 +173,8 @@ public class GradleAuthHelper {
         }
     }
 
-    private static Mono<Account> findFirstAvailableAccount() {
-        final List<Account> accounts = Azure.az(AzureAccount.class).accounts();
+    private static Mono<Account> findFirstAvailableAccount(AuthConfiguration auth) {
+        final List<Account> accounts = Azure.az(AzureAccount.class).initAccounts(auth);
         if (accounts.isEmpty()) {
             return Mono.error(new AzureToolkitAuthenticationException("There are no accounts available."));
         }
