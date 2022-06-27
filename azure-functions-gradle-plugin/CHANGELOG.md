@@ -1,6 +1,8 @@
 # Change Log
 All notable changes to the "Azure Function Plugin for Gradle" will be documented in this file.
 - [Change Log](#change-log)
+  - [1.10.0](#1100)
+  - [1.9.0](#190)
   - [1.8.0](#180)  
   - [1.7.0](#170)
   - [1.6.0](#160)
@@ -11,18 +13,25 @@ All notable changes to the "Azure Function Plugin for Gradle" will be documented
   - [1.1.0](#110)
   - [1.0.0](#100)
 
+## 1.10.0
+- Support Managed Identity for authentication
+- Support azure-functions-java-library 2.*
+
+## 1.9.0
+- Support deployment slot for Function App
+
 ## 1.8.0
-- Support default value for region/pricing tier/javaVersion [#1755](https://github.com/microsoft/azure-maven-plugins/pull/1761)
+- Support default value for region/pricing tier/java version [#1755](https://github.com/microsoft/azure-maven-plugins/pull/1761)
 - Fix warning message of `illegal reflective access from groovy` [#1763](https://github.com/microsoft/azure-maven-plugins/pull/1763)
 
 ## 1.7.0
 - Support [proxy](https://github.com/microsoft/azure-gradle-plugins/wiki/Proxy) with credential
-- Fix the unexpected gradle settings which will ignore the Java 1.8 settings
-- Fix the bug of cannot detect func installed by choco install
+- Fix the unexpected Gradle settings which will ignore the Java 1.8 settings
+- Fix the bug of cannot detect func installed by Choco install
 - Change the configuration name from `authentication` to `auth`
 
 ## 1.6.0
-- Support [proxy](https://github.com/microsoft/azure-gradle-plugins/wiki/Proxy) in azure function gradle plugin
+- Support [proxy](https://github.com/microsoft/azure-gradle-plugins/wiki/Proxy) in azure function Gradle plugin
 - Create default files when there are no local.settings.json and host.json files instead of reporting errors.
 - Use track2 SDK to manage azure functions
 
