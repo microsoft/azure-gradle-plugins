@@ -121,7 +121,7 @@ public class DeployTask extends DefaultTask {
     private WebAppBase<?, ?, ?> createOrUpdateWebapp(GradleWebAppConfig config) {
         final AppServiceConfig appServiceConfig = convert(config);
         final WebApp app = Azure.az(AzureWebApp.class).webApps(appServiceConfig.subscriptionId())
-                .get(appServiceConfig.resourceGroup(), appServiceConfig.appName());
+                .get(appServiceConfig.appName(), appServiceConfig.resourceGroup());
         boolean skipCreate = BooleanUtils.toBoolean(System.getProperty("azure.resource.create.skip", "false"));
         final AppServiceConfig defaultConfig = app != null && app.exists() ? fromAppService(app, Objects.requireNonNull(app.getAppServicePlan())) :
                 buildDefaultConfig(appServiceConfig.subscriptionId(), appServiceConfig.resourceGroup(), appServiceConfig.appName());

@@ -371,7 +371,7 @@ public class DeployHandler {
     }
 
     public FunctionApp getFunctionApp() {
-        return ctx.getOrCreateAzureAppServiceClient().get(ctx.getResourceGroup(), ctx.getAppName());
+        return ctx.getOrCreateAzureAppServiceClient().get(ctx.getAppName(), ctx.getResourceGroup());
     }
 
     private void validateApplicationInsightsConfiguration() {
