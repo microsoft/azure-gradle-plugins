@@ -6,26 +6,23 @@
 package com.microsoft.azure.gradle.auth;
 
 import com.azure.core.management.AzureEnvironment;
-import com.azure.identity.DeviceCodeInfo;
 import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
 import com.microsoft.azure.gradle.temeletry.TelemetryConstants;
 import com.microsoft.azure.toolkit.lib.Azure;
 import com.microsoft.azure.toolkit.lib.auth.Account;
+import com.microsoft.azure.toolkit.lib.auth.AuthConfiguration;
+import com.microsoft.azure.toolkit.lib.auth.AuthType;
 import com.microsoft.azure.toolkit.lib.auth.AzureAccount;
 import com.microsoft.azure.toolkit.lib.auth.AzureCloud;
-import com.microsoft.azure.toolkit.lib.auth.core.devicecode.DeviceCodeAccount;
-import com.microsoft.azure.toolkit.lib.auth.exception.AzureToolkitAuthenticationException;
-import com.microsoft.azure.toolkit.lib.auth.exception.InvalidConfigurationException;
-import com.microsoft.azure.toolkit.lib.auth.model.AuthConfiguration;
-import com.microsoft.azure.toolkit.lib.auth.model.AuthType;
-import com.microsoft.azure.toolkit.lib.auth.util.AzureEnvironmentUtils;
+import com.microsoft.azure.toolkit.lib.auth.AzureEnvironmentUtils;
+import com.microsoft.azure.toolkit.lib.auth.AzureToolkitAuthenticationException;
 import com.microsoft.azure.toolkit.lib.common.bundle.AzureString;
+import com.microsoft.azure.toolkit.lib.common.exception.InvalidConfigurationException;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
 import com.microsoft.azure.toolkit.lib.common.model.Subscription;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import reactor.core.publisher.Mono;
 
 import javax.annotation.Nonnull;
 import java.util.Collections;
@@ -47,7 +44,7 @@ public class GradleAuthHelper {
             final List<Subscription> subscriptions = account.getSubscriptions();
             final String targetSubscriptionId = getTargetSubscriptionId(subscriptionId, subscriptions, account.getSelectedSubscriptions());
             checkSubscription(subscriptions, targetSubscriptionId);
-            Azure.az(AzureAccount.class).account().selectSubscription(Collections.singletonList(targetSubscriptionId));
+            Azure.az(AzureAccount.class).account().setSelectedSubscriptions(Collections.singletonList(targetSubscriptionId));
             printCurrentSubscription(account);
             return targetSubscriptionId;
         } catch (InvalidConfigurationException e) {
@@ -92,17 +89,18 @@ public class GradleAuthHelper {
     }
 
     private static Account login(@Nonnull AuthConfiguration auth) {
-        promptAzureEnvironment(auth.getEnvironment());
+        final AzureEnvironment azureEnvironment = AzureEnvironmentUtils.stringToAzureEnvironment(auth.getEnvironment());
+        promptAzureEnvironment(azureEnvironment);
         final Account account = accountLogin(auth);
-        final boolean isInteractiveLogin = account.getAuthType() == AuthType.OAUTH2 || account.getAuthType() == AuthType.DEVICE_CODE;
+        final boolean isInteractiveLogin = account.getType() == AuthType.OAUTH2 || account.getType() == AuthType.DEVICE_CODE;
         final AzureEnvironment env = account.getEnvironment();
         final String environmentName = AzureEnvironmentUtils.azureEnvironmentToString(env);
-        if (env != AzureEnvironment.AZURE && env != auth.getEnvironment()) {
+        if (env != AzureEnvironment.AZURE && env != azureEnvironment) {
             AzureMessager.getMessager().info(AzureString.format(USING_AZURE_ENVIRONMENT, environmentName));
         }
         printCredentialDescription(account, isInteractiveLogin);
         TelemetryAgent.getInstance().addDefaultProperty(TelemetryConstants.AUTH_TYPE_KEY, Objects.toString(auth.getType()));
-        TelemetryAgent.getInstance().addDefaultProperty(TelemetryConstants.AUTH_METHOD_KEY, Objects.toString(account.getAuthType()));
+        TelemetryAgent.getInstance().addDefaultProperty(TelemetryConstants.AUTH_METHOD_KEY, Objects.toString(account.getType()));
         TelemetryAgent.getInstance().addDefaultProperty(TelemetryConstants.AZURE_ENVIRONMENT_KEY, environmentName);
         return account;
     }
@@ -117,8 +115,8 @@ public class GradleAuthHelper {
                         selectedSubscriptions.get(0).getId()));
                 }
             }
-            if (StringUtils.isNotEmpty(account.getEntity().getEmail())) {
-                AzureMessager.getMessager().info(AzureString.format("Username: %s", account.getEntity().getEmail()));
+            if (StringUtils.isNotEmpty(account.getUsername())) {
+                AzureMessager.getMessager().info(AzureString.format("Username: %s", account.getUsername()));
             }
         } else {
             AzureMessager.getMessager().info(account.toString());
@@ -133,38 +131,20 @@ public class GradleAuthHelper {
 
     private static Account accountLogin(AuthConfiguration auth) {
         if (auth.getEnvironment() != null) {
-            Azure.az(AzureCloud.class).set(auth.getEnvironment());
+            Azure.az(AzureCloud.class).set(AzureEnvironmentUtils.stringToAzureEnvironment(auth.getEnvironment()));
         }
-        if (auth.getType() == null || auth.getType() == AuthType.AUTO) {
+        if (auth.getType() == AuthType.AUTO) {
             if (StringUtils.isAllBlank(auth.getCertificate(), auth.getCertificatePassword(), auth.getKey())) {
-                final Account account = findFirstAvailableAccount(auth).block();
-                if (account == null) {
-                    throw new AzureToolkitAuthenticationException("There are no accounts available.");
-                }
-                promptForOAuthOrDeviceCodeLogin(account.getAuthType());
-                return handleDeviceCodeAccount(Azure.az(AzureAccount.class).loginAsync(account, false).block());
+                promptForOAuthOrDeviceCodeLogin(auth.getType());
+                return Azure.az(AzureAccount.class).login(auth, false);
             } else {
-                return doServicePrincipalLogin(auth);
+                auth.setType(AuthType.SERVICE_PRINCIPAL);
+                return Azure.az(AzureAccount.class).login(auth);
             }
         } else {
             promptForOAuthOrDeviceCodeLogin(auth.getType());
-            return handleDeviceCodeAccount(Azure.az(AzureAccount.class).loginAsync(auth, false).block());
+            return Azure.az(AzureAccount.class).login(auth, false);
         }
-    }
-
-    private static Account doServicePrincipalLogin(AuthConfiguration auth) {
-        auth.setType(AuthType.SERVICE_PRINCIPAL);
-        return Azure.az(AzureAccount.class).login(auth).account();
-    }
-
-    private static Account handleDeviceCodeAccount(Account account) {
-        if (account instanceof DeviceCodeAccount) {
-            final DeviceCodeAccount deviceCodeAccount = (DeviceCodeAccount) account;
-            final DeviceCodeInfo challenge = deviceCodeAccount.getDeviceCode();
-            AzureMessager.getMessager().info(
-                AzureString.format(StringUtils.replace(challenge.getMessage(), challenge.getUserCode(), "%s"), challenge.getUserCode()));
-        }
-        return account.continueLogin().block();
     }
 
     private static void promptForOAuthOrDeviceCodeLogin(AuthType authType) {
@@ -173,38 +153,14 @@ public class GradleAuthHelper {
         }
     }
 
-    private static Mono<Account> findFirstAvailableAccount(AuthConfiguration auth) {
-        final List<Account> accounts = Azure.az(AzureAccount.class).initAccounts(auth);
-        if (accounts.isEmpty()) {
-            return Mono.error(new AzureToolkitAuthenticationException("There are no accounts available."));
-        }
-        Mono<Account> current = checkAccountAvailable(accounts.get(0));
-        for (int i = 1; i < accounts.size(); i++) {
-            final Account ac = accounts.get(i);
-            current = current.onErrorResume(e -> checkAccountAvailable(ac));
-        }
-        return current;
-    }
-
-    private static Mono<Account> checkAccountAvailable(Account account) {
-        return account.checkAvailable().map(avail -> {
-            if (avail) {
-                return account;
-            }
-            throw new AzureToolkitAuthenticationException(String.format("Cannot login with auth type: %s", account.getAuthType()));
-        });
-    }
-
     private static AuthConfiguration toAuthConfiguration(GradleAuthConfig gradleAuthConfig) throws InvalidConfigurationException {
-        final AuthConfiguration authConfiguration = new AuthConfiguration();
+        final AuthConfiguration authConfiguration = new AuthConfiguration(AuthType.parseAuthType(gradleAuthConfig.getType()));
         authConfiguration.setClient(gradleAuthConfig.getClient());
         authConfiguration.setTenant(gradleAuthConfig.getTenant());
         authConfiguration.setCertificate(gradleAuthConfig.getCertificate());
         authConfiguration.setCertificatePassword(gradleAuthConfig.getCertificatePassword());
         authConfiguration.setKey(gradleAuthConfig.getKey());
-        final String authTypeStr = gradleAuthConfig.getType();
-        authConfiguration.setType(AuthType.parseAuthType(authTypeStr));
-        authConfiguration.setEnvironment(AzureEnvironmentUtils.stringToAzureEnvironment(gradleAuthConfig.getEnvironment()));
+        authConfiguration.setEnvironment(gradleAuthConfig.getEnvironment());
         if (StringUtils.isNotBlank(gradleAuthConfig.getEnvironment()) && Objects.isNull(authConfiguration.getEnvironment())) {
             throw new InvalidConfigurationException(String.format(INVALID_AZURE_ENVIRONMENT, gradleAuthConfig.getEnvironment()));
         }
