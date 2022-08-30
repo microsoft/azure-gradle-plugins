@@ -20,6 +20,7 @@ import com.microsoft.azure.toolkit.lib.common.bundle.AzureString;
 import com.microsoft.azure.toolkit.lib.common.exception.InvalidConfigurationException;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
 import com.microsoft.azure.toolkit.lib.common.model.Subscription;
+import com.microsoft.azure.toolkit.lib.common.utils.TextUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -130,20 +131,30 @@ public class GradleAuthHelper {
     }
 
     private static Account accountLogin(AuthConfiguration auth) {
+        final AzureAccount azureAccount = Azure.az(AzureAccount.class);
+        if (azureAccount.isLoggedIn() || azureAccount.isLoggingIn()) {
+            azureAccount.logout();
+        }
         if (auth.getEnvironment() != null) {
             Azure.az(AzureCloud.class).set(AzureEnvironmentUtils.stringToAzureEnvironment(auth.getEnvironment()));
+        }
+        if (auth.getType() == AuthType.DEVICE_CODE) {
+            auth.setDeviceCodeConsumer(info -> {
+                final String message = StringUtils.replace(info.getMessage(), info.getUserCode(), TextUtils.cyan(info.getUserCode()));
+                AzureMessager.getMessager().info(message);
+            });
         }
         if (auth.getType() == AuthType.AUTO) {
             if (StringUtils.isAllBlank(auth.getCertificate(), auth.getCertificatePassword(), auth.getKey())) {
                 promptForOAuthOrDeviceCodeLogin(auth.getType());
-                return Azure.az(AzureAccount.class).login(auth, false);
+                return azureAccount.login(auth, false);
             } else {
                 auth.setType(AuthType.SERVICE_PRINCIPAL);
-                return Azure.az(AzureAccount.class).login(auth);
+                return azureAccount.login(auth);
             }
         } else {
             promptForOAuthOrDeviceCodeLogin(auth.getType());
-            return Azure.az(AzureAccount.class).login(auth, false);
+            return azureAccount.login(auth, false);
         }
     }
 
