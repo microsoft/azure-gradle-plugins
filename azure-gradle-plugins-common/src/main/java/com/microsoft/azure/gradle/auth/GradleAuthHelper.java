@@ -146,21 +146,13 @@ public class GradleAuthHelper {
         }
         if (auth.getType() == AuthType.AUTO) {
             if (StringUtils.isAllBlank(auth.getCertificate(), auth.getCertificatePassword(), auth.getKey())) {
-                promptForOAuthOrDeviceCodeLogin(auth.getType());
                 return azureAccount.login(auth, false);
             } else {
                 auth.setType(AuthType.SERVICE_PRINCIPAL);
                 return azureAccount.login(auth);
             }
         } else {
-            promptForOAuthOrDeviceCodeLogin(auth.getType());
             return azureAccount.login(auth, false);
-        }
-    }
-
-    private static void promptForOAuthOrDeviceCodeLogin(AuthType authType) {
-        if (authType == AuthType.OAUTH2 || authType == AuthType.DEVICE_CODE) {
-            AzureMessager.getMessager().info(AzureString.format("Auth type: %s", authType.toString()));
         }
     }
 
