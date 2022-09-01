@@ -102,7 +102,7 @@ public class DeployHandler {
     private static final int LIST_TRIGGERS_RETRY_PERIOD_IN_SECONDS = 10;
     private static final String NO_TRIGGERS_FOUNDED = "No triggers found in deployed function app, " +
         "please try to deploy the project again.";
-    private static final String EXPANDABLE_JAVA_VERSION_WARNING = "'%s' may not be a valid java version, recommended values are `Java 8` and `Java 11`";
+    private static final String EXPANDABLE_JAVA_VERSION_WARNING = "'%s' may not be a valid java version, recommended values are `Java 8`, `Java 11` and `Java 17`";
     private static final String EXPANDABLE_PRICING_TIER_WARNING = "'%s' may not be a valid pricing tier, " +
         "please refer to https://aka.ms/maven_function_configuration#supported-pricing-tiers for valid values";
     private static final String EXPANDABLE_REGION_WARNING = "'%s' may not be a valid region, " +
