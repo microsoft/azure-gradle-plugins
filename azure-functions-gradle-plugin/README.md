@@ -100,9 +100,18 @@ gradle azureFunctionsDeploy
 ```
 
 ## Common Questions
-**Q: How to do when reporting "Cannot run functions locally due to error: Azure Functions Core Tools can not be found."**
+
+**Q: What to do when it fails to `gradle azureFunctionsRun` with no error
+
+**A:** Run with `gradle azureFunctionsRun --stacktrace` then see one of the answer below.
+
+
+**Q: What to do when reporting "Cannot run functions locally due to error: Azure Functions Core Tools can not be found."**
 
 **A:** You can install Azure Functions Core Tools at: https://aka.ms/azfunc-install
+
+**A WSL:**
+Additionaly, there is a underlining bug in [azure-libraries-for-java](https://github.com/Azure/azure-libraries-for-java/issues/1437) which means if you are using WSL or your PATH contains spaces you will also recivie this error. Remove any spaces from your PATH.
 
 ## Feedback and Questions
 To report bugs or request new features, file issues on [Issues](https://github.com/microsoft/azure-gradle-plugins/issues). Or, ask questions on [Stack Overflow with tag azure-java-tools](https://stackoverflow.com/questions/tagged/azure-java-tools).
