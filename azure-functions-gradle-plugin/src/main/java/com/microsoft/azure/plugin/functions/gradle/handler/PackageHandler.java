@@ -284,9 +284,9 @@ public class PackageHandler {
             FileUtils.cleanDirectory(libFolder);
         }
         final List<File> artifacts = project.getProjectDependencies().stream().map(Path::toFile).collect(Collectors.toList());
-        final String libraryToExclude = artifacts.stream()
-                .filter(artifact -> StringUtils.equalsAnyIgnoreCase(artifact.getName(), AZURE_FUNCTIONS_JAVA_CORE_LIBRARY))
-                .map(File::getName).findFirst().orElse(AZURE_FUNCTIONS_JAVA_LIBRARY);
+        final String libraryToExclude = artifacts.stream().anyMatch(artifact ->
+                StringUtils.containsIgnoreCase(artifact.getName(), AZURE_FUNCTIONS_JAVA_CORE_LIBRARY)) ?
+                AZURE_FUNCTIONS_JAVA_CORE_LIBRARY : AZURE_FUNCTIONS_JAVA_LIBRARY;
         for (final File file : artifacts) {
             if (!StringUtils.containsIgnoreCase(file.getName(), libraryToExclude)) {
                 FileUtils.copyFileToDirectory(file, libFolder);
