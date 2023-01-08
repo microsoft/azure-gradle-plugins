@@ -32,7 +32,7 @@ public class AzureFunctionsPlugin implements Plugin<Project> {
     private static final String GRADLE_FUNCTION_EXTENSION = "azurefunctions";
 
     @Override
-    @AzureOperation(name = "functionapp.init_gradle_plugin", type = AzureOperation.Type.ACTION)
+    @AzureOperation(name = "internal/functionapp.init_gradle_plugin")
     public void apply(final Project project) {
         AzureTaskManager.register(new GradleAzureTaskManager());
         AzureMessager.setDefaultMessager(new GradleAzureMessager(project.getLogger()));

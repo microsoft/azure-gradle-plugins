@@ -173,7 +173,7 @@ public class DeployHandler {
                 .retryWhen(Retry.fixedDelay(LIST_TRIGGERS_MAX_RETRY - 1, Duration.ofSeconds(LIST_TRIGGERS_RETRY_PERIOD_IN_SECONDS))).block();
     }
 
-    @AzureOperation(name = "functionapp.list_function.app", params = {"functionApp.getName()"}, type = AzureOperation.Type.TASK)
+    @AzureOperation(name = "user/functionapp.list_function.app", params = {"functionApp.getName()"})
     private List<FunctionEntity> listFunctions(final FunctionApp functionApp, int count) {
         final AzureString message = count == 0 ?
                 AzureString.fromString(SYNCING_TRIGGERS) : AzureString.format(SYNCING_TRIGGERS_WITH_RETRY, count, LIST_TRIGGERS_MAX_RETRY);

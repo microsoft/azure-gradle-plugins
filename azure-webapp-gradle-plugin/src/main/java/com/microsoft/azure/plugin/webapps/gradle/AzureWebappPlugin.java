@@ -36,7 +36,7 @@ public class AzureWebappPlugin implements Plugin<Project> {
     private static final String GRADLE_FUNCTION_EXTENSION = "azurewebapp";
 
     @Override
-    @AzureOperation(name = "webapp.init_gradle_plugin", type = AzureOperation.Type.ACTION)
+    @AzureOperation(name = "internal/webapp.init_gradle_plugin")
     public void apply(final Project project) {
         AzureTaskManager.register(new GradleAzureTaskManager());
         final AzureWebappPluginExtension extension = project.getExtensions().create(GRADLE_FUNCTION_EXTENSION,

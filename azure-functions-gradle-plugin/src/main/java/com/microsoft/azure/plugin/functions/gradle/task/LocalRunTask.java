@@ -55,7 +55,7 @@ public class LocalRunTask extends Exec implements IFunctionTask {
 
     @TaskAction
     @Override
-    @AzureOperation(name = "functionapp.run", type = AzureOperation.Type.ACTION)
+    @AzureOperation(name = "user/functionapp.run")
     public void exec() {
         try {
             TelemetryAgent.getInstance().trackTaskStart(this.getClass());
