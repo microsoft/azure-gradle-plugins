@@ -14,6 +14,7 @@ dependencies {
     implementation 'com.google.guava:guava:30.1.1-jre'
     implementation 'org.apache.maven:maven-artifact:3.8.1'
     implementation 'org.fusesource.jansi:jansi:1.18'
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-properties:2.14.1'
 
     implementation 'com.microsoft.azure:azure-toolkit-common-lib:' + azureToolkitVersion
     aspect 'com.microsoft.azure:azure-toolkit-common-lib:' + azureToolkitVersion

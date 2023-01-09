@@ -5,15 +5,19 @@
 
 package com.microsoft.azure.plugin.webapps.gradle;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.dataformat.javaprop.JavaPropsMapper;
 import com.microsoft.azure.gradle.common.GradleAzureTaskManager;
 import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
 import com.microsoft.azure.gradle.util.GradleAzureMessager;
 import com.microsoft.azure.toolkit.lib.appservice.model.OperatingSystem;
+import com.microsoft.azure.toolkit.lib.common.bundle.AzureString;
 import com.microsoft.azure.toolkit.lib.common.cache.CacheEvict;
 import com.microsoft.azure.toolkit.lib.common.cache.CacheManager;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
 import com.microsoft.azure.toolkit.lib.common.operation.AzureOperation;
 import com.microsoft.azure.toolkit.lib.common.task.AzureTaskManager;
+import com.microsoft.azure.toolkit.lib.common.utils.Utils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -28,7 +32,10 @@ import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskOutputs;
 import org.gradle.api.tasks.TaskProvider;
 
+import javax.annotation.Nullable;
+import java.io.IOException;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
 public class AzureWebappPlugin implements Plugin<Project> {
@@ -41,7 +48,7 @@ public class AzureWebappPlugin implements Plugin<Project> {
         AzureTaskManager.register(new GradleAzureTaskManager());
         final AzureWebappPluginExtension extension = project.getExtensions().create(GRADLE_FUNCTION_EXTENSION,
             AzureWebappPluginExtension.class, project);
-
+        mergeCommandLineParameters(extension);
         AzureMessager.setDefaultMessager(new GradleAzureMessager(project.getLogger()));
         String pluginVersion = StringUtils.firstNonBlank(AzureWebappPlugin.class.getPackage().getImplementationVersion(), "develop");
         TelemetryAgent.getInstance().initTelemetry(GRADLE_PLUGIN_NAME, pluginVersion, BooleanUtils.isNotFalse(extension.getAllowTelemetry()));
@@ -106,5 +113,18 @@ public class AzureWebappPlugin implements Plugin<Project> {
             }
         }
         return null;
+    }
+
+    @Nullable
+    private static void mergeCommandLineParameters(final AzureWebappPluginExtension config) {
+        final JavaPropsMapper mapper = new JavaPropsMapper();
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        final Properties properties = System.getProperties();
+        try {
+            final AzureWebappPluginExtension commandLineParameters = mapper.readPropertiesAs(properties, AzureWebappPluginExtension.class);
+            Utils.copyProperties(config, commandLineParameters, false);
+        } catch (IOException | IllegalAccessException e) {
+            AzureMessager.getMessager().warning(AzureString.format("Failed to read parameters from command line : %s", e.getMessage()));
+        }
     }
 }

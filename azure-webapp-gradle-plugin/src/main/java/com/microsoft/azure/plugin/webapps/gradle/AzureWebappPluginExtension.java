@@ -5,12 +5,14 @@
 
 package com.microsoft.azure.plugin.webapps.gradle;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.microsoft.azure.gradle.auth.GradleAuthConfig;
 import com.microsoft.azure.gradle.configuration.GradleDeploymentSlotConfig;
 import com.microsoft.azure.gradle.configuration.GradleRuntimeConfig;
 import com.microsoft.azure.toolkit.lib.appservice.model.OperatingSystem;
 import com.microsoft.azure.toolkit.lib.legacy.appservice.DockerImageType;
 import groovy.lang.Closure;
+import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.Input;
@@ -21,6 +23,7 @@ import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 
+@NoArgsConstructor
 public class AzureWebappPluginExtension {
     public static final String JAVA_VERSION_KEY = "javaVersion";
     public static final String JAVA_WEB_CONTAINER_KEY = "javaWebContainer";
@@ -62,7 +65,7 @@ public class AzureWebappPluginExtension {
     private Boolean disableAppInsights;
 
     @Nonnull
-    private final Project project;
+    private Project project;
 
     @Input
     @Optional
@@ -228,6 +231,26 @@ public class AzureWebappPluginExtension {
 
     public void setDisableAppInsights(Boolean disableAppInsights) {
         this.disableAppInsights = disableAppInsights;
+    }
+
+    @JsonSetter
+    public void setAuth(GradleAuthConfig auth) {
+        this.auth = auth;
+    }
+
+    @JsonSetter
+    public void setRuntime(GradleRuntimeConfig runtime) {
+        this.runtime = runtime;
+    }
+
+    @JsonSetter
+    public void setDeploymentSlot(GradleDeploymentSlotConfig deploymentSlot) {
+        this.deploymentSlot = deploymentSlot;
+    }
+
+    @JsonSetter
+    public void setAppSettings(Map<String, String> appSettings) {
+        this.appSettings = appSettings;
     }
 
     public AzureWebappPluginExtension(@Nonnull Project project) {
