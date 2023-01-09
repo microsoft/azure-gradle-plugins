@@ -1,0 +1,16 @@
+initscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+        mavenLocal()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.microsoft.azure:azure-functions-gradle-plugin:1.12.0-SNAPSHOT'
+    }
+}
+
+allprojects {
+    apply plugin: com.microsoft.azure.plugin.functions.gradle.AzureFunctionsPlugin
+}

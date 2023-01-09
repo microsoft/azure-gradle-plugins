@@ -1,0 +1,16 @@
+initscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+        mavenLocal()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.microsoft.azure:azure-webapp-gradle-plugin:1.7.0-SNAPSHOT'
+    }
+}
+
+allprojects {
+    apply plugin: com.microsoft.azure.plugin.webapps.gradle.AzureWebappPlugin
+}
