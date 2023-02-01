@@ -9,7 +9,7 @@ initscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.microsoft.azure:azure-functions-gradle-plugin:1.12.0-SNAPSHOT'
+        classpath 'com.microsoft.azure:azure-functions-gradle-plugin:1.12.0'
     }
 }
 

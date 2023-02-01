@@ -9,7 +9,7 @@ initscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.microsoft.azure:azure-webapp-gradle-plugin:1.7.0-SNAPSHOT'
+        classpath 'com.microsoft.azure:azure-webapp-gradle-plugin:1.7.0'
     }
 }
 
