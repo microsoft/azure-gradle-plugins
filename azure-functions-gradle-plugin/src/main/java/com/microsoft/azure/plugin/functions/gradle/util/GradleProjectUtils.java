@@ -26,8 +26,8 @@ import java.util.stream.Collectors;
  */
 public class GradleProjectUtils {
     private static final String MAIN_SOURCE_SET_NAME = "main";
-    public static final String DEPENDENCY_WARNING = "Following dependencies could not be founded, " +
-            "please check whether related modules has been packaged \n %s";
+    private static final String DEPENDENCY_WARNING = "The following dependencies could not be found, " +
+            "please check whether related modules have been packaged \n %s";
 
     public static JavaProject convert(final Project project) {
         final JavaPluginConvention javaPluginConvention = project.getConvention().getPlugin(JavaPluginConvention.class);
