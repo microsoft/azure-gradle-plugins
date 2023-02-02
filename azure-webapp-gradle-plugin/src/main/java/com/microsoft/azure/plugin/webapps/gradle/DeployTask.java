@@ -66,7 +66,7 @@ public class DeployTask extends DefaultTask {
     private String artifactFile;
 
     @TaskAction
-    @AzureOperation(name = "webapp.deploy_app", type = AzureOperation.Type.ACTION)
+    @AzureOperation(name = "user/webapp.deploy_app")
     public void deploy() throws GradleException {
         try {
             ProxyManager.getInstance().applyProxy();

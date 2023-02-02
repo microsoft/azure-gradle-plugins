@@ -33,6 +33,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.input.BOMInputStream;
 import org.apache.commons.lang3.StringUtils;
 
+import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -51,6 +52,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -94,6 +97,7 @@ public class PackageHandler {
     private static final String DEFAULT_HOST_JSON = "{\"version\":\"2.0\",\"extensionBundle\":" +
         "{\"id\":\"Microsoft.Azure.Functions.ExtensionBundle\",\"version\":\"[3.*, 4.0.0)\"}}\n";
     private static final String TRIGGER_TYPE = "triggerType";
+    private static final Pattern ARTIFACT_NAME_PATTERN = Pattern.compile("(.*)-(\\d+\\.)?(\\d+\\.)?(\\*|\\d+).*");
 
     private final IProject project;
     private final String deploymentStagingDirectoryPath;
@@ -284,16 +288,26 @@ public class PackageHandler {
             FileUtils.cleanDirectory(libFolder);
         }
         final List<File> artifacts = project.getProjectDependencies().stream().map(Path::toFile).collect(Collectors.toList());
-        final String libraryToExclude = artifacts.stream().anyMatch(artifact ->
-                StringUtils.containsIgnoreCase(artifact.getName(), AZURE_FUNCTIONS_JAVA_CORE_LIBRARY)) ?
-                AZURE_FUNCTIONS_JAVA_CORE_LIBRARY : AZURE_FUNCTIONS_JAVA_LIBRARY;
+        final String libraryToExclude = artifacts.stream()
+                .map(PackageHandler::getArtifactIdFromFile)
+                .filter(name -> StringUtils.equalsAnyIgnoreCase(name, AZURE_FUNCTIONS_JAVA_CORE_LIBRARY))
+                .findFirst().orElse(AZURE_FUNCTIONS_JAVA_LIBRARY);
         for (final File file : artifacts) {
-            if (!StringUtils.containsIgnoreCase(file.getName(), libraryToExclude)) {
+            if (!StringUtils.equalsIgnoreCase(getArtifactIdFromFile(file), libraryToExclude)) {
+                if (!file.exists()) {
+                    throw new AzureToolkitRuntimeException(String.format("Dependency artifact (%s) not found, please correct the dependency and try again", file.getAbsolutePath()));
+                }
                 FileUtils.copyFileToDirectory(file, libFolder);
             }
         }
         FileUtils.copyFileToDirectory(project.getArtifactFile().toFile(), new File(deploymentStagingDirectoryPath));
         AzureMessager.getMessager().info(COPY_SUCCESS);
+    }
+
+    private static String getArtifactIdFromFile(@Nonnull final File file) {
+        final Matcher matcher = ARTIFACT_NAME_PATTERN.matcher(file.getName());
+        return matcher.matches() ? StringUtils.substringBeforeLast(file.getName(), "-") :
+                StringUtils.substringBeforeLast(file.getName(), ".jar");
     }
 
     private FunctionCoreToolsHandler getFunctionCoreToolsHandler(final CommandHandler commandHandler) {

@@ -35,7 +35,7 @@ public class PackageTask extends DefaultTask implements IFunctionTask {
     }
 
     @TaskAction
-    @AzureOperation(name = "functionapp.package", type = AzureOperation.Type.ACTION)
+    @AzureOperation(name = "user/functionapp.package")
     public void build() throws GradleException {
         try {
             TelemetryAgent.getInstance().trackTaskStart(this.getClass());

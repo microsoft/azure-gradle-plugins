@@ -5,11 +5,15 @@
 
 package com.microsoft.azure.plugin.functions.gradle;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.microsoft.azure.gradle.auth.GradleAuthConfig;
 import com.microsoft.azure.gradle.configuration.GradleDeploymentSlotConfig;
 import com.microsoft.azure.gradle.configuration.GradleRuntimeConfig;
 import com.microsoft.azure.plugin.functions.gradle.configuration.deploy.Deployment;
 import groovy.lang.Closure;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Optional;
@@ -18,7 +22,7 @@ import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 
-
+@NoArgsConstructor
 public class AzureFunctionsExtension {
 
     @Nullable
@@ -61,7 +65,8 @@ public class AzureFunctionsExtension {
 
     private Map<String, String> appSettings;
 
-    private final Project project;
+    @JsonIgnore
+    private Project project;
 
     @Nullable
     private String appInsightsInstance;
@@ -254,5 +259,30 @@ public class AzureFunctionsExtension {
 
     public void setDisableAppInsights(@Nullable Boolean disableAppInsights) {
         this.disableAppInsights = disableAppInsights;
+    }
+
+    @JsonSetter
+    public void setAuth(@Nullable GradleAuthConfig auth) {
+        this.auth = auth;
+    }
+
+    @JsonSetter
+    public void setDeployment(@Nullable Deployment deployment) {
+        this.deployment = deployment;
+    }
+
+    @JsonSetter
+    public void setRuntime(@Nullable GradleRuntimeConfig runtime) {
+        this.runtime = runtime;
+    }
+
+    @JsonSetter
+    public void setDeploymentSlot(@Nullable GradleDeploymentSlotConfig deploymentSlot) {
+        this.deploymentSlot = deploymentSlot;
+    }
+
+    @JsonSetter
+    public void setAppSettings(Map<String, String> appSettings) {
+        this.appSettings = appSettings;
     }
 }

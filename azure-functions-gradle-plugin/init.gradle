@@ -1,0 +1,30 @@
+import org.gradle.util.VersionNumber
+
+initscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+        mavenLocal()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.microsoft.azure:azure-functions-gradle-plugin:1.12.0'
+    }
+}
+
+allprojects {
+    project.afterEvaluate {
+        if (project.plugins.findPlugin("com.microsoft.azure.azurefunctions") == null) {
+            project.pluginManager.apply(com.microsoft.azure.plugin.functions.gradle.AzureFunctionsPlugin)
+        } else {
+            var artifact = project.buildscript.configurations.classpath.resolvedConfiguration.resolvedArtifacts
+                    .collect { it.moduleVersion.id }
+                    .find { it.group == 'com.microsoft.azure' && it.name == 'azure-functions-gradle-plugin' };
+            if (VersionNumber.parse(artifact.version) < VersionNumber.parse("1.12.0")) {
+                println "You are using functions gradle plugin " + artifact.version +  ", which did not support command line parameters, " +
+                        "please set azure configuration in your build.gradle"
+            }
+        }
+    }
+}

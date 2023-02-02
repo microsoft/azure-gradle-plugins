@@ -38,7 +38,7 @@ public class DeployTask extends DefaultTask implements IFunctionTask {
     }
 
     @TaskAction
-    @AzureOperation(name = "functionapp.deploy_app", type = AzureOperation.Type.ACTION)
+    @AzureOperation(name = "user/functionapp.deploy_app")
     public void deploy() throws GradleException {
         try {
             ProxyManager.getInstance().applyProxy();
