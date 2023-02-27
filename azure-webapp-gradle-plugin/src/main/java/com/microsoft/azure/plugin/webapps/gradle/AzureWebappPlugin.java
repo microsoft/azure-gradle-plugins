@@ -48,7 +48,6 @@ public class AzureWebappPlugin implements Plugin<Project> {
         AzureTaskManager.register(new GradleAzureTaskManager());
         final AzureWebappPluginExtension extension = project.getExtensions().create(GRADLE_FUNCTION_EXTENSION,
             AzureWebappPluginExtension.class, project);
-        mergeCommandLineParameters(extension);
         AzureMessager.setDefaultMessager(new GradleAzureMessager(project.getLogger()));
         String pluginVersion = StringUtils.firstNonBlank(AzureWebappPlugin.class.getPackage().getImplementationVersion(), "develop");
         TelemetryAgent.getInstance().initTelemetry(GRADLE_PLUGIN_NAME, pluginVersion, BooleanUtils.isNotFalse(extension.getAllowTelemetry()));
@@ -68,6 +67,7 @@ public class AzureWebappPlugin implements Plugin<Project> {
         });
 
         project.afterEvaluate(projectAfterEvaluation -> {
+            mergeCommandLineParameters(extension);
             final TaskProvider<Task> warTask = getWarTaskProvider(projectAfterEvaluation);
             final TaskProvider<Task> bootWarTask = getBootWarTaskProvider(projectAfterEvaluation);
             final TaskProvider<Task> bootJarTask = getBootJarTaskProvider(projectAfterEvaluation);
