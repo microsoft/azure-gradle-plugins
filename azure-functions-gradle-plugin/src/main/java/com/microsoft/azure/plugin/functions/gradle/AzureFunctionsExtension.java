@@ -13,7 +13,6 @@ import com.microsoft.azure.gradle.configuration.GradleRuntimeConfig;
 import com.microsoft.azure.plugin.functions.gradle.configuration.deploy.Deployment;
 import groovy.lang.Closure;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Optional;
