@@ -100,7 +100,7 @@ public class DeployTask extends DefaultTask {
     }
 
     private void deployArtifact(WebAppBase<?, ?, ?> target, GradleWebAppConfig config) {
-        new DeployWebAppTask(target, config.webAppArtifacts()).execute();
+        new DeployWebAppTask(target, config.webAppArtifacts(), true).execute();
     }
 
     private void validateOnline(GradleWebAppConfig config) {
