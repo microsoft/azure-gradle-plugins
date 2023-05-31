@@ -33,7 +33,7 @@ subprojects {
     targetCompatibility = 1.8
 
     ext {
-        azureToolkitVersion = "0.29.0"
+        azureToolkitVersion = "0.33.0"
     }
 
     checkstyle {
@@ -67,8 +67,6 @@ subprojects {
                 + targetCompatibility)
     }
 }
-
-
 
 configure(subprojects.findAll {it.name != 'azure-gradle-plugins-common'}) {
     apply plugin: 'java-gradle-plugin'

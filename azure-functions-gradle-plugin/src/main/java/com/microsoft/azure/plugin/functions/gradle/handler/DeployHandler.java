@@ -360,7 +360,7 @@ public class DeployHandler {
         }
         final ComparableVersion runtimeVersion = new ComparableVersion(runtime.javaVersion().getValue());
         final File file = this.ctx.getProject().getArtifactFile().toFile();
-        final ComparableVersion artifactVersion = new ComparableVersion(Utils.getArtifactCompileVersion(file));
+        final ComparableVersion artifactVersion = new ComparableVersion(String.valueOf(Utils.getArtifactCompileVersion(file)));
         if (runtimeVersion.compareTo(artifactVersion) < 0) {
             throw new AzureToolkitRuntimeException(ARTIFACT_INCOMPATIBLE);
         }
