@@ -106,8 +106,8 @@ public class GradleAuthHelper {
         return account;
     }
 
-    private static void printCredentialDescription(Account account, boolean skipType) {
-        if (skipType) {
+    private static void printCredentialDescription(Account account, boolean isInteractiveLogin) {
+        if (isInteractiveLogin) {
             if (CollectionUtils.isNotEmpty(account.getSubscriptions())) {
                 final List<Subscription> selectedSubscriptions = account.getSelectedSubscriptions();
                 if (selectedSubscriptions != null && selectedSubscriptions.size() == 1) {
@@ -116,12 +116,8 @@ public class GradleAuthHelper {
                         selectedSubscriptions.get(0).getId()));
                 }
             }
-            if (StringUtils.isNotEmpty(account.getUsername())) {
-                AzureMessager.getMessager().info(AzureString.format("Username: %s", account.getUsername()));
-            }
-        } else {
-            AzureMessager.getMessager().info(account.toString());
         }
+        AzureMessager.getMessager().info(account.toString());
     }
 
     private static void promptAzureEnvironment(AzureEnvironment env) {

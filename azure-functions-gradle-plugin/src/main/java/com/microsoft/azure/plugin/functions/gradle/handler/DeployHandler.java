@@ -18,17 +18,12 @@ import com.microsoft.azure.toolkit.lib.appservice.entity.FunctionEntity;
 import com.microsoft.azure.toolkit.lib.appservice.function.FunctionApp;
 import com.microsoft.azure.toolkit.lib.appservice.function.FunctionAppBase;
 import com.microsoft.azure.toolkit.lib.appservice.function.core.AzureFunctionsAnnotationConstants;
-import com.microsoft.azure.toolkit.lib.appservice.model.FunctionDeployType;
-import com.microsoft.azure.toolkit.lib.appservice.model.JavaVersion;
-import com.microsoft.azure.toolkit.lib.appservice.model.OperatingSystem;
-import com.microsoft.azure.toolkit.lib.appservice.model.PricingTier;
 import com.microsoft.azure.toolkit.lib.appservice.model.Runtime;
-import com.microsoft.azure.toolkit.lib.appservice.model.WebContainer;
+import com.microsoft.azure.toolkit.lib.appservice.model.*;
 import com.microsoft.azure.toolkit.lib.appservice.task.CreateOrUpdateFunctionAppTask;
 import com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigUtils;
 import com.microsoft.azure.toolkit.lib.auth.AzureAccount;
 import com.microsoft.azure.toolkit.lib.common.bundle.AzureString;
-import com.microsoft.azure.toolkit.lib.common.exception.AzureExecutionException;
 import com.microsoft.azure.toolkit.lib.common.exception.AzureToolkitRuntimeException;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
 import com.microsoft.azure.toolkit.lib.common.model.Region;
@@ -36,7 +31,6 @@ import com.microsoft.azure.toolkit.lib.common.operation.AzureOperation;
 import com.microsoft.azure.toolkit.lib.common.utils.Utils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.maven.artifact.versioning.ComparableVersion;
 import org.zeroturnaround.zip.ZipUtil;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -114,7 +108,7 @@ public class DeployHandler {
         this.ctx = ctx;
     }
 
-    public void execute() throws AzureExecutionException {
+    public void execute() {
         TelemetryAgent.getInstance().addDefaultProperty(FUNCTION_JAVA_VERSION_KEY, String.valueOf(javaVersion()));
         TelemetryAgent.getInstance().addDefaultProperty(DISABLE_APP_INSIGHTS_KEY, String.valueOf(ctx.isDisableAppInsights()));
         doValidate();
@@ -242,11 +236,12 @@ public class DeployHandler {
         if (StringUtils.isNotEmpty(pricingTier) && PricingTier.fromString(pricingTier) == null) {
             throw new AzureToolkitRuntimeException(String.format(EXPANDABLE_PRICING_TIER_WARNING, pricingTier));
         }
+        Optional.ofNullable(getRuntimeConfig()).ifPresent(this::validateArtifactCompileVersion);
         validateApplicationInsightsConfiguration();
     }
 
     @Nonnull
-    private FunctionAppBase<?, ?, ?> createOrUpdateFunctionApp() throws AzureExecutionException {
+    private FunctionAppBase<?, ?, ?> createOrUpdateFunctionApp() {
         final FunctionApp app = getFunctionApp();
         final FunctionAppConfig functionConfig = (FunctionAppConfig) new FunctionAppConfig()
             .disableAppInsights(ctx.isDisableAppInsights())
@@ -274,7 +269,6 @@ public class DeployHandler {
                     .map(map -> map.get(CreateOrUpdateFunctionAppTask.APPINSIGHTS_INSTRUMENTATION_KEY)).orElse(null);
             functionConfig.appInsightsKey(aiKey);
         }
-        validateArtifactCompileVersion(functionConfig.runtime());
         return new CreateOrUpdateFunctionAppTask(functionConfig).execute();
     }
 
@@ -354,14 +348,22 @@ public class DeployHandler {
             .orElseThrow(() -> new AzureToolkitRuntimeException(String.format("Invalid pricing tier %s", pricingTier)));
     }
 
-    protected void validateArtifactCompileVersion(RuntimeConfig runtime) throws AzureExecutionException {
+    protected void validateArtifactCompileVersion(@Nonnull RuntimeConfig runtime) {
         if (runtime.os() == OperatingSystem.DOCKER) {
             return;
         }
-        final ComparableVersion runtimeVersion = new ComparableVersion(runtime.javaVersion().getValue());
+        final String javaVersion = Optional.of(runtime).map(RuntimeConfig::javaVersion).map(JavaVersion::getValue).orElse(StringUtils.EMPTY);
         final File file = this.ctx.getProject().getArtifactFile().toFile();
-        final ComparableVersion artifactVersion = new ComparableVersion(Utils.getArtifactCompileVersion(file));
-        if (runtimeVersion.compareTo(artifactVersion) < 0) {
+        final int runtimeVersion;
+        final int artifactCompileVersion;
+        try {
+            runtimeVersion  = Utils.getJavaMajorVersion(javaVersion);
+            artifactCompileVersion = Utils.getArtifactCompileVersion(file);
+        } catch (RuntimeException e) {
+            AzureMessager.getMessager().info("Failed to get version of your artifact, skip artifact compatibility test");
+            return;
+        }
+        if (runtimeVersion < artifactCompileVersion) {
             throw new AzureToolkitRuntimeException(ARTIFACT_INCOMPATIBLE);
         }
     }
