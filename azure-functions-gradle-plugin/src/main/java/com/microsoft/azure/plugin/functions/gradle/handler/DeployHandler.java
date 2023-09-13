@@ -357,7 +357,7 @@ public class DeployHandler {
         final int runtimeVersion;
         final int artifactCompileVersion;
         try {
-            runtimeVersion  = Utils.getJavaMajorVersion(javaVersion);
+            runtimeVersion = Utils.getJavaMajorVersion(javaVersion);
             artifactCompileVersion = Utils.getArtifactCompileVersion(file);
         } catch (RuntimeException e) {
             AzureMessager.getMessager().info("Failed to get version of your artifact, skip artifact compatibility test");
