@@ -45,11 +45,6 @@ public class AzureFunctionsPlugin implements Plugin<Project> {
         AzureMessager.setDefaultMessager(new GradleAzureMessager(project.getLogger()));
         final AzureFunctionsExtension extension = project.getExtensions().create(GRADLE_FUNCTION_EXTENSION,
                 AzureFunctionsExtension.class, project);
-        TelemetryAgent.getInstance().initTelemetry(GRADLE_PLUGIN_NAME,
-            StringUtils.firstNonBlank(AzureFunctionsPlugin.class.getPackage().getImplementationVersion(), "develop"), // default version: develop
-            BooleanUtils.isNotFalse(extension.getAllowTelemetry()));
-        TelemetryAgent.getInstance().showPrivacyStatement();
-
         try {
             CacheManager.evictCache(CacheEvict.ALL, CacheEvict.ALL);
         } catch (ExecutionException e) {
@@ -86,7 +81,15 @@ public class AzureFunctionsPlugin implements Plugin<Project> {
         });
 
         project.afterEvaluate(projectAfterEvaluation -> {
+
             mergeCommandLineParameters(extension);
+            TelemetryAgent.getInstance().initTelemetry(GRADLE_PLUGIN_NAME,
+                StringUtils.firstNonBlank(AzureFunctionsPlugin.class.getPackage().getImplementationVersion(), "develop"), // default version: develop
+                BooleanUtils.isNotFalse(extension.getAllowTelemetry()));
+            if (BooleanUtils.isNotFalse(extension.getAllowTelemetry())) {
+                TelemetryAgent.getInstance().showPrivacyStatement();
+            }
+
             packageTask.configure(task -> task.dependsOn("jar"));
             packageZipTask.configure(task -> task.dependsOn(packageTask));
             runTask.configure(task -> task.dependsOn(packageTask));
