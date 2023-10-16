@@ -51,9 +51,6 @@ public class AzureFunctionsPlugin implements Plugin<Project> {
             //ignore
         }
 
-        Azure.az().config().setLogLevel(HttpLogDetailLevel.NONE.name());
-        Azure.az().config().setUserAgent(TelemetryAgent.getInstance().getUserAgent());
-
         final TaskContainer tasks = project.getTasks();
 
         final TaskProvider<PackageTask> packageTask = tasks.register("azureFunctionsPackage", PackageTask.class, task -> {
@@ -83,10 +80,15 @@ public class AzureFunctionsPlugin implements Plugin<Project> {
         project.afterEvaluate(projectAfterEvaluation -> {
 
             mergeCommandLineParameters(extension);
+
             TelemetryAgent.getInstance().initTelemetry(GRADLE_PLUGIN_NAME,
                 StringUtils.firstNonBlank(AzureFunctionsPlugin.class.getPackage().getImplementationVersion(), "develop"), // default version: develop
                 BooleanUtils.isNotFalse(extension.getAllowTelemetry()));
-            TelemetryAgent.getInstance().showPrivacyStatement();
+            if (BooleanUtils.isNotFalse(extension.getAllowTelemetry())) {
+                TelemetryAgent.getInstance().showPrivacyStatement();
+            }
+            Azure.az().config().setUserAgent(TelemetryAgent.getInstance().getUserAgent());
+            Azure.az().config().setLogLevel(HttpLogDetailLevel.NONE.name());
 
             packageTask.configure(task -> task.dependsOn("jar"));
             packageZipTask.configure(task -> task.dependsOn(packageTask));

@@ -74,11 +74,8 @@ public class TelemetryAgent implements TelemetryConfiguration {
         this.pluginName = pluginName;
         this.pluginVersion = pluginVersion;
         this.allowTelemetry = allowTelemetry;
-        telemetryProxy = new AzureTelemetryClient(this.getTelemetryProperties());
-        if (!allowTelemetry) {
-            telemetryProxy.trackEvent(TELEMETRY_NOT_ALLOWED);
-            telemetryProxy.disable();
-        } else {
+        if (allowTelemetry) {
+            telemetryProxy = new AzureTelemetryClient(this.getTelemetryProperties());
             AzureTelemeter.setClient(telemetryProxy);
             AzureTelemeter.setCommonProperties(this.getTelemetryProperties());
             AzureTelemeter.setEventNamePrefix("AzurePlugin.Gradle");
@@ -86,7 +83,9 @@ public class TelemetryAgent implements TelemetryConfiguration {
     }
 
     public void addDefaultProperty(String key, String value) {
-        this.telemetryProxy.addDefaultProperty(key, value);
+        if (telemetryProxy != null) {
+            this.telemetryProxy.addDefaultProperty(key, value);
+        }
     }
 
     public void addDefaultProperties(Map<String, String> properties) {
