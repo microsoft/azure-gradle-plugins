@@ -49,9 +49,6 @@ public class AzureWebappPlugin implements Plugin<Project> {
         final AzureWebappPluginExtension extension = project.getExtensions().create(GRADLE_FUNCTION_EXTENSION,
             AzureWebappPluginExtension.class, project);
         AzureMessager.setDefaultMessager(new GradleAzureMessager(project.getLogger()));
-        String pluginVersion = StringUtils.firstNonBlank(AzureWebappPlugin.class.getPackage().getImplementationVersion(), "develop");
-        TelemetryAgent.getInstance().initTelemetry(GRADLE_PLUGIN_NAME, pluginVersion, BooleanUtils.isNotFalse(extension.getAllowTelemetry()));
-        TelemetryAgent.getInstance().showPrivacyStatement();
 
         try {
             CacheManager.evictCache(CacheEvict.ALL, CacheEvict.ALL);
@@ -68,6 +65,9 @@ public class AzureWebappPlugin implements Plugin<Project> {
 
         project.afterEvaluate(projectAfterEvaluation -> {
             mergeCommandLineParameters(extension);
+            String pluginVersion = StringUtils.firstNonBlank(AzureWebappPlugin.class.getPackage().getImplementationVersion(), "develop");
+            TelemetryAgent.getInstance().initTelemetry(GRADLE_PLUGIN_NAME, pluginVersion, BooleanUtils.isNotFalse(extension.getAllowTelemetry()));
+            TelemetryAgent.getInstance().showPrivacyStatement();
             final TaskProvider<Task> warTask = getWarTaskProvider(projectAfterEvaluation);
             final TaskProvider<Task> bootWarTask = getBootWarTaskProvider(projectAfterEvaluation);
             final TaskProvider<Task> bootJarTask = getBootJarTaskProvider(projectAfterEvaluation);

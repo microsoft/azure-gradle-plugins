@@ -86,9 +86,7 @@ public class AzureFunctionsPlugin implements Plugin<Project> {
             TelemetryAgent.getInstance().initTelemetry(GRADLE_PLUGIN_NAME,
                 StringUtils.firstNonBlank(AzureFunctionsPlugin.class.getPackage().getImplementationVersion(), "develop"), // default version: develop
                 BooleanUtils.isNotFalse(extension.getAllowTelemetry()));
-            if (BooleanUtils.isNotFalse(extension.getAllowTelemetry())) {
-                TelemetryAgent.getInstance().showPrivacyStatement();
-            }
+            TelemetryAgent.getInstance().showPrivacyStatement();
 
             packageTask.configure(task -> task.dependsOn("jar"));
             packageZipTask.configure(task -> task.dependsOn(packageTask));
