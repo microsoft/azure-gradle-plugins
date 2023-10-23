@@ -21,7 +21,6 @@ import com.microsoft.azure.toolkit.lib.appservice.function.core.AzureFunctionsAn
 import com.microsoft.azure.toolkit.lib.appservice.model.Runtime;
 import com.microsoft.azure.toolkit.lib.appservice.model.*;
 import com.microsoft.azure.toolkit.lib.appservice.task.CreateOrUpdateFunctionAppTask;
-import com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigUtils;
 import com.microsoft.azure.toolkit.lib.auth.AzureAccount;
 import com.microsoft.azure.toolkit.lib.common.bundle.AzureString;
 import com.microsoft.azure.toolkit.lib.common.exception.AzureToolkitRuntimeException;
@@ -331,8 +330,17 @@ public class DeployHandler {
 
     private AppServiceConfig buildDefaultConfig(String subscriptionId, String resourceGroup, String appName) {
         // get java version according to project java version
-        JavaVersion javaVersion = org.gradle.api.JavaVersion.current().isJava8() ? JavaVersion.JAVA_8 : JavaVersion.JAVA_11;
-        return AppServiceConfigUtils.buildDefaultFunctionConfig(subscriptionId, resourceGroup, appName, javaVersion);
+        final FunctionAppConfig result = AppServiceConfig.buildDefaultFunctionConfig(resourceGroup, appName);
+        final org.gradle.api.JavaVersion localRuntime = org.gradle.api.JavaVersion.current();
+        final JavaVersion javaVersion = localRuntime.isCompatibleWith(org.gradle.api.JavaVersion.VERSION_17) ? JavaVersion.JAVA_17 :
+                localRuntime.isJava11Compatible() ? JavaVersion.JAVA_11 : JavaVersion.JAVA_8;
+        final RuntimeConfig runtimeConfig = new RuntimeConfig()
+                .os(Runtime.DEFAULT_FUNCTION_RUNTIME.getOperatingSystem())
+                .webContainer(Runtime.DEFAULT_FUNCTION_RUNTIME.getWebContainer())
+                .javaVersion(javaVersion);
+        result.runtime(runtimeConfig);
+        result.subscriptionId(subscriptionId);
+        return result;
     }
 
     private Region getParsedRegion() {
