@@ -243,6 +243,7 @@ public class DeployHandler {
     private FunctionAppBase<?, ?, ?> createOrUpdateFunctionApp() {
         final FunctionApp app = getFunctionApp();
         final FunctionAppConfig functionConfig = (FunctionAppConfig) new FunctionAppConfig()
+            .flexConsumptionConfiguration(ctx.getFlexConsumptionConfiguration())
             .disableAppInsights(ctx.isDisableAppInsights())
             .appInsightsKey(ctx.getAppInsightsKey())
             .appInsightsInstance(ctx.getAppInsightsInstance())
@@ -334,11 +335,7 @@ public class DeployHandler {
         final org.gradle.api.JavaVersion localRuntime = org.gradle.api.JavaVersion.current();
         final JavaVersion javaVersion = localRuntime.isCompatibleWith(org.gradle.api.JavaVersion.VERSION_17) ? JavaVersion.JAVA_17 :
                 localRuntime.isJava11Compatible() ? JavaVersion.JAVA_11 : JavaVersion.JAVA_8;
-        final RuntimeConfig runtimeConfig = new RuntimeConfig()
-                .os(Runtime.DEFAULT_FUNCTION_RUNTIME.getOperatingSystem())
-                .webContainer(Runtime.DEFAULT_FUNCTION_RUNTIME.getWebContainer())
-                .javaVersion(javaVersion);
-        result.runtime(runtimeConfig);
+        result.runtime().javaVersion(javaVersion);
         result.subscriptionId(subscriptionId);
         return result;
     }

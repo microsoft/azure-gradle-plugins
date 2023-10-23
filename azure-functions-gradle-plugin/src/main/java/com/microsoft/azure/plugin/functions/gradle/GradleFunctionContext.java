@@ -12,12 +12,15 @@ import com.microsoft.azure.plugin.functions.gradle.util.GradleProjectUtils;
 import com.microsoft.azure.toolkit.lib.Azure;
 import com.microsoft.azure.toolkit.lib.appservice.function.AzureFunctions;
 import com.microsoft.azure.toolkit.lib.appservice.function.FunctionAppModule;
+import com.microsoft.azure.toolkit.lib.appservice.model.FlexConsumptionConfiguration;
 import com.microsoft.azure.toolkit.lib.common.IProject;
 import com.microsoft.azure.toolkit.lib.common.exception.AzureToolkitRuntimeException;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.Project;
+import org.gradle.api.tasks.Input;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -159,6 +162,28 @@ public class GradleFunctionContext {
 
     public String getLocalDebugConfig() {
         return this.functionsExtension.getLocalDebug();
+    }
+
+    @Nullable
+    public Integer getAlwaysReadyInstances() {
+        return this.functionsExtension.getAlwaysReadyInstances();
+    }
+
+    @Nullable
+    public Integer getInstanceSize() {
+        return this.functionsExtension.getInstanceSize();
+    }
+
+    @Nullable
+    public Integer getMaximumInstances() {
+        return this.functionsExtension.getMaximumInstances();
+    }
+
+    public FlexConsumptionConfiguration getFlexConsumptionConfiguration() {
+        return FlexConsumptionConfiguration.builder()
+                .alwaysReadyInstances(functionsExtension.getAlwaysReadyInstances())
+                .instanceSize(functionsExtension.getInstanceSize())
+                .maximumInstances(functionsExtension.getMaximumInstances()).build();
     }
 
     public Map<String, String> getTelemetryProperties() {
