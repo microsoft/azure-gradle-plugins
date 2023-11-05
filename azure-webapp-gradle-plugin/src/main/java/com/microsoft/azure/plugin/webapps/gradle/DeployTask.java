@@ -5,7 +5,6 @@
 
 package com.microsoft.azure.plugin.webapps.gradle;
 
-import com.azure.core.http.policy.HttpLogDetailLevel;
 import com.microsoft.azure.gradle.auth.GradleAuthHelper;
 import com.microsoft.azure.gradle.configuration.GradleDeploymentSlotConfig;
 import com.microsoft.azure.gradle.configuration.GradleRuntimeConfig;
@@ -14,11 +13,7 @@ import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
 import com.microsoft.azure.toolkit.lib.Azure;
 import com.microsoft.azure.toolkit.lib.appservice.config.AppServiceConfig;
 import com.microsoft.azure.toolkit.lib.appservice.config.RuntimeConfig;
-import com.microsoft.azure.toolkit.lib.appservice.model.JavaVersion;
-import com.microsoft.azure.toolkit.lib.appservice.model.OperatingSystem;
-import com.microsoft.azure.toolkit.lib.appservice.model.PricingTier;
-import com.microsoft.azure.toolkit.lib.appservice.model.WebAppArtifact;
-import com.microsoft.azure.toolkit.lib.appservice.model.WebContainer;
+import com.microsoft.azure.toolkit.lib.appservice.model.*;
 import com.microsoft.azure.toolkit.lib.appservice.task.CreateOrUpdateWebAppTask;
 import com.microsoft.azure.toolkit.lib.appservice.task.DeployWebAppTask;
 import com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigUtils;
@@ -72,7 +67,6 @@ public class DeployTask extends DefaultTask {
             ProxyManager.getInstance().applyProxy();
             TelemetryAgent.getInstance().addDefaultProperty(PROXY, String.valueOf(ProxyManager.getInstance().isProxyEnabled()));
             TelemetryAgent.getInstance().addDefaultProperties(azureWebappExtension.getTelemetryProperties());
-            initTask();
             TelemetryAgent.getInstance().trackTaskStart(this.getClass());
             final GradleWebAppConfig config = parseConfiguration();
             normalizeConfigValue(config);
@@ -168,11 +162,6 @@ public class DeployTask extends DefaultTask {
             .username(config.username())
             .password(config.password())
             .startUpCommand(config.startUpCommand())).orElse(null);
-    }
-
-    private void initTask() {
-        Azure.az().config().setLogLevel(HttpLogDetailLevel.NONE.name());
-        Azure.az().config().setUserAgent(TelemetryAgent.getInstance().getUserAgent());
     }
 
     private GradleWebAppConfig parseConfiguration() {

@@ -5,18 +5,18 @@
 
 package com.microsoft.azure.plugin.webapps.gradle;
 
+import com.azure.core.http.policy.HttpLogDetailLevel;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.dataformat.javaprop.JavaPropsMapper;
-import com.microsoft.azure.gradle.common.GradleAzureTaskManager;
 import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
 import com.microsoft.azure.gradle.util.GradleAzureMessager;
+import com.microsoft.azure.toolkit.lib.Azure;
 import com.microsoft.azure.toolkit.lib.appservice.model.OperatingSystem;
 import com.microsoft.azure.toolkit.lib.common.bundle.AzureString;
 import com.microsoft.azure.toolkit.lib.common.cache.CacheEvict;
 import com.microsoft.azure.toolkit.lib.common.cache.CacheManager;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
-import com.microsoft.azure.toolkit.lib.common.operation.AzureOperation;
-import com.microsoft.azure.toolkit.lib.common.task.AzureTaskManager;
+import com.microsoft.azure.toolkit.lib.common.utils.InstallationIdUtils;
 import com.microsoft.azure.toolkit.lib.common.utils.Utils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.ObjectUtils;
@@ -32,20 +32,21 @@ import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskOutputs;
 import org.gradle.api.tasks.TaskProvider;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+
+import static com.microsoft.azure.gradle.temeletry.TelemetryConstants.INSTALLATION_ID_KEY;
+import static com.microsoft.azure.gradle.temeletry.TelemetryConstants.SESSION_ID_KEY;
 
 public class AzureWebappPlugin implements Plugin<Project> {
     public static final String GRADLE_PLUGIN_NAME = "azure-webapp-gradle-plugin";
     private static final String GRADLE_FUNCTION_EXTENSION = "azurewebapp";
 
     @Override
-    @AzureOperation(name = "internal/webapp.init_gradle_plugin")
     public void apply(final Project project) {
-        AzureTaskManager.register(new GradleAzureTaskManager());
         final AzureWebappPluginExtension extension = project.getExtensions().create(GRADLE_FUNCTION_EXTENSION,
             AzureWebappPluginExtension.class, project);
         AzureMessager.setDefaultMessager(new GradleAzureMessager(project.getLogger()));
@@ -65,8 +66,24 @@ public class AzureWebappPlugin implements Plugin<Project> {
 
         project.afterEvaluate(projectAfterEvaluation -> {
             mergeCommandLineParameters(extension);
-            String pluginVersion = StringUtils.firstNonBlank(AzureWebappPlugin.class.getPackage().getImplementationVersion(), "develop");
-            TelemetryAgent.getInstance().initTelemetry(GRADLE_PLUGIN_NAME, pluginVersion, BooleanUtils.isNotFalse(extension.getAllowTelemetry()));
+
+            AzureMessager.setDefaultMessager(new GradleAzureMessager(project.getLogger()));
+            Azure.az().config().setLogLevel(HttpLogDetailLevel.NONE.name());
+            Azure.az().config().setProduct(GRADLE_PLUGIN_NAME);
+            final String pluginVersion = StringUtils.firstNonBlank(AzureWebappPlugin.class.getPackage().getImplementationVersion(), "develop");
+            Azure.az().config().setVersion(pluginVersion);
+            final boolean enableTelemetry = BooleanUtils.isNotFalse(extension.getAllowTelemetry());
+            Azure.az().config().setTelemetryEnabled(enableTelemetry);
+            final String installationId = InstallationIdUtils.getHashMac();
+            Azure.az().config().setMachineId(installationId);
+            final String sessionId = UUID.randomUUID().toString();
+            Azure.az().config().setSessionId(sessionId);
+            final String userAgent = enableTelemetry ?
+                    String.format("%s/%s %s:%s %s:%s", GRADLE_PLUGIN_NAME, pluginVersion,
+                            INSTALLATION_ID_KEY, installationId, SESSION_ID_KEY, sessionId)
+                    : String.format("%s/%s", GRADLE_PLUGIN_NAME, pluginVersion);
+            Azure.az().config().setUserAgent(userAgent);
+
             TelemetryAgent.getInstance().showPrivacyStatement();
             final TaskProvider<Task> warTask = getWarTaskProvider(projectAfterEvaluation);
             final TaskProvider<Task> bootWarTask = getBootWarTaskProvider(projectAfterEvaluation);
@@ -115,7 +132,6 @@ public class AzureWebappPlugin implements Plugin<Project> {
         return null;
     }
 
-    @Nullable
     private static void mergeCommandLineParameters(final AzureWebappPluginExtension config) {
         final JavaPropsMapper mapper = new JavaPropsMapper();
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);

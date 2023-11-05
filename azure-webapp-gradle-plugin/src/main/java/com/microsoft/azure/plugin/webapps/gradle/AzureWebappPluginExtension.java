@@ -61,10 +61,6 @@ public class AzureWebappPluginExtension {
     private String appInsightsInstance;
 
     private String appInsightsKey;
-
-    private Boolean disableAppInsights;
-
-    @Nonnull
     private Project project;
 
     @Input
@@ -153,12 +149,6 @@ public class AzureWebappPluginExtension {
 
     @Input
     @Optional
-    public Boolean isDisableAppInsights() {
-        return disableAppInsights;
-    }
-
-    @Input
-    @Optional
     public GradleDeploymentSlotConfig getDeploymentSlot() {
         return deploymentSlot;
     }
@@ -227,10 +217,6 @@ public class AzureWebappPluginExtension {
 
     public void setAppInsightsKey(@Nullable String appInsightsKey) {
         this.appInsightsKey = appInsightsKey;
-    }
-
-    public void setDisableAppInsights(Boolean disableAppInsights) {
-        this.disableAppInsights = disableAppInsights;
     }
 
     @JsonSetter

@@ -76,6 +76,14 @@ public class AzureFunctionsExtension {
     @Nullable
     private Boolean disableAppInsights;
 
+    // configurations for flex consumption app
+    @Nullable
+    private Integer alwaysReadyInstances;
+    @Nullable
+    private Integer instanceSize;
+    @Nullable
+    private Integer maximumInstances;
+
     public AzureFunctionsExtension(Project project) {
         this.project = project;
     }
@@ -283,5 +291,38 @@ public class AzureFunctionsExtension {
     @JsonSetter
     public void setAppSettings(Map<String, String> appSettings) {
         this.appSettings = appSettings;
+    }
+
+    @Nullable
+    @Input
+    @Optional
+    public Integer getAlwaysReadyInstances() {
+        return alwaysReadyInstances;
+    }
+
+    public void setAlwaysReadyInstances(@Nullable Integer alwaysReadyInstances) {
+        this.alwaysReadyInstances = alwaysReadyInstances;
+    }
+
+    @Nullable
+    @Input
+    @Optional
+    public Integer getInstanceSize() {
+        return instanceSize;
+    }
+
+    public void setInstanceSize(@Nullable Integer instanceSize) {
+        this.instanceSize = instanceSize;
+    }
+
+    @Nullable
+    @Input
+    @Optional
+    public Integer getMaximumInstances() {
+        return maximumInstances;
+    }
+
+    public void setMaximumInstances(@Nullable Integer maximumInstances) {
+        this.maximumInstances = maximumInstances;
     }
 }
