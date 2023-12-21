@@ -8,7 +8,6 @@ package com.microsoft.azure.plugin.functions.gradle.handler;
 import com.azure.core.management.AzureEnvironment;
 import com.google.common.base.Preconditions;
 import com.microsoft.azure.gradle.configuration.GradleRuntimeConfig;
-import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
 import com.microsoft.azure.plugin.functions.gradle.GradleFunctionContext;
 import com.microsoft.azure.toolkit.lib.Azure;
 import com.microsoft.azure.toolkit.lib.appservice.config.AppServiceConfig;
@@ -20,6 +19,7 @@ import com.microsoft.azure.toolkit.lib.appservice.function.FunctionAppBase;
 import com.microsoft.azure.toolkit.lib.appservice.function.core.AzureFunctionsAnnotationConstants;
 import com.microsoft.azure.toolkit.lib.appservice.model.Runtime;
 import com.microsoft.azure.toolkit.lib.appservice.model.*;
+import com.microsoft.azure.toolkit.lib.appservice.plan.AppServicePlan;
 import com.microsoft.azure.toolkit.lib.appservice.task.CreateOrUpdateFunctionAppTask;
 import com.microsoft.azure.toolkit.lib.auth.AzureAccount;
 import com.microsoft.azure.toolkit.lib.common.bundle.AzureString;
@@ -27,6 +27,7 @@ import com.microsoft.azure.toolkit.lib.common.exception.AzureToolkitRuntimeExcep
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
 import com.microsoft.azure.toolkit.lib.common.model.Region;
 import com.microsoft.azure.toolkit.lib.common.operation.AzureOperation;
+import com.microsoft.azure.toolkit.lib.common.operation.OperationContext;
 import com.microsoft.azure.toolkit.lib.common.utils.Utils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -36,6 +37,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.time.Duration;
@@ -44,6 +46,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static com.microsoft.azure.toolkit.lib.appservice.model.FunctionAppLinuxRuntime.*;
 import static com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigUtils.fromAppService;
 import static com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigUtils.mergeAppServiceConfig;
 
@@ -95,7 +98,6 @@ public class DeployHandler {
     private static final int LIST_TRIGGERS_RETRY_PERIOD_IN_SECONDS = 10;
     private static final String NO_TRIGGERS_FOUNDED = "No triggers found in deployed function app, " +
         "please try to deploy the project again.";
-    private static final String EXPANDABLE_JAVA_VERSION_WARNING = "'%s' may not be a valid java version, recommended values are `Java 8`, `Java 11` and `Java 17`";
     private static final String EXPANDABLE_PRICING_TIER_WARNING = "'%s' may not be a valid pricing tier, " +
         "please refer to https://aka.ms/maven_function_configuration#supported-pricing-tiers for valid values";
     private static final String EXPANDABLE_REGION_WARNING = "'%s' may not be a valid region, " +
@@ -108,8 +110,8 @@ public class DeployHandler {
     }
 
     public void execute() {
-        TelemetryAgent.getInstance().addDefaultProperty(FUNCTION_JAVA_VERSION_KEY, String.valueOf(javaVersion()));
-        TelemetryAgent.getInstance().addDefaultProperty(DISABLE_APP_INSIGHTS_KEY, String.valueOf(ctx.isDisableAppInsights()));
+        OperationContext.current().setTelemetryProperty(FUNCTION_JAVA_VERSION_KEY, StringUtils.firstNonBlank(getJavaVersion(), "N/A"));
+        OperationContext.current().setTelemetryProperty(DISABLE_APP_INSIGHTS_KEY, String.valueOf(ctx.isDisableAppInsights()));
         doValidate();
         final FunctionAppBase<?, ?, ?> app = createOrUpdateFunctionApp();
         deployArtifact(app);
@@ -119,15 +121,18 @@ public class DeployHandler {
     }
 
     private RuntimeConfig getRuntimeConfig() {
-        final GradleRuntimeConfig runtime = ctx.getRuntime();
-        if (runtime == null) {
+        final GradleRuntimeConfig config = ctx.getRuntime();
+        if (config == null) {
             return null;
         }
-        final OperatingSystem os = Optional.ofNullable(runtime.os()).map(OperatingSystem::fromString).orElse(null);
-        final JavaVersion javaVersion = Optional.ofNullable(runtime.javaVersion()).map(JavaVersion::fromString).orElse(null);
-        return new RuntimeConfig().os(os).javaVersion(javaVersion).webContainer(WebContainer.JAVA_OFF)
-            .image(runtime.image()).registryUrl(runtime.registryUrl())
-            .username(runtime.username()).password(runtime.password());
+        final OperatingSystem os = Optional.ofNullable(config.os()).map(OperatingSystem::fromString)
+                .orElseGet(() -> Optional.ofNullable(getFunctionApp()).map(FunctionApp::getAppServicePlan).map(AppServicePlan::getOperatingSystem).orElse(OperatingSystem.WINDOWS));
+        final String javaVersion = getJavaVersion();
+        final Runtime runtime = os == OperatingSystem.DOCKER ? FunctionAppRuntime.DOCKER : os == OperatingSystem.WINDOWS ?
+                FunctionAppWindowsRuntime.fromJavaVersionUserText(javaVersion) : FunctionAppLinuxRuntime.fromJavaVersionUserText(javaVersion);
+        return new RuntimeConfig().runtime(runtime)
+                .image(config.image()).registryUrl(config.registryUrl())
+                .username(config.username()).password(config.password());
     }
 
     /**
@@ -224,10 +229,6 @@ public class DeployHandler {
             if (StringUtils.isNotEmpty(runtime.os()) && OperatingSystem.fromString(runtime.os()) == null) {
                 throw new AzureToolkitRuntimeException(INVALID_OS);
             }
-            // java version
-            if (StringUtils.isNotEmpty(runtime.javaVersion()) && JavaVersion.fromString(runtime.javaVersion()).isExpandedValue()) {
-                AzureMessager.getMessager().warning(AzureString.format(EXPANDABLE_JAVA_VERSION_WARNING, runtime.javaVersion()));
-            }
         }
 
         final String pricingTier = ctx.getPricingTier();
@@ -310,8 +311,8 @@ public class DeployHandler {
             throw new AzureToolkitRuntimeException(e.getMessage(), e);
         } finally {
             final long endTime = System.currentTimeMillis();
-            TelemetryAgent.getInstance().addDefaultProperty(String.format("%s-cost", name), String.valueOf(endTime - startTime));
-            TelemetryAgent.getInstance().addDefaultProperty(JVM_UP_TIME, String.valueOf(ManagementFactory.getRuntimeMXBean().getUptime()));
+            OperationContext.current().setTelemetryProperty(String.format("%s-cost", name), String.valueOf(endTime - startTime));
+            OperationContext.current().setTelemetryProperty(JVM_UP_TIME, String.valueOf(ManagementFactory.getRuntimeMXBean().getUptime()));
         }
     }
 
@@ -333,9 +334,9 @@ public class DeployHandler {
         // get java version according to project java version
         final FunctionAppConfig result = AppServiceConfig.buildDefaultFunctionConfig(resourceGroup, appName);
         final org.gradle.api.JavaVersion localRuntime = org.gradle.api.JavaVersion.current();
-        final JavaVersion javaVersion = localRuntime.isCompatibleWith(org.gradle.api.JavaVersion.VERSION_17) ? JavaVersion.JAVA_17 :
-                localRuntime.isJava11Compatible() ? JavaVersion.JAVA_11 : JavaVersion.JAVA_8;
-        result.runtime().javaVersion(javaVersion);
+        final Runtime runtime = localRuntime.isCompatibleWith(org.gradle.api.JavaVersion.VERSION_17) ? FUNCTION_JAVA17 :
+                localRuntime.isJava11Compatible() ? FUNCTION_JAVA11: FUNCTION_JAVA8;
+        result.runtime(new RuntimeConfig().runtime(runtime));
         result.subscriptionId(subscriptionId);
         return result;
     }
@@ -357,7 +358,7 @@ public class DeployHandler {
         if (runtime.os() == OperatingSystem.DOCKER) {
             return;
         }
-        final String javaVersion = Optional.of(runtime).map(RuntimeConfig::javaVersion).map(JavaVersion::getValue).orElse(StringUtils.EMPTY);
+        final String javaVersion = Optional.ofNullable(getJavaVersion()).orElse(StringUtils.EMPTY);
         final File file = this.ctx.getProject().getArtifactFile().toFile();
         final int runtimeVersion;
         final int artifactCompileVersion;
@@ -373,8 +374,9 @@ public class DeployHandler {
         }
     }
 
-    private JavaVersion javaVersion() {
-        return Objects.isNull(ctx.getRuntime()) ? null : JavaVersion.fromString(ctx.getRuntime().javaVersion());
+    @Nullable
+    private String getJavaVersion() {
+        return Optional.ofNullable(ctx.getRuntime()).map(GradleRuntimeConfig::javaVersion).orElse(null);
     }
 
     public FunctionApp getFunctionApp() {

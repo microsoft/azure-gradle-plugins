@@ -11,6 +11,7 @@ import com.microsoft.azure.plugin.functions.gradle.GradleFunctionContext;
 import com.microsoft.azure.plugin.functions.gradle.handler.DeployHandler;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
 import com.microsoft.azure.toolkit.lib.common.operation.AzureOperation;
+import com.microsoft.azure.toolkit.lib.common.operation.OperationContext;
 import com.microsoft.azure.toolkit.lib.common.proxy.ProxyManager;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
@@ -42,10 +43,10 @@ public class DeployTask extends DefaultTask implements IFunctionTask {
     public void deploy() throws GradleException {
         try {
             ProxyManager.getInstance().applyProxy();
-            TelemetryAgent.getInstance().addDefaultProperty(PROXY, String.valueOf(ProxyManager.getInstance().isProxyEnabled()));
+            OperationContext.current().setTelemetryProperty(PROXY, String.valueOf(ProxyManager.getInstance().isProxyEnabled()));
             TelemetryAgent.getInstance().trackTaskStart(this.getClass());
             final GradleFunctionContext ctx = new GradleFunctionContext(getProject(), this.getFunctionsExtension());
-            TelemetryAgent.getInstance().addDefaultProperties(ctx.getTelemetryProperties());
+            OperationContext.current().setTelemetryProperties(ctx.getTelemetryProperties());
             final DeployHandler deployHandler = new DeployHandler(ctx);
             deployHandler.execute();
             TelemetryAgent.getInstance().trackTaskSuccess(this.getClass());

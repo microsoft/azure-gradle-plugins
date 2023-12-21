@@ -18,7 +18,6 @@ import com.microsoft.azure.toolkit.lib.common.exception.AzureToolkitRuntimeExcep
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.Project;
-import org.gradle.api.tasks.Input;
 
 import javax.annotation.Nullable;
 import java.io.File;

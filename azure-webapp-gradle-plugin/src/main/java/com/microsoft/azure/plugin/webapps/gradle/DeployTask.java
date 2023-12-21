@@ -13,7 +13,9 @@ import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
 import com.microsoft.azure.toolkit.lib.Azure;
 import com.microsoft.azure.toolkit.lib.appservice.config.AppServiceConfig;
 import com.microsoft.azure.toolkit.lib.appservice.config.RuntimeConfig;
+import com.microsoft.azure.toolkit.lib.appservice.model.Runtime;
 import com.microsoft.azure.toolkit.lib.appservice.model.*;
+import com.microsoft.azure.toolkit.lib.appservice.plan.AppServicePlan;
 import com.microsoft.azure.toolkit.lib.appservice.task.CreateOrUpdateWebAppTask;
 import com.microsoft.azure.toolkit.lib.appservice.task.DeployWebAppTask;
 import com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigUtils;
@@ -26,6 +28,7 @@ import com.microsoft.azure.toolkit.lib.common.exception.AzureToolkitRuntimeExcep
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
 import com.microsoft.azure.toolkit.lib.common.model.Region;
 import com.microsoft.azure.toolkit.lib.common.operation.AzureOperation;
+import com.microsoft.azure.toolkit.lib.common.operation.OperationContext;
 import com.microsoft.azure.toolkit.lib.common.proxy.ProxyManager;
 import com.microsoft.azure.toolkit.lib.common.validator.SchemaValidator;
 import com.microsoft.azure.toolkit.lib.common.validator.ValidationMessage;
@@ -50,14 +53,13 @@ import java.util.stream.Collectors;
 import static com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigUtils.fromAppService;
 import static com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigUtils.mergeAppServiceConfig;
 
+@Setter
 public class DeployTask extends DefaultTask {
     private static final String PROXY = "proxy";
     private static final String INVALID_PARAMETER_ERROR_MESSAGE = "Invalid values found in configuration, please correct the value with messages below:";
 
-    @Setter
     private AzureWebappPluginExtension azureWebappExtension;
 
-    @Setter
     private String artifactFile;
 
     @TaskAction
@@ -65,8 +67,8 @@ public class DeployTask extends DefaultTask {
     public void deploy() throws GradleException {
         try {
             ProxyManager.getInstance().applyProxy();
-            TelemetryAgent.getInstance().addDefaultProperty(PROXY, String.valueOf(ProxyManager.getInstance().isProxyEnabled()));
-            TelemetryAgent.getInstance().addDefaultProperties(azureWebappExtension.getTelemetryProperties());
+            OperationContext.current().setTelemetryProperty(PROXY, String.valueOf(ProxyManager.getInstance().isProxyEnabled()));
+            OperationContext.current().setTelemetryProperties(azureWebappExtension.getTelemetryProperties());
             TelemetryAgent.getInstance().trackTaskStart(this.getClass());
             final GradleWebAppConfig config = parseConfiguration();
             normalizeConfigValue(config);
@@ -121,8 +123,13 @@ public class DeployTask extends DefaultTask {
                 buildDefaultConfig(appServiceConfig.subscriptionId(), appServiceConfig.resourceGroup(), appServiceConfig.appName());
         mergeAppServiceConfig(appServiceConfig, defaultConfig);
         if (appServiceConfig.pricingTier() == null) {
-            appServiceConfig.pricingTier(
-                StringUtils.containsIgnoreCase(Objects.toString(appServiceConfig.runtime().webContainer()), "jboss") ? PricingTier.PREMIUM_P1V3 : PricingTier.PREMIUM_P1V2);
+            final Runtime runtime = appServiceConfig.runtime().runtime();
+            final String jboss = WebAppLinuxRuntime.JBOSS7_JAVA17.getContainerName();
+            if (runtime instanceof WebAppLinuxRuntime && StringUtils.containsIgnoreCase(((WebAppLinuxRuntime) runtime).getContainerName(), jboss)) {
+                appServiceConfig.pricingTier(PricingTier.PREMIUM_P1V3);
+            } else {
+                appServiceConfig.pricingTier(PricingTier.PREMIUM_P1V2);
+            }
         }
         CreateOrUpdateWebAppTask task = new CreateOrUpdateWebAppTask(appServiceConfig);
         task.setSkipCreateAzureResource(skipCreate);
@@ -132,8 +139,7 @@ public class DeployTask extends DefaultTask {
     private AppServiceConfig buildDefaultConfig(String subscriptionId, String resourceGroup, String appName) {
         final String packaging = FilenameUtils.getExtension(StringUtils.firstNonBlank(this.artifactFile, ""));
         // get java version according to project java version
-        JavaVersion javaVersion = org.gradle.api.JavaVersion.current().isJava8() ? JavaVersion.JAVA_8 : JavaVersion.JAVA_11;
-        return AppServiceConfigUtils.buildDefaultWebAppConfig(subscriptionId, resourceGroup, appName, packaging, javaVersion);
+        return AppServiceConfigUtils.buildDefaultWebAppConfig(subscriptionId, resourceGroup, appName, packaging);
     }
 
     private AppServiceConfig convert(GradleWebAppConfig config) {
@@ -152,16 +158,29 @@ public class DeployTask extends DefaultTask {
                 .appSettings(config.appSettings());
     }
 
-    private RuntimeConfig convert(@Nullable GradleRuntimeConfig configNullable) {
-        return Optional.ofNullable(configNullable).map(config -> new RuntimeConfig()
-            .os(Optional.ofNullable(config.os()).map(OperatingSystem::fromString).orElse(null))
-            .webContainer(Optional.ofNullable(config.webContainer()).map(WebContainer::fromString).orElse(null))
-            .javaVersion(Optional.ofNullable(config.javaVersion()).map(JavaVersion::fromString).orElse(null))
-            .registryUrl(config.registryUrl())
-            .image(config.image())
-            .username(config.username())
-            .password(config.password())
-            .startUpCommand(config.startUpCommand())).orElse(null);
+    private RuntimeConfig convert(@Nullable GradleRuntimeConfig config) {
+        if (Objects.isNull(config)) {
+            return null;
+        }
+        final OperatingSystem os = Optional.ofNullable(config.os()).map(OperatingSystem::fromString)
+                .orElseGet(() -> Optional.ofNullable(getWebApp()).map(WebApp::getAppServicePlan).map(AppServicePlan::getOperatingSystem).orElse(OperatingSystem.LINUX));
+        final String javaVersion = config.javaVersion();
+        final String webContainer = config.webContainer();
+        final Runtime runtime = os == OperatingSystem.DOCKER ? FunctionAppRuntime.DOCKER : os == OperatingSystem.WINDOWS ?
+                WebAppWindowsRuntime.fromContainerAndJavaVersionUserText(webContainer, javaVersion) :
+                WebAppLinuxRuntime.fromContainerAndJavaVersionUserText(webContainer, javaVersion);
+        return new RuntimeConfig()
+                .runtime(runtime)
+                .registryUrl(config.registryUrl())
+                .image(config.image())
+                .username(config.username())
+                .password(config.password())
+                .startUpCommand(config.startUpCommand());
+    }
+
+    private WebApp getWebApp() {
+        return Azure.az(AzureWebApp.class).webApps(azureWebappExtension.getSubscription())
+                .get(azureWebappExtension.getAppName(), azureWebappExtension.getResourceGroup());
     }
 
     private GradleWebAppConfig parseConfiguration() {
@@ -194,7 +213,7 @@ public class DeployTask extends DefaultTask {
     }
 
     private void normalizeConfigValue(GradleWebAppConfig config) {
-        if (StringUtils.isNotBlank(config.region()) && Region.fromName(config.region()) != null) {
+        if (StringUtils.isNotBlank(config.region())) {
             config.region(Region.fromName(config.region()).getName());
         }
     }

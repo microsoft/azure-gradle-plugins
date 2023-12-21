@@ -14,21 +14,18 @@ import com.google.common.base.Preconditions;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
 import com.microsoft.azure.toolkit.lib.common.IProject;
 import com.microsoft.azure.toolkit.lib.common.exception.AzureExecutionException;
 import com.microsoft.azure.toolkit.lib.common.exception.AzureToolkitRuntimeException;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
+import com.microsoft.azure.toolkit.lib.common.operation.OperationContext;
 import com.microsoft.azure.toolkit.lib.legacy.function.bindings.Binding;
 import com.microsoft.azure.toolkit.lib.legacy.function.bindings.BindingEnum;
 import com.microsoft.azure.toolkit.lib.legacy.function.configurations.FunctionConfiguration;
-import com.microsoft.azure.toolkit.lib.legacy.function.handlers.AnnotationHandler;
-import com.microsoft.azure.toolkit.lib.legacy.function.handlers.AnnotationHandlerImpl;
-import com.microsoft.azure.toolkit.lib.legacy.function.handlers.CommandHandler;
-import com.microsoft.azure.toolkit.lib.legacy.function.handlers.CommandHandlerImpl;
-import com.microsoft.azure.toolkit.lib.legacy.function.handlers.FunctionCoreToolsHandler;
-import com.microsoft.azure.toolkit.lib.legacy.function.handlers.FunctionCoreToolsHandlerImpl;
+import com.microsoft.azure.toolkit.lib.legacy.function.handlers.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.input.BOMInputStream;
 import org.apache.commons.lang3.StringUtils;
@@ -43,15 +40,7 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Scanner;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -114,8 +103,8 @@ public class PackageHandler {
         final AnnotationHandler annotationHandler = getAnnotationHandler();
         final Set<Method> methods = findAnnotatedMethods(annotationHandler);
 
-        if (methods.size() == 0) {
-            throw new AzureExecutionException(NO_FUNCTIONS);
+        if (CollectionUtils.isEmpty(methods)) {
+            throw new AzureToolkitRuntimeException(NO_FUNCTIONS);
         }
 
         final Map<String, FunctionConfiguration> configMap = getFunctionConfigurations(annotationHandler, methods);
@@ -188,7 +177,7 @@ public class PackageHandler {
                                                                          final Set<Method> methods) throws AzureExecutionException {
         AzureMessager.getMessager().info(LINE_FEED + GENERATE_CONFIG);
         final Map<String, FunctionConfiguration> configMap = handler.generateConfigurations(methods);
-        if (configMap.size() == 0) {
+        if (CollectionUtils.isEmpty(methods)) {
             AzureMessager.getMessager().info(GENERATE_SKIP);
         } else {
             final String scriptFilePath = getScriptFilePath();
@@ -205,7 +194,7 @@ public class PackageHandler {
 
     private void validateFunctionConfigurations(final Map<String, FunctionConfiguration> configMap) {
         AzureMessager.getMessager().info(LINE_FEED + VALIDATE_CONFIG);
-        if (configMap.size() == 0) {
+        if (MapUtils.isEmpty(configMap)) {
             AzureMessager.getMessager().info(VALIDATE_SKIP);
         } else {
             configMap.values().forEach(FunctionConfiguration::validate);
@@ -217,7 +206,7 @@ public class PackageHandler {
     private void writeFunctionJsonFiles(final ObjectWriter objectWriter,
                                         final Map<String, FunctionConfiguration> configMap) throws IOException {
         AzureMessager.getMessager().info(LINE_FEED + SAVE_FUNCTION_JSONS);
-        if (configMap.size() == 0) {
+        if (MapUtils.isEmpty(configMap)) {
             AzureMessager.getMessager().info(SAVE_SKIP);
         } else {
             for (final Map.Entry<String, FunctionConfiguration> config : configMap.entrySet()) {
@@ -243,13 +232,13 @@ public class PackageHandler {
         AzureMessager.getMessager().info(SAVE_SUCCESS + hostJsonFile.getAbsolutePath());
     }
 
-    private void copyLocalSettingJsonFile() throws AzureExecutionException, IOException {
+    private void copyLocalSettingJsonFile() throws IOException {
         AzureMessager.getMessager().info(LINE_FEED + SAVE_LOCAL_SETTINGS_JSON);
         final File localSettingJsonTargetFile = Paths.get(this.deploymentStagingDirectoryPath, LOCAL_SETTINGS_JSON)
             .toFile();
         final File localSettingJsonSrcFile = new File(project.getBaseDirectory().toFile(), LOCAL_SETTINGS_JSON);
         if (localSettingJsonSrcFile.exists() && localSettingJsonSrcFile.length() == 0) {
-            throw new AzureExecutionException("The " + localSettingJsonSrcFile.getAbsolutePath() +
+            throw new AzureToolkitRuntimeException("The " + localSettingJsonSrcFile.getAbsolutePath() +
                 " file is empty, please check the document at" + DOCS_LINK);
         } else {
             copyFilesWithDefaultContent(localSettingJsonSrcFile, localSettingJsonTargetFile, DEFAULT_LOCAL_SETTINGS_JSON);
@@ -368,6 +357,6 @@ public class PackageHandler {
                 .sorted()
                 .distinct()
                 .collect(Collectors.toList());
-        TelemetryAgent.getInstance().addDefaultProperty(TRIGGER_TYPE, StringUtils.join(bindingTypeSet, ","));
+        OperationContext.current().setTelemetryProperty(TRIGGER_TYPE, StringUtils.join(bindingTypeSet, ","));
     }
 }

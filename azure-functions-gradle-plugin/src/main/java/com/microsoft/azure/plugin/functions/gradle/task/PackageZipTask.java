@@ -18,7 +18,6 @@ import org.zeroturnaround.zip.ZipUtil;
 
 import javax.annotation.Nullable;
 import java.io.File;
-import java.io.IOException;
 
 public class PackageZipTask extends DefaultTask implements IFunctionTask {
     private static final String PACKAGE_ZIP_FAILURE = "Cannot build zip for azure functions due to error: ";
@@ -38,7 +37,7 @@ public class PackageZipTask extends DefaultTask implements IFunctionTask {
     }
 
     @TaskAction
-    public void buildZip() throws GradleException, IOException {
+    public void buildZip() throws GradleException {
         try {
             TelemetryAgent.getInstance().trackTaskStart(this.getClass());
             final GradleFunctionContext ctx = new GradleFunctionContext(getProject(), this.getFunctionsExtension());
