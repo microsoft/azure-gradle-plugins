@@ -135,6 +135,9 @@ public class DeployHandler {
         final String javaVersion = getJavaVersion();
         final Runtime runtime = os == OperatingSystem.DOCKER ? FunctionAppRuntime.DOCKER : os == OperatingSystem.WINDOWS ?
                 FunctionAppWindowsRuntime.fromJavaVersionUserText(javaVersion) : FunctionAppLinuxRuntime.fromJavaVersionUserText(javaVersion);
+        if (Objects.isNull(runtime) && StringUtils.isNotBlank(config.javaVersion())) {
+            throw new AzureToolkitRuntimeException("invalid runtime configuration, please refer to https://aka.ms/maven_function_configuration#supported-runtime for valid values");
+        }
         return new RuntimeConfig().runtime(runtime)
                 .image(config.image()).registryUrl(config.registryUrl())
                 .username(config.username()).password(config.password());

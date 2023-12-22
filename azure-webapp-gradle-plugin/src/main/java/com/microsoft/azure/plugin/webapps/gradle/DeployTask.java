@@ -175,6 +175,9 @@ public class DeployTask extends DefaultTask {
         final Runtime runtime = os == OperatingSystem.DOCKER ? FunctionAppRuntime.DOCKER : os == OperatingSystem.WINDOWS ?
                 WebAppWindowsRuntime.fromContainerAndJavaVersionUserText(webContainer, javaVersion) :
                 WebAppLinuxRuntime.fromContainerAndJavaVersionUserText(webContainer, javaVersion);
+        if (Objects.isNull(runtime) && (StringUtils.isNotBlank(config.webContainer()) || StringUtils.isNotBlank(config.javaVersion()))) {
+            throw new AzureToolkitRuntimeException("invalid runtime configuration, please refer to https://aka.ms/maven_webapp_runtime for valid values");
+        }
         return new RuntimeConfig()
                 .runtime(runtime)
                 .registryUrl(config.registryUrl())
