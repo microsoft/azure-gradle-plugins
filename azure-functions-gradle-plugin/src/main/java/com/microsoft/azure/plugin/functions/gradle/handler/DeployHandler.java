@@ -14,8 +14,10 @@ import com.microsoft.azure.toolkit.lib.appservice.config.AppServiceConfig;
 import com.microsoft.azure.toolkit.lib.appservice.config.FunctionAppConfig;
 import com.microsoft.azure.toolkit.lib.appservice.config.RuntimeConfig;
 import com.microsoft.azure.toolkit.lib.appservice.entity.FunctionEntity;
+import com.microsoft.azure.toolkit.lib.appservice.function.AzureFunctions;
 import com.microsoft.azure.toolkit.lib.appservice.function.FunctionApp;
 import com.microsoft.azure.toolkit.lib.appservice.function.FunctionAppBase;
+import com.microsoft.azure.toolkit.lib.appservice.function.FunctionsServiceSubscription;
 import com.microsoft.azure.toolkit.lib.appservice.function.core.AzureFunctionsAnnotationConstants;
 import com.microsoft.azure.toolkit.lib.appservice.model.Runtime;
 import com.microsoft.azure.toolkit.lib.appservice.model.*;
@@ -125,6 +127,9 @@ public class DeployHandler {
         if (config == null) {
             return null;
         }
+        final FunctionsServiceSubscription serviceSubscription = (FunctionsServiceSubscription) Azure.az(AzureFunctions.class)
+                .forSubscription(ctx.getOrCreateAzureAppServiceClient().getSubscriptionId());
+        serviceSubscription.loadRuntimes();
         final OperatingSystem os = Optional.ofNullable(config.os()).map(OperatingSystem::fromString)
                 .orElseGet(() -> Optional.ofNullable(getFunctionApp()).map(FunctionApp::getAppServicePlan).map(AppServicePlan::getOperatingSystem).orElse(OperatingSystem.WINDOWS));
         final String javaVersion = getJavaVersion();

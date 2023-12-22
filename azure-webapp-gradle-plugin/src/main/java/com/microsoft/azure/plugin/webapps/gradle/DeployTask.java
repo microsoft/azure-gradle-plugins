@@ -23,6 +23,7 @@ import com.microsoft.azure.toolkit.lib.appservice.utils.Utils;
 import com.microsoft.azure.toolkit.lib.appservice.webapp.AzureWebApp;
 import com.microsoft.azure.toolkit.lib.appservice.webapp.WebApp;
 import com.microsoft.azure.toolkit.lib.appservice.webapp.WebAppBase;
+import com.microsoft.azure.toolkit.lib.appservice.webapp.WebAppServiceSubscription;
 import com.microsoft.azure.toolkit.lib.auth.AzureAccount;
 import com.microsoft.azure.toolkit.lib.common.exception.AzureToolkitRuntimeException;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
@@ -41,7 +42,7 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.tasks.TaskAction;
 
-import javax.annotation.Nullable;
+import javax.annotation.Nonnull;
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
@@ -74,6 +75,7 @@ public class DeployTask extends DefaultTask {
             normalizeConfigValue(config);
             validate(config);
             config.subscriptionId(GradleAuthHelper.login(azureWebappExtension.getAuth(), config.subscriptionId()));
+            azureWebappExtension.setSubscription(config.subscriptionId());
             validateOnline(config);
             final WebAppBase<?, ?, ?> target = createOrUpdateWebapp(config);
             deployArtifact(target, config);
@@ -153,19 +155,23 @@ public class DeployTask extends DefaultTask {
                 .deploymentSlotConfigurationSource(config.deploymentSlotConfigurationSource())
                 .pricingTier(Optional.ofNullable(config.pricingTier()).map(PricingTier::fromString).orElse(null))
                 .region(Optional.ofNullable(config.region()).map(Region::fromName).orElse(null))
-                .runtime(convert(config.runtime()))
+                .runtime(getRuntimeConfig(config))
                 .servicePlanName(config.servicePlanName())
                 .appSettings(config.appSettings());
     }
 
-    private RuntimeConfig convert(@Nullable GradleRuntimeConfig config) {
+    private RuntimeConfig getRuntimeConfig(@Nonnull GradleWebAppConfig webAppConfig) {
+        final GradleRuntimeConfig config = webAppConfig.runtime();
         if (Objects.isNull(config)) {
             return null;
         }
+        final WebAppServiceSubscription serviceSubscription = (WebAppServiceSubscription) Azure.az(AzureWebApp.class).forSubscription(webAppConfig.subscriptionId());
         final OperatingSystem os = Optional.ofNullable(config.os()).map(OperatingSystem::fromString)
-                .orElseGet(() -> Optional.ofNullable(getWebApp()).map(WebApp::getAppServicePlan).map(AppServicePlan::getOperatingSystem).orElse(OperatingSystem.LINUX));
+                .orElseGet(() -> Optional.ofNullable(serviceSubscription.webApps().get(webAppConfig.appName(), webAppConfig.resourceGroup()))
+                        .map(WebApp::getAppServicePlan).map(AppServicePlan::getOperatingSystem).orElse(OperatingSystem.LINUX));
         final String javaVersion = config.javaVersion();
         final String webContainer = config.webContainer();
+        serviceSubscription.loadRuntimes();
         final Runtime runtime = os == OperatingSystem.DOCKER ? FunctionAppRuntime.DOCKER : os == OperatingSystem.WINDOWS ?
                 WebAppWindowsRuntime.fromContainerAndJavaVersionUserText(webContainer, javaVersion) :
                 WebAppLinuxRuntime.fromContainerAndJavaVersionUserText(webContainer, javaVersion);
@@ -176,11 +182,6 @@ public class DeployTask extends DefaultTask {
                 .username(config.username())
                 .password(config.password())
                 .startUpCommand(config.startUpCommand());
-    }
-
-    private WebApp getWebApp() {
-        return Azure.az(AzureWebApp.class).webApps(azureWebappExtension.getSubscription())
-                .get(azureWebappExtension.getAppName(), azureWebappExtension.getResourceGroup());
     }
 
     private GradleWebAppConfig parseConfiguration() {
