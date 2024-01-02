@@ -116,6 +116,7 @@ public class DeployHandler {
     public void execute() {
         OperationContext.current().setTelemetryProperty(FUNCTION_JAVA_VERSION_KEY, StringUtils.firstNonBlank(getJavaVersion(), "N/A"));
         OperationContext.current().setTelemetryProperty(DISABLE_APP_INSIGHTS_KEY, String.valueOf(ctx.isDisableAppInsights()));
+        ((FunctionsServiceSubscription) ctx.getOrCreateAzureAppServiceClient().getParent()).loadRuntimes();
         doValidate();
         final FunctionAppBase<?, ?, ?> app = createOrUpdateFunctionApp();
         deployArtifact(app);

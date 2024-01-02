@@ -78,6 +78,7 @@ public class DeployTask extends DefaultTask {
             validate(config);
             config.subscriptionId(GradleAuthHelper.login(azureWebappExtension.getAuth(), config.subscriptionId()));
             azureWebappExtension.setSubscription(config.subscriptionId());
+            ((WebAppServiceSubscription) Azure.az(AzureWebApp.class).webApps(config.subscriptionId()).getParent()).loadRuntimes();
             validateOnline(config);
             final WebAppBase<?, ?, ?> target = createOrUpdateWebapp(config);
             deployArtifact(target, config);
