@@ -1,6 +1,7 @@
 # Change Log
 All notable changes to the "Azure Function Plugin for Gradle" will be documented in this file.
 - [Change Log](#change-log)
+  - [1.15.0](#1150)
   - [1.11.0](#1110)
   - [1.10.0](#1100)
   - [1.9.0](#190)
@@ -13,6 +14,9 @@ All notable changes to the "Azure Function Plugin for Gradle" will be documented
   - [1.2.0](#120)
   - [1.1.0](#110)
   - [1.0.0](#100)
+
+## 1.15.0
+- Migrate to use `stacks` API to get and validate function app runtime stacks
 
 ## 1.11.0
 - Support Java 17 for Function App
