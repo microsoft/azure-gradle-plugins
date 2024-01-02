@@ -19,8 +19,10 @@ import com.microsoft.azure.toolkit.lib.appservice.function.FunctionApp;
 import com.microsoft.azure.toolkit.lib.appservice.function.FunctionAppBase;
 import com.microsoft.azure.toolkit.lib.appservice.function.FunctionsServiceSubscription;
 import com.microsoft.azure.toolkit.lib.appservice.function.core.AzureFunctionsAnnotationConstants;
+import com.microsoft.azure.toolkit.lib.appservice.model.FunctionDeployType;
+import com.microsoft.azure.toolkit.lib.appservice.model.OperatingSystem;
+import com.microsoft.azure.toolkit.lib.appservice.model.PricingTier;
 import com.microsoft.azure.toolkit.lib.appservice.model.Runtime;
-import com.microsoft.azure.toolkit.lib.appservice.model.*;
 import com.microsoft.azure.toolkit.lib.appservice.plan.AppServicePlan;
 import com.microsoft.azure.toolkit.lib.appservice.task.CreateOrUpdateFunctionAppTask;
 import com.microsoft.azure.toolkit.lib.auth.AzureAccount;
@@ -133,12 +135,7 @@ public class DeployHandler {
         final OperatingSystem os = Optional.ofNullable(config.os()).map(OperatingSystem::fromString)
                 .orElseGet(() -> Optional.ofNullable(getFunctionApp()).map(FunctionApp::getAppServicePlan).map(AppServicePlan::getOperatingSystem).orElse(OperatingSystem.WINDOWS));
         final String javaVersion = getJavaVersion();
-        final Runtime runtime = os == OperatingSystem.DOCKER ? FunctionAppRuntime.DOCKER : os == OperatingSystem.WINDOWS ?
-                FunctionAppWindowsRuntime.fromJavaVersionUserText(javaVersion) : FunctionAppLinuxRuntime.fromJavaVersionUserText(javaVersion);
-        if (Objects.isNull(runtime) && StringUtils.isNotBlank(config.javaVersion())) {
-            throw new AzureToolkitRuntimeException("invalid runtime configuration, please refer to https://aka.ms/maven_function_configuration#supported-runtime for valid values");
-        }
-        return new RuntimeConfig().runtime(runtime)
+        return new RuntimeConfig().os(os).javaVersion(javaVersion)
                 .image(config.image()).registryUrl(config.registryUrl())
                 .username(config.username()).password(config.password());
     }
@@ -344,7 +341,7 @@ public class DeployHandler {
         final org.gradle.api.JavaVersion localRuntime = org.gradle.api.JavaVersion.current();
         final Runtime runtime = localRuntime.isCompatibleWith(org.gradle.api.JavaVersion.VERSION_17) ? FUNCTION_JAVA17 :
                 localRuntime.isJava11Compatible() ? FUNCTION_JAVA11: FUNCTION_JAVA8;
-        result.runtime(new RuntimeConfig().runtime(runtime));
+        result.runtime(new RuntimeConfig().os(runtime.getOperatingSystem()).javaVersion(runtime.getJavaVersionUserText()));
         result.subscriptionId(subscriptionId);
         return result;
     }

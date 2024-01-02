@@ -13,8 +13,10 @@ import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
 import com.microsoft.azure.toolkit.lib.Azure;
 import com.microsoft.azure.toolkit.lib.appservice.config.AppServiceConfig;
 import com.microsoft.azure.toolkit.lib.appservice.config.RuntimeConfig;
-import com.microsoft.azure.toolkit.lib.appservice.model.Runtime;
-import com.microsoft.azure.toolkit.lib.appservice.model.*;
+import com.microsoft.azure.toolkit.lib.appservice.model.OperatingSystem;
+import com.microsoft.azure.toolkit.lib.appservice.model.PricingTier;
+import com.microsoft.azure.toolkit.lib.appservice.model.WebAppArtifact;
+import com.microsoft.azure.toolkit.lib.appservice.model.WebAppLinuxRuntime;
 import com.microsoft.azure.toolkit.lib.appservice.plan.AppServicePlan;
 import com.microsoft.azure.toolkit.lib.appservice.task.CreateOrUpdateWebAppTask;
 import com.microsoft.azure.toolkit.lib.appservice.task.DeployWebAppTask;
@@ -125,9 +127,10 @@ public class DeployTask extends DefaultTask {
                 buildDefaultConfig(appServiceConfig.subscriptionId(), appServiceConfig.resourceGroup(), appServiceConfig.appName());
         mergeAppServiceConfig(appServiceConfig, defaultConfig);
         if (appServiceConfig.pricingTier() == null) {
-            final Runtime runtime = appServiceConfig.runtime().runtime();
+            final RuntimeConfig runtime = appServiceConfig.runtime();
+            final OperatingSystem operatingSystem = Optional.ofNullable(runtime).map(RuntimeConfig::os).orElse(null);
             final String jboss = WebAppLinuxRuntime.JBOSS7_JAVA17.getContainerName();
-            if (runtime instanceof WebAppLinuxRuntime && StringUtils.containsIgnoreCase(((WebAppLinuxRuntime) runtime).getContainerName(), jboss)) {
+            if (operatingSystem == OperatingSystem.LINUX && StringUtils.containsIgnoreCase(runtime.webContainer(), jboss)) {
                 appServiceConfig.pricingTier(PricingTier.PREMIUM_P1V3);
             } else {
                 appServiceConfig.pricingTier(PricingTier.PREMIUM_P1V2);
@@ -171,15 +174,10 @@ public class DeployTask extends DefaultTask {
                         .map(WebApp::getAppServicePlan).map(AppServicePlan::getOperatingSystem).orElse(OperatingSystem.LINUX));
         final String javaVersion = config.javaVersion();
         final String webContainer = config.webContainer();
-        serviceSubscription.loadRuntimes();
-        final Runtime runtime = os == OperatingSystem.DOCKER ? FunctionAppRuntime.DOCKER : os == OperatingSystem.WINDOWS ?
-                WebAppWindowsRuntime.fromContainerAndJavaVersionUserText(webContainer, javaVersion) :
-                WebAppLinuxRuntime.fromContainerAndJavaVersionUserText(webContainer, javaVersion);
-        if (Objects.isNull(runtime) && (StringUtils.isNotBlank(config.webContainer()) || StringUtils.isNotBlank(config.javaVersion()))) {
-            throw new AzureToolkitRuntimeException("invalid runtime configuration, please refer to https://aka.ms/maven_webapp_runtime for valid values");
-        }
         return new RuntimeConfig()
-                .runtime(runtime)
+                .os(os)
+                .webContainer(webContainer)
+                .javaVersion(javaVersion)
                 .registryUrl(config.registryUrl())
                 .image(config.image())
                 .username(config.username())
