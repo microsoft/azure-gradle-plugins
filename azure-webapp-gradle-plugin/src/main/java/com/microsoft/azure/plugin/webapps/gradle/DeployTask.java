@@ -17,7 +17,6 @@ import com.microsoft.azure.toolkit.lib.appservice.model.OperatingSystem;
 import com.microsoft.azure.toolkit.lib.appservice.model.PricingTier;
 import com.microsoft.azure.toolkit.lib.appservice.model.WebAppArtifact;
 import com.microsoft.azure.toolkit.lib.appservice.model.WebAppLinuxRuntime;
-import com.microsoft.azure.toolkit.lib.appservice.plan.AppServicePlan;
 import com.microsoft.azure.toolkit.lib.appservice.task.CreateOrUpdateWebAppTask;
 import com.microsoft.azure.toolkit.lib.appservice.task.DeployWebAppTask;
 import com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigUtils;
@@ -169,10 +168,7 @@ public class DeployTask extends DefaultTask {
         if (Objects.isNull(config)) {
             return null;
         }
-        final WebAppServiceSubscription serviceSubscription = (WebAppServiceSubscription) Azure.az(AzureWebApp.class).forSubscription(webAppConfig.subscriptionId());
-        final OperatingSystem os = Optional.ofNullable(config.os()).map(OperatingSystem::fromString)
-                .orElseGet(() -> Optional.ofNullable(serviceSubscription.webApps().get(webAppConfig.appName(), webAppConfig.resourceGroup()))
-                        .map(WebApp::getAppServicePlan).map(AppServicePlan::getOperatingSystem).orElse(OperatingSystem.LINUX));
+        final OperatingSystem os = Optional.ofNullable(config.os()).map(OperatingSystem::fromString).orElse(null);
         final String javaVersion = config.javaVersion();
         final String webContainer = config.webContainer();
         return new RuntimeConfig()
