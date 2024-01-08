@@ -171,8 +171,8 @@ public class DeployTask extends DefaultTask {
             return null;
         }
         final OperatingSystem os = Optional.ofNullable(config.os()).map(OperatingSystem::fromString).orElse(null);
-        final String javaVersion = config.javaVersion();
-        final String webContainer = config.webContainer();
+        final String javaVersion = Optional.of(config.javaVersion()).filter(StringUtils::isNotEmpty).orElse(null);
+        final String webContainer = Optional.of(config.webContainer()).filter(StringUtils::isNotEmpty).orElse(null);
         return new RuntimeConfig()
                 .os(os)
                 .webContainer(webContainer)
