@@ -246,10 +246,10 @@ public class AzureWebappPluginExtension {
     public Map<String, String> getTelemetryProperties() {
         final Map<String, String> result = new HashMap<>();
         final GradleRuntimeConfig runtime = getRuntime();
-        final String os = java.util.Optional.ofNullable(runtime).map(GradleRuntimeConfig::os).orElse(null);
+        final String os = java.util.Optional.ofNullable(runtime).map(GradleRuntimeConfig::os).orElse(StringUtils.EMPTY);
         result.put(OS_KEY, os);
-        result.put(JAVA_VERSION_KEY, java.util.Optional.ofNullable(runtime).map(GradleRuntimeConfig::javaVersion).orElse(null));
-        result.put(JAVA_WEB_CONTAINER_KEY, java.util.Optional.ofNullable(runtime).map(GradleRuntimeConfig::webContainer).orElse(null));
+        result.put(JAVA_VERSION_KEY, java.util.Optional.ofNullable(runtime).map(GradleRuntimeConfig::javaVersion).orElse(StringUtils.EMPTY));
+        result.put(JAVA_WEB_CONTAINER_KEY, java.util.Optional.ofNullable(runtime).map(GradleRuntimeConfig::webContainer).orElse(StringUtils.EMPTY));
         result.put(PRICING_TIER_KEY, pricingTier);
         result.put(REGION_KEY, region);
         if (runtime != null && StringUtils.equalsIgnoreCase(os, OperatingSystem.DOCKER.getValue())) {
