@@ -26,6 +26,7 @@ import com.microsoft.azure.toolkit.lib.appservice.webapp.WebApp;
 import com.microsoft.azure.toolkit.lib.appservice.webapp.WebAppBase;
 import com.microsoft.azure.toolkit.lib.appservice.webapp.WebAppServiceSubscription;
 import com.microsoft.azure.toolkit.lib.auth.AzureAccount;
+import com.microsoft.azure.toolkit.lib.common.bundle.AzureString;
 import com.microsoft.azure.toolkit.lib.common.exception.AzureToolkitRuntimeException;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
 import com.microsoft.azure.toolkit.lib.common.model.Region;
@@ -81,6 +82,7 @@ public class DeployTask extends DefaultTask {
             validateOnline(config);
             final WebAppBase<?, ?, ?> target = createOrUpdateWebapp(config);
             deployArtifact(target, config);
+            AzureMessager.getMessager().info(AzureString.format("Application url: %s", "https://" + target.getHostName()));
             TelemetryAgent.getInstance().trackTaskSuccess(this.getClass());
         } catch (Exception e) {
             AzureMessager.getMessager().error(e);
