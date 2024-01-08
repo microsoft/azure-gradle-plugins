@@ -341,7 +341,7 @@ public class DeployHandler {
         final FunctionAppConfig result = AppServiceConfig.buildDefaultFunctionConfig(resourceGroup, appName);
         final org.gradle.api.JavaVersion localRuntime = org.gradle.api.JavaVersion.current();
         final Runtime runtime = localRuntime.isCompatibleWith(org.gradle.api.JavaVersion.VERSION_17) ? FUNCTION_JAVA17 :
-                localRuntime.isJava11Compatible() ? FUNCTION_JAVA11: FUNCTION_JAVA8;
+                localRuntime.isJava11Compatible() ? FUNCTION_JAVA11 : FUNCTION_JAVA8;
         result.runtime(new RuntimeConfig().os(runtime.getOperatingSystem()).javaVersion(runtime.getJavaVersionUserText()));
         result.subscriptionId(subscriptionId);
         return result;
