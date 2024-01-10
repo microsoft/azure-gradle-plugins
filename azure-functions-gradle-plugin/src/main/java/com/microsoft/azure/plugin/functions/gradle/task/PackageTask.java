@@ -9,6 +9,7 @@ import com.microsoft.azure.plugin.functions.gradle.AzureFunctionsExtension;
 import com.microsoft.azure.plugin.functions.gradle.GradleFunctionContext;
 import com.microsoft.azure.plugin.functions.gradle.handler.PackageHandler;
 import com.microsoft.azure.toolkit.lib.common.operation.AzureOperation;
+import com.microsoft.azure.toolkit.lib.common.operation.OperationContext;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
@@ -40,7 +41,7 @@ public class PackageTask extends DefaultTask implements IFunctionTask {
         try {
             TelemetryAgent.getInstance().trackTaskStart(this.getClass());
             final GradleFunctionContext ctx = new GradleFunctionContext(getProject(), this.getFunctionsExtension());
-            TelemetryAgent.getInstance().addDefaultProperties(ctx.getTelemetryProperties());
+            OperationContext.current().setTelemetryProperties(ctx.getTelemetryProperties());
             final File stagingFolder = new File(ctx.getDeploymentStagingDirectoryPath());
             // package task will start from a empty staging folder
             if (stagingFolder.exists()) {

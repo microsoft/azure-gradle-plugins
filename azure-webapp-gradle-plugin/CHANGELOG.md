@@ -1,6 +1,7 @@
 # Change Log
 All notable changes to the "Azure WebApp Plugin for Gradle" will be documented in this file.
 - [Change Log](#change-log)
+  - [1.10.0](#1100)
   - [1.6.0](#160)
   - [1.5.0](#150)
   - [1.4.0](#140)
@@ -8,6 +9,9 @@ All notable changes to the "Azure WebApp Plugin for Gradle" will be documented i
   - [1.2.0](#120)
   - [1.1.0](#110)
   - [1.0.0](#100)
+
+## 1.10.0
+- Migrate to use `stacks` API to get and validate web app runtime stacks
 
 ## 1.6.0
 - Improve stability/reliability of Authentication

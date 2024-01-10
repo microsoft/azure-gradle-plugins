@@ -18,9 +18,11 @@ import org.gradle.api.tasks.Exec;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
+import org.gradle.process.ExecResult;
 
 import javax.annotation.Nullable;
 import java.io.File;
+import java.util.Optional;
 
 public class LocalRunTask extends Exec implements IFunctionTask {
 
@@ -77,7 +79,7 @@ public class LocalRunTask extends Exec implements IFunctionTask {
             this.setWorkingDir(new File(stagingFolder));
             this.setIgnoreExitValue(true);
             super.exec();
-            final int code = this.getExecResult().getExitValue();
+            final int code = Optional.ofNullable(getExecResult()).map(ExecResult::getExitValue).orElse(-1);
             for (final Long validCode : CommandUtils.getValidReturnCodes()) {
                 if (validCode != null && validCode.intValue() == code) {
                     TelemetryAgent.getInstance().trackTaskSuccess(this.getClass());

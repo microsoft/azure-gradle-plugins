@@ -6,20 +6,14 @@
 package com.microsoft.azure.gradle.auth;
 
 import com.azure.core.management.AzureEnvironment;
-import com.microsoft.azure.gradle.temeletry.TelemetryAgent;
 import com.microsoft.azure.gradle.temeletry.TelemetryConstants;
 import com.microsoft.azure.toolkit.lib.Azure;
-import com.microsoft.azure.toolkit.lib.auth.Account;
-import com.microsoft.azure.toolkit.lib.auth.AuthConfiguration;
-import com.microsoft.azure.toolkit.lib.auth.AuthType;
-import com.microsoft.azure.toolkit.lib.auth.AzureAccount;
-import com.microsoft.azure.toolkit.lib.auth.AzureCloud;
-import com.microsoft.azure.toolkit.lib.auth.AzureEnvironmentUtils;
-import com.microsoft.azure.toolkit.lib.auth.AzureToolkitAuthenticationException;
+import com.microsoft.azure.toolkit.lib.auth.*;
 import com.microsoft.azure.toolkit.lib.common.bundle.AzureString;
 import com.microsoft.azure.toolkit.lib.common.exception.InvalidConfigurationException;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
 import com.microsoft.azure.toolkit.lib.common.model.Subscription;
+import com.microsoft.azure.toolkit.lib.common.telemetry.AzureTelemeter;
 import com.microsoft.azure.toolkit.lib.common.utils.TextUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
@@ -85,7 +79,7 @@ public class GradleAuthHelper {
         if (StringUtils.isBlank(targetSubscriptionId) && !subscriptions.isEmpty()) {
             targetSubscriptionId = subscriptions.stream().map(Subscription::getId).findFirst().orElse(null);
         }
-        TelemetryAgent.getInstance().addDefaultProperty(TelemetryConstants.SUBSCRIPTION_ID_KEY, targetSubscriptionId);
+        AzureTelemeter.getClient().addDefaultProperty(TelemetryConstants.SUBSCRIPTION_ID_KEY, Optional.ofNullable(targetSubscriptionId).orElse(StringUtils.EMPTY));
         return targetSubscriptionId;
     }
 
@@ -100,9 +94,9 @@ public class GradleAuthHelper {
             AzureMessager.getMessager().info(AzureString.format(USING_AZURE_ENVIRONMENT, environmentName));
         }
         printCredentialDescription(account, isInteractiveLogin);
-        TelemetryAgent.getInstance().addDefaultProperty(TelemetryConstants.AUTH_TYPE_KEY, Objects.toString(auth.getType()));
-        TelemetryAgent.getInstance().addDefaultProperty(TelemetryConstants.AUTH_METHOD_KEY, Objects.toString(account.getType()));
-        TelemetryAgent.getInstance().addDefaultProperty(TelemetryConstants.AZURE_ENVIRONMENT_KEY, environmentName);
+        AzureTelemeter.getClient().addDefaultProperty(TelemetryConstants.AUTH_TYPE_KEY, Objects.toString(auth.getType()));
+        AzureTelemeter.getClient().addDefaultProperty(TelemetryConstants.AUTH_METHOD_KEY, Objects.toString(account.getType()));
+        AzureTelemeter.getClient().addDefaultProperty(TelemetryConstants.AZURE_ENVIRONMENT_KEY, environmentName);
         return account;
     }
 

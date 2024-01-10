@@ -33,7 +33,7 @@ subprojects {
     targetCompatibility = 1.8
 
     ext {
-        azureToolkitVersion = "0.38.0"
+        azureToolkitVersion = "0.40.0"
     }
 
     checkstyle {

@@ -16,6 +16,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import javax.annotation.Nonnull;
 import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
@@ -104,7 +105,7 @@ public class TelemetryAgent {
         try {
             final File configurationFile = new File(CONFIGURATION_PATH);
             if (configurationFile.exists()) {
-                try (InputStream input = new FileInputStream(CONFIGURATION_PATH)) {
+                try (InputStream input = Files.newInputStream(Paths.get(CONFIGURATION_PATH))) {
                     prop.load(input);
                     final String firstRunValue = prop.getProperty(FIRST_RUN_KEY);
                     if (firstRunValue != null && firstRunValue.equalsIgnoreCase("false")) {
@@ -123,7 +124,7 @@ public class TelemetryAgent {
     }
 
     private void updateConfigurationFile(Properties prop) {
-        try (OutputStream output = new FileOutputStream(CONFIGURATION_PATH)) {
+        try (OutputStream output = Files.newOutputStream(Paths.get(CONFIGURATION_PATH))) {
             prop.setProperty(FIRST_RUN_KEY, "false");
             prop.store(output, "Azure Gradle Plugin configurations");
         } catch (Exception e) {

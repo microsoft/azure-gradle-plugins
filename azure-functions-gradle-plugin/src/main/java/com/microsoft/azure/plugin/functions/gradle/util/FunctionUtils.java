@@ -5,7 +5,7 @@
 package com.microsoft.azure.plugin.functions.gradle.util;
 
 import com.microsoft.azure.plugin.functions.gradle.handler.PackageHandler;
-import com.microsoft.azure.toolkit.lib.common.exception.AzureExecutionException;
+import com.microsoft.azure.toolkit.lib.common.exception.AzureToolkitRuntimeException;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
 
 import java.io.File;
@@ -17,20 +17,20 @@ public class FunctionUtils {
     private static final String HOST_JSON_NOT_FOUND = "File 'host.json' cannot be found at staging directory.";
     private static final String LOCAL_SETTINGS_JSON_NOT_FOUND = "File 'local.settings.json' cannot be found at staging directory.";
 
-    public static void checkStagingDirectory(String stagingFolder) throws AzureExecutionException {
+    public static void checkStagingDirectory(String stagingFolder) throws AzureToolkitRuntimeException {
         final File file = new File(stagingFolder);
         if (!file.exists() || !file.isDirectory()) {
-            throw new AzureExecutionException(STAGE_DIR_NOT_FOUND);
+            throw new AzureToolkitRuntimeException(STAGE_DIR_NOT_FOUND);
         }
         AzureMessager.getMessager().info(STAGE_DIR_FOUND + stagingFolder);
         final File hostJson = new File(file, PackageHandler.HOST_JSON);
         if (!hostJson.exists() || !hostJson.isFile()) {
-            throw new AzureExecutionException(HOST_JSON_NOT_FOUND);
+            throw new AzureToolkitRuntimeException(HOST_JSON_NOT_FOUND);
         }
 
         final File localSettingsJson = new File(file, PackageHandler.LOCAL_SETTINGS_JSON);
         if (!localSettingsJson.exists() || !localSettingsJson.isFile()) {
-            throw new AzureExecutionException(LOCAL_SETTINGS_JSON_NOT_FOUND);
+            throw new AzureToolkitRuntimeException(LOCAL_SETTINGS_JSON_NOT_FOUND);
         }
     }
 }
