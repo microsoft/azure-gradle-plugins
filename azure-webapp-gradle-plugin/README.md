@@ -1,7 +1,7 @@
 # Azure WebApp Plugin for Gradle
 [![Gradle Plugin Portal](https://img.shields.io/maven-metadata/v.svg?colorB=007ec6&label=Azure+WebApp+Plugin+for+Gradle&metadataUrl=https%3A%2F%2Fplugins.gradle.org%2Fm2%2Fcom%2Fmicrosoft%2Fazure%2Fazure-webapp-gradle-plugin%2Fmaven-metadata.xml)](https://plugins.gradle.org/plugin/com.microsoft.azure.azurewebapp)
 
-This plugin helps Java developers to deploy Maven projects to [Azure App Service](https://docs.microsoft.com/en-us/azure/app-service/).
+This plugin helps Java developers to deploy Gradle projects to [Azure App Service](https://docs.microsoft.com/en-us/azure/app-service/).
 
 
 ## Prerequisites
