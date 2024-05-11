@@ -195,7 +195,7 @@ public class GradleFunctionContext {
         result.put(FUNCTION_RUNTIME_KEY, StringUtils.isEmpty(os) ? "" : os);
         result.put(FUNCTION_IS_DOCKER_KEY, String.valueOf(isDockerFunction));
         result.put(FUNCTION_REGION_KEY, getRegion());
-        result.put(FUNCTION_PRICING_KEY, getPricingTier());
+        result.put(FUNCTION_PRICING_KEY, StringUtils.isEmpty(getPricingTier()) ? "" : getPricingTier());
         result.put(DISABLE_APP_INSIGHTS_KEY, String.valueOf(isDisableAppInsights()));
         result.put(DEPLOY_TO_SLOT_KEY, String.valueOf(StringUtils.isEmpty(getDeploymentSlotName())));
         return result;
