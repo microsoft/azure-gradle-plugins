@@ -10,6 +10,7 @@ import com.google.common.base.Preconditions;
 import com.microsoft.azure.gradle.configuration.GradleRuntimeConfig;
 import com.microsoft.azure.plugin.functions.gradle.GradleFunctionContext;
 import com.microsoft.azure.toolkit.lib.Azure;
+import com.microsoft.azure.toolkit.lib.appservice.AzureAppService;
 import com.microsoft.azure.toolkit.lib.appservice.config.AppServiceConfig;
 import com.microsoft.azure.toolkit.lib.appservice.config.FunctionAppConfig;
 import com.microsoft.azure.toolkit.lib.appservice.config.RuntimeConfig;
@@ -19,10 +20,8 @@ import com.microsoft.azure.toolkit.lib.appservice.function.FunctionApp;
 import com.microsoft.azure.toolkit.lib.appservice.function.FunctionAppBase;
 import com.microsoft.azure.toolkit.lib.appservice.function.FunctionsServiceSubscription;
 import com.microsoft.azure.toolkit.lib.appservice.function.core.AzureFunctionsAnnotationConstants;
-import com.microsoft.azure.toolkit.lib.appservice.model.FunctionDeployType;
-import com.microsoft.azure.toolkit.lib.appservice.model.OperatingSystem;
-import com.microsoft.azure.toolkit.lib.appservice.model.PricingTier;
 import com.microsoft.azure.toolkit.lib.appservice.model.Runtime;
+import com.microsoft.azure.toolkit.lib.appservice.model.*;
 import com.microsoft.azure.toolkit.lib.appservice.plan.AppServicePlan;
 import com.microsoft.azure.toolkit.lib.appservice.task.CreateOrUpdateFunctionAppTask;
 import com.microsoft.azure.toolkit.lib.auth.AzureAccount;
@@ -45,13 +44,11 @@ import javax.annotation.Nullable;
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.time.Duration;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.microsoft.azure.toolkit.lib.appservice.model.FunctionAppLinuxRuntime.*;
-import static com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigUtils.fromAppService;
+import static com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigUtils.fromFunctionApp;
 import static com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigUtils.mergeAppServiceConfig;
 
 /**
@@ -106,6 +103,12 @@ public class DeployHandler {
         "please refer to https://aka.ms/maven_function_configuration#supported-pricing-tiers for valid values";
     private static final String EXPANDABLE_REGION_WARNING = "'%s' may not be a valid region, " +
         "please refer to https://aka.ms/maven_function_configuration#supported-regions for valid values";
+    private static final String CV2_INVALID_CONTAINER_SIZE = "Invalid container size for flex consumption plan, valid values are: %s";
+    private static final List<Integer> VALID_CONTAINER_SIZE = Arrays.asList(512, 2048, 4096);
+    public static final int MAX_MAX_INSTANCES = 1000;
+    public static final int MIN_MAX_INSTANCES = 40;
+    public static final int MIN_HTTP_INSTANCE_CONCURRENCY = 1;
+    public static final int MAX_HTTP_INSTANCE_CONCURRENCY = 1000;
     private final GradleFunctionContext ctx;
 
     public DeployHandler(final GradleFunctionContext ctx) {
@@ -190,6 +193,60 @@ public class DeployHandler {
     protected void doValidate() {
         validateParameters();
         validateApplicationInsightsConfiguration();
+        if (Objects.equals(PricingTier.fromString(ctx.getPricingTier()), PricingTier.FLEX_CONSUMPTION)) {
+            validateFlexConsumptionConfiguration();
+        }
+    }
+
+    private void validateFlexConsumptionConfiguration() {
+        // regions
+        final String subsId = ctx.getOrCreateAzureAppServiceClient().getSubscriptionId();
+        final List<Region> regions = Azure.az(AzureAppService.class).forSubscription(subsId)
+                .functionApps().listRegions(PricingTier.FLEX_CONSUMPTION);
+        final Region region = Optional.ofNullable(ctx.getRegion()).filter(StringUtils::isNotBlank).map(Region::fromName).orElse(null);
+        final String supportedRegionsValue = regions.stream().map(Region::getName).collect(Collectors.joining(","));
+        if (Objects.nonNull(region) && !regions.contains(region)) {
+            throw new AzureToolkitRuntimeException("`%s` is not a valid region for flex consumption app, supported values are %s", region.getName(), supportedRegionsValue);
+        }
+        // runtime
+        final List<? extends FunctionAppRuntime> validFlexRuntimes = Objects.isNull(region) ? Collections.emptyList() :
+                Azure.az(AzureAppService.class).forSubscription(subsId).functionApps().listFlexConsumptionRuntimes(region);
+        final GradleRuntimeConfig runtime = ctx.getRuntime();
+        final OperatingSystem os = Optional.ofNullable(runtime).map(GradleRuntimeConfig::os).map(OperatingSystem::fromString).orElse(OperatingSystem.WINDOWS);
+        final String javaVersion = Optional.ofNullable(runtime).map(GradleRuntimeConfig::javaVersion).orElse(FunctionAppRuntime.DEFAULT_JAVA.toString());
+        final FunctionAppRuntime functionAppRuntime = os == OperatingSystem.DOCKER ? FunctionAppDockerRuntime.INSTANCE :
+                os == OperatingSystem.LINUX ? FunctionAppLinuxRuntime.fromJavaVersionUserText(javaVersion) : FunctionAppWindowsRuntime.fromJavaVersionUserText(javaVersion);
+        if (Objects.nonNull(region) && !validFlexRuntimes.contains(functionAppRuntime)) {
+            final String validValues = validFlexRuntimes.stream().map(FunctionAppRuntime::getDisplayName).collect(Collectors.joining(","));
+            throw new AzureToolkitRuntimeException(String.format("Invalid runtime configuration, valid flex consumption runtimes are %s in region %s", validValues, region.getLabel()));
+        }
+        // storage authentication method
+        final StorageAuthenticationMethod authenticationMethod = Optional.ofNullable(ctx.getStorageAuthenticationMethod())
+                .map(StorageAuthenticationMethod::fromString)
+                .orElse(null);
+        if (Objects.nonNull(authenticationMethod)) {
+            if (StringUtils.isNotBlank(ctx.getStorageAccountConnectionString()) &&
+                    authenticationMethod != StorageAuthenticationMethod.StorageAccountConnectionString) {
+                AzureMessager.getMessager().warning("The value of <storageAccountConnectionString> will be ignored because the value of <storageAuthenticationMethod> is not StorageAccountConnectionString");
+            }
+            if (StringUtils.isNotBlank(ctx.getUserAssignedIdentityResourceId()) &&
+                    authenticationMethod != StorageAuthenticationMethod.UserAssignedIdentity) {
+                AzureMessager.getMessager().warning("The value of <userAssignedIdentityResourceId> will be ignored because the value of <storageAuthenticationMethod> is not UserAssignedIdentity");
+            }
+            if (StringUtils.isBlank(ctx.getUserAssignedIdentityResourceId()) && authenticationMethod == StorageAuthenticationMethod.UserAssignedIdentity) {
+                throw new AzureToolkitRuntimeException("Please specify the value of <userAssignedIdentityResourceId> when the value of <storageAuthenticationMethod> is UserAssignedIdentity");
+            }
+        }
+        // scale configuration
+        if (Objects.nonNull(ctx.getInstanceMemory()) && !VALID_CONTAINER_SIZE.contains(ctx.getInstanceMemory())) {
+            throw new AzureToolkitRuntimeException(String.format(CV2_INVALID_CONTAINER_SIZE, VALID_CONTAINER_SIZE.stream().map(String::valueOf).collect(Collectors.joining(","))));
+        }
+        if (Objects.nonNull(ctx.getMaximumInstances()) && (ctx.getMaximumInstances() > MAX_MAX_INSTANCES || ctx.getMaximumInstances() < MIN_MAX_INSTANCES)){
+            throw new AzureToolkitRuntimeException("Invalid value for <maximumInstances>, it should be in range [40, 1000]");
+        }
+        if (Objects.nonNull(ctx.getHttpInstanceConcurrency()) && (ctx.getHttpInstanceConcurrency() < MIN_HTTP_INSTANCE_CONCURRENCY || ctx.getHttpInstanceConcurrency() > MAX_HTTP_INSTANCE_CONCURRENCY)) {
+            throw new AzureToolkitRuntimeException("Invalid value for <httpInstanceConcurrency>, it should be in range [1, 1000]");
+        }
     }
 
     protected void validateParameters() {
@@ -268,7 +325,7 @@ public class DeployHandler {
 
         final boolean createFunctionApp = Optional.ofNullable(app).map(function -> !function.exists()).orElse(true);
         final AppServiceConfig defaultConfig = createFunctionApp ? buildDefaultConfig(functionConfig.subscriptionId(),
-            functionConfig.resourceGroup(), functionConfig.appName()) : fromAppService(app, Objects.requireNonNull(app.getAppServicePlan()));
+            functionConfig.resourceGroup(), functionConfig.appName()) : fromFunctionApp(app);
         mergeAppServiceConfig(functionConfig, defaultConfig);
         if (!createFunctionApp && !functionConfig.disableAppInsights() && StringUtils.isBlank(functionConfig.appInsightsKey())) {
             // fill ai key from existing app settings

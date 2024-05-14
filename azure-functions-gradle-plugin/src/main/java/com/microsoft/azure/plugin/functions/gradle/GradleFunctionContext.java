@@ -13,19 +13,16 @@ import com.microsoft.azure.toolkit.lib.Azure;
 import com.microsoft.azure.toolkit.lib.appservice.function.AzureFunctions;
 import com.microsoft.azure.toolkit.lib.appservice.function.FunctionAppModule;
 import com.microsoft.azure.toolkit.lib.appservice.model.FlexConsumptionConfiguration;
+import com.microsoft.azure.toolkit.lib.appservice.model.StorageAuthenticationMethod;
 import com.microsoft.azure.toolkit.lib.common.IProject;
 import com.microsoft.azure.toolkit.lib.common.exception.AzureToolkitRuntimeException;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.Project;
 
-import javax.annotation.Nullable;
 import java.io.File;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class GradleFunctionContext {
@@ -163,26 +160,47 @@ public class GradleFunctionContext {
         return this.functionsExtension.getLocalDebug();
     }
 
-    @Nullable
-    public Integer getAlwaysReadyInstances() {
-        return this.functionsExtension.getAlwaysReadyInstances();
+    public String getStorageAccountConnectionString() {
+        return functionsExtension.getStorageAccountConnectionString();
     }
 
-    @Nullable
-    public Integer getInstanceSize() {
-        return this.functionsExtension.getInstanceSize();
+    public CharSequence getUserAssignedIdentityResourceId() {
+        return functionsExtension.getUserAssignedIdentityResourceId();
     }
 
-    @Nullable
+    public String getStorageAuthenticationMethod() {
+        return functionsExtension.getStorageAuthenticationMethod();
+    }
+
+    public Integer getInstanceMemory() {
+        return functionsExtension.getInstanceMemory();
+    }
+
     public Integer getMaximumInstances() {
-        return this.functionsExtension.getMaximumInstances();
+        return functionsExtension.getMaximumInstances();
+    }
+
+    public Integer getHttpInstanceConcurrency() {
+        return functionsExtension.getHttpInstanceConcurrency();
     }
 
     public FlexConsumptionConfiguration getFlexConsumptionConfiguration() {
+        final Map<String, String> alwaysReadyInstances = Optional.ofNullable(functionsExtension.getAlwaysReadyInstances())
+                .map(map -> map.entrySet().stream()
+                        .collect(Collectors.toMap(Map.Entry::getKey, e -> Objects.toString(e.getValue(), null))))
+                .orElse(Collections.emptyMap());
         return FlexConsumptionConfiguration.builder()
-                .alwaysReadyInstances(functionsExtension.getAlwaysReadyInstances())
-                .instanceSize(functionsExtension.getInstanceSize())
-                .maximumInstances(functionsExtension.getMaximumInstances()).build();
+                .alwaysReadyInstances(alwaysReadyInstances)
+                .instanceSize(functionsExtension.getInstanceMemory())
+                .httpInstanceConcurrency(functionsExtension.getHttpInstanceConcurrency())
+                .maximumInstances(functionsExtension.getMaximumInstances())
+                .deploymentAccount(functionsExtension.getDeploymentStorageAccount())
+                .deploymentResourceGroup(functionsExtension.getDeploymentStorageResourceGroup())
+                .deploymentContainer(functionsExtension.getDeploymentStorageContainer())
+                .authenticationMethod(StorageAuthenticationMethod.fromString(functionsExtension.getStorageAuthenticationMethod()))
+                .userAssignedIdentityResourceId(functionsExtension.getUserAssignedIdentityResourceId())
+                .storageAccountConnectionString(functionsExtension.getStorageAccountConnectionString())
+                .build();
     }
 
     public Map<String, String> getTelemetryProperties() {
