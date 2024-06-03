@@ -206,7 +206,7 @@ public class DeployHandler {
         final Region region = Optional.ofNullable(ctx.getRegion()).filter(StringUtils::isNotBlank).map(Region::fromName).orElse(null);
         final String supportedRegionsValue = regions.stream().map(Region::getName).collect(Collectors.joining(","));
         if (Objects.nonNull(region) && !regions.contains(region)) {
-            throw new AzureToolkitRuntimeException("`%s` is not a valid region for flex consumption app, supported values are %s", region.getName(), supportedRegionsValue);
+            throw new AzureToolkitRuntimeException(String.format("`%s` is not a valid region for flex consumption app, supported values are %s", region.getName(), supportedRegionsValue));
         }
         // runtime
         final List<? extends FunctionAppRuntime> validFlexRuntimes = Objects.isNull(region) ? Collections.emptyList() :
@@ -227,14 +227,14 @@ public class DeployHandler {
         if (Objects.nonNull(authenticationMethod)) {
             if (StringUtils.isNotBlank(ctx.getStorageAccountConnectionString()) &&
                     authenticationMethod != StorageAuthenticationMethod.StorageAccountConnectionString) {
-                AzureMessager.getMessager().warning("The value of <storageAccountConnectionString> will be ignored because the value of <storageAuthenticationMethod> is not StorageAccountConnectionString");
+                AzureMessager.getMessager().warning("The value of 'storageAccountConnectionString' will be ignored because the value of 'storageAuthenticationMethod' is not StorageAccountConnectionString");
             }
             if (StringUtils.isNotBlank(ctx.getUserAssignedIdentityResourceId()) &&
                     authenticationMethod != StorageAuthenticationMethod.UserAssignedIdentity) {
-                AzureMessager.getMessager().warning("The value of <userAssignedIdentityResourceId> will be ignored because the value of <storageAuthenticationMethod> is not UserAssignedIdentity");
+                AzureMessager.getMessager().warning("The value of 'userAssignedIdentityResourceId' will be ignored because the value of 'storageAuthenticationMethod' is not UserAssignedIdentity");
             }
             if (StringUtils.isBlank(ctx.getUserAssignedIdentityResourceId()) && authenticationMethod == StorageAuthenticationMethod.UserAssignedIdentity) {
-                throw new AzureToolkitRuntimeException("Please specify the value of <userAssignedIdentityResourceId> when the value of <storageAuthenticationMethod> is UserAssignedIdentity");
+                throw new AzureToolkitRuntimeException("Please specify the value of 'userAssignedIdentityResourceId' when the value of 'storageAuthenticationMethod' is UserAssignedIdentity");
             }
         }
         // scale configuration
@@ -242,10 +242,10 @@ public class DeployHandler {
             throw new AzureToolkitRuntimeException(String.format(CV2_INVALID_CONTAINER_SIZE, VALID_CONTAINER_SIZE.stream().map(String::valueOf).collect(Collectors.joining(","))));
         }
         if (Objects.nonNull(ctx.getMaximumInstances()) && (ctx.getMaximumInstances() > MAX_MAX_INSTANCES || ctx.getMaximumInstances() < MIN_MAX_INSTANCES)){
-            throw new AzureToolkitRuntimeException("Invalid value for <maximumInstances>, it should be in range [40, 1000]");
+            throw new AzureToolkitRuntimeException("Invalid value for 'maximumInstances', it should be in range [40, 1000]");
         }
         if (Objects.nonNull(ctx.getHttpInstanceConcurrency()) && (ctx.getHttpInstanceConcurrency() < MIN_HTTP_INSTANCE_CONCURRENCY || ctx.getHttpInstanceConcurrency() > MAX_HTTP_INSTANCE_CONCURRENCY)) {
-            throw new AzureToolkitRuntimeException("Invalid value for <httpInstanceConcurrency>, it should be in range [1, 1000]");
+            throw new AzureToolkitRuntimeException("Invalid value for 'httpInstanceConcurrency', it should be in range [1, 1000]");
         }
     }
 
