@@ -241,7 +241,7 @@ public class DeployHandler {
         if (Objects.nonNull(ctx.getInstanceMemory()) && !VALID_CONTAINER_SIZE.contains(ctx.getInstanceMemory())) {
             throw new AzureToolkitRuntimeException(String.format(CV2_INVALID_CONTAINER_SIZE, VALID_CONTAINER_SIZE.stream().map(String::valueOf).collect(Collectors.joining(","))));
         }
-        if (Objects.nonNull(ctx.getMaximumInstances()) && (ctx.getMaximumInstances() > MAX_MAX_INSTANCES || ctx.getMaximumInstances() < MIN_MAX_INSTANCES)){
+        if (Objects.nonNull(ctx.getMaximumInstances()) && (ctx.getMaximumInstances() > MAX_MAX_INSTANCES || ctx.getMaximumInstances() < MIN_MAX_INSTANCES)) {
             throw new AzureToolkitRuntimeException("Invalid value for 'maximumInstances', it should be in range [40, 1000]");
         }
         if (Objects.nonNull(ctx.getHttpInstanceConcurrency()) && (ctx.getHttpInstanceConcurrency() < MIN_HTTP_INSTANCE_CONCURRENCY || ctx.getHttpInstanceConcurrency() > MAX_HTTP_INSTANCE_CONCURRENCY)) {
