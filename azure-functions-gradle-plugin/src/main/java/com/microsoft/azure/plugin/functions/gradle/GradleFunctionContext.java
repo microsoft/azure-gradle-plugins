@@ -206,14 +206,14 @@ public class GradleFunctionContext {
     public Map<String, String> getTelemetryProperties() {
         final Map<String, String> result = new HashMap<>();
         final GradleRuntimeConfig runtime = getRuntime();
-        final String javaVersion = runtime == null ? null : runtime.javaVersion();
-        final String os = runtime == null ? null : runtime.os();
-        final boolean isDockerFunction = runtime != null && StringUtils.isNotEmpty(runtime.image());
-        result.put(FUNCTION_JAVA_VERSION_KEY, StringUtils.isEmpty(javaVersion) ? "" : javaVersion);
-        result.put(FUNCTION_RUNTIME_KEY, StringUtils.isEmpty(os) ? "" : os);
+        final String javaVersion = Optional.ofNullable(runtime).map(GradleRuntimeConfig::javaVersion).orElse(StringUtils.EMPTY);
+        final String os = Optional.ofNullable(runtime).map(GradleRuntimeConfig::os).orElse(StringUtils.EMPTY);
+        final boolean isDockerFunction = Optional.ofNullable(runtime).map(GradleRuntimeConfig::image).filter(StringUtils::isNotBlank).isPresent();
+        result.put(FUNCTION_JAVA_VERSION_KEY, javaVersion);
+        result.put(FUNCTION_RUNTIME_KEY, os);
         result.put(FUNCTION_IS_DOCKER_KEY, String.valueOf(isDockerFunction));
-        result.put(FUNCTION_REGION_KEY, getRegion());
-        result.put(FUNCTION_PRICING_KEY, StringUtils.isEmpty(getPricingTier()) ? "" : getPricingTier());
+        result.put(FUNCTION_REGION_KEY, Optional.ofNullable(getRegion()).orElse(StringUtils.EMPTY));
+        result.put(FUNCTION_PRICING_KEY, Optional.ofNullable(getPricingTier()).orElse(StringUtils.EMPTY));
         result.put(DISABLE_APP_INSIGHTS_KEY, String.valueOf(isDisableAppInsights()));
         result.put(DEPLOY_TO_SLOT_KEY, String.valueOf(StringUtils.isEmpty(getDeploymentSlotName())));
         return result;

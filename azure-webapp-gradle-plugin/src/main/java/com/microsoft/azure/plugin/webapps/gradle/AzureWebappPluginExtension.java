@@ -250,8 +250,8 @@ public class AzureWebappPluginExtension {
         result.put(OS_KEY, os);
         result.put(JAVA_VERSION_KEY, java.util.Optional.ofNullable(runtime).map(GradleRuntimeConfig::javaVersion).orElse(StringUtils.EMPTY));
         result.put(JAVA_WEB_CONTAINER_KEY, java.util.Optional.ofNullable(runtime).map(GradleRuntimeConfig::webContainer).orElse(StringUtils.EMPTY));
-        result.put(PRICING_TIER_KEY, pricingTier);
-        result.put(REGION_KEY, region);
+        result.put(PRICING_TIER_KEY, java.util.Optional.ofNullable(pricingTier).orElse(StringUtils.EMPTY));
+        result.put(REGION_KEY, java.util.Optional.ofNullable(region).orElse(StringUtils.EMPTY));
         if (runtime != null && StringUtils.equalsIgnoreCase(os, OperatingSystem.DOCKER.getValue())) {
             final boolean isCustomRegistry = StringUtils.isNotEmpty(runtime.registryUrl());
             final DockerImageType imageType;
