@@ -16,6 +16,12 @@ All notable changes to the "Azure Function Plugin for Gradle" will be documented
   - [1.1.0](#110)
   - [1.0.0](#100)
 
+## 1.16.2
+- Fix: Application Insights client may still be provisioned even if `allowTelemetry` is set to `false`
+
+## 1.16.1
+- Fix: NPE in azureFunctionsPackage task when some parameter is not set (Thanks for @davidsalter)
+
 ## 1.16.0
 - Add Flex Consumption SKU support for creation and deploying
 - Fix: #178 Unable to Update Deployment with azureFunctionsDeploy Due to "BlobAlreadyExists" Error
