@@ -18,6 +18,7 @@ import org.gradle.api.tasks.Exec;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
+import org.gradle.process.ExecOutput;
 import org.gradle.process.ExecResult;
 
 import javax.annotation.Nullable;
@@ -70,16 +71,22 @@ public class LocalRunTask extends Exec implements IFunctionTask {
             final String stagingFolder = ctx.getDeploymentStagingDirectoryPath();
             FunctionUtils.checkStagingDirectory(stagingFolder);
 
+            ExecOutput execResult = null;
             if (BooleanUtils.isTrue(this.enableDebug) || StringUtils.isNotEmpty(ctx.getLocalDebugConfig())) {
-                this.commandLine(cliExec, "host", "start", "--language-worker", "--",
-                    getDebugJvmArgument(ctx.getLocalDebugConfig()));
+                execResult = this.getProject().getProviders().exec(spec -> {
+                    spec.commandLine(cliExec);
+                    spec.args("host", "start", "--language-worker", "--", getDebugJvmArgument(ctx.getLocalDebugConfig()));
+                });
             } else {
-                this.commandLine(cliExec, "host", "start");
+                execResult = this.getProject().getProviders().exec(spec -> {
+                    spec.commandLine(cliExec);
+                    spec.args("host", "start");
+                });
             }
             this.setWorkingDir(new File(stagingFolder));
             this.setIgnoreExitValue(true);
             super.exec();
-            final int code = Optional.ofNullable(getExecResult()).map(ExecResult::getExitValue).orElse(-1);
+            final int code = Optional.ofNullable(execResult.getResult().getOrNull()).map(ExecResult::getExitValue).orElse(-1);
             for (final Long validCode : CommandUtils.getValidReturnCodes()) {
                 if (validCode != null && validCode.intValue() == code) {
                     TelemetryAgent.getInstance().trackTaskSuccess(this.getClass());
