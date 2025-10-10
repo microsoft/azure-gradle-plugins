@@ -9,9 +9,12 @@ import com.microsoft.azure.toolkit.lib.common.bundle.AzureString;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
 import org.apache.commons.collections4.CollectionUtils;
 import org.gradle.api.Project;
+import org.gradle.api.file.Directory;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.BasePluginConvention;
+import org.gradle.api.plugins.BasePluginExtension;
 import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
 
 import java.io.File;
@@ -30,7 +33,7 @@ public class GradleProjectUtils {
             "please check whether related modules have been packaged \n %s";
 
     public static JavaProject convert(final Project project) {
-        final JavaPluginConvention javaPluginConvention = project.getConvention().getPlugin(JavaPluginConvention.class);
+        final JavaPluginExtension javaPluginConvention = project.getExtensions().getByType(JavaPluginExtension.class);
         Objects.requireNonNull(javaPluginConvention, "Project " + project.getName() + " is not java project.");
 
         final SourceSet mainSourceSet = javaPluginConvention.getSourceSets().getByName(MAIN_SOURCE_SET_NAME);
@@ -43,7 +46,7 @@ public class GradleProjectUtils {
             .filter(file -> !file.toPath().equals(resourcesOutputDirectory));
         final JavaProject func = new JavaProject();
         func.setBaseDirectory(project.getProjectDir().toPath());
-        func.setBuildDirectory(project.getBuildDir().toPath());
+        func.setBuildDirectory(project.getLayout().getBuildDirectory().get().getAsFile().toPath());
 
         final List<Path> dependencies = allDependencies.getFiles().stream().filter(File::exists).map(File::toPath).collect(Collectors.toList());
         final List<String> nonExistDependencies = allDependencies.getFiles().stream().filter(file -> !file.exists()).map(File::getPath).collect(Collectors.toList());
@@ -52,9 +55,9 @@ public class GradleProjectUtils {
         }
         func.setDependencies(dependencies);
 
-        final BasePluginConvention basePlugin = project.getConvention().getPlugin(BasePluginConvention.class);
-        func.setArtifactFile(Paths.get(project.getBuildDir().getAbsolutePath(), basePlugin.getLibsDirName(),
-            basePlugin.getArchivesBaseName() + "-" + project.getVersion() + ".jar"));
+        final BasePluginExtension basePlugin = project.getExtensions().getByType(BasePluginExtension.class);
+        func.setArtifactFile(Paths.get(basePlugin.getLibsDirectory().get().getAsFile().getAbsolutePath(),
+            basePlugin.getArchivesName().get() + "-" + project.getVersion() + ".jar"));
         return func;
     }
 }

@@ -1,9 +1,9 @@
 plugins {
     id "net.linguica.maven-settings" version "0.5" apply false
     id "com.gradle.plugin-publish" version "0.15.0" apply false
-    id "nu.studer.credentials" version "2.1" apply false
+    id "nu.studer.credentials" version "3.0" apply false
     id "com.github.ben-manes.versions" version "0.39.0"  apply false
-    id "io.freefair.aspectj.post-compile-weaving" version "6.0.0-m2"
+    id "io.freefair.aspectj.post-compile-weaving" version "9.0.0"
 }
 
 class PrepareResourceTask extends DefaultTask {
@@ -29,15 +29,18 @@ subprojects {
     apply plugin: 'checkstyle'
     apply plugin: 'project-report'
 
-    sourceCompatibility = 1.8
-    targetCompatibility = 1.8
+    java {
+        toolchain {
+            version = 21
+        }
+    }
 
     ext {
-        azureToolkitVersion = "0.45.0"
+        azureToolkitVersion = "0.54.0"
     }
 
     checkstyle {
-        toolVersion '8.36.1';
+        version '8.36.1';
 
         // Whether or not to allow the build to continue if there are warnings.
         ignoreFailures = false
@@ -51,18 +54,19 @@ subprojects {
         mavenCentral()
     }
 
-    task javadocJar(type: Jar, dependsOn: 'javadoc') {
+    tasks.register('javadocJar', Jar) {
+        dependsOn 'javadoc'
         from javadoc.destinationDir
         archiveClassifier = 'javadoc'
     }
 
-    task sourceJar(type: Jar) {
+    tasks.register('sourceJar', Jar) {
         from sourceSets.main.allJava
         archiveClassifier = "sources"
     }
 
     compileJava.doFirst {
-        if (targetCompatibility != '1.8') throw new RuntimeException("This project shall be compiled with targetCompatibility = 1.8 " +
+        if (targetCompatibility != '21') throw new RuntimeException("This project shall be compiled with targetCompatibility = 21 " +
                 "but targetCompatibility is actually "
                 + targetCompatibility)
     }
@@ -73,20 +77,20 @@ configure(subprojects.findAll {it.name != 'azure-gradle-plugins-common'}) {
     apply plugin: 'com.gradle.plugin-publish'
     apply plugin: "nu.studer.credentials"
 
-    task prepareResources(type: PrepareResourceTask) {
+    tasks.register('prepareResources', PrepareResourceTask) {
         currentProject = project
     }
 
-    task prepareReleaseResources(type: PrepareResourceTask) {
+    tasks.register('prepareReleaseResources', PrepareResourceTask) {
         currentProject = project
         release = true
     }
 
-    task setupPluginPublishSecret {
+    tasks.register('setupPluginPublishSecret') {
         doLast {
             def key = credentials['gradle.publish.key']
             def secret = credentials['gradle.publish.secret']
-            if( !key || !secret) {
+            if (!key || !secret) {
                 throw new RuntimeException("gradlePublishKey and/or gradlePublishSecret are not defined")
             }
 

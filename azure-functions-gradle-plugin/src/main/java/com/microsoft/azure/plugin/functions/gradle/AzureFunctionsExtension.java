@@ -174,7 +174,6 @@ public class AzureFunctionsExtension {
      */
     @Nullable
     @Getter
-    @Setter
     @Input
     @Optional
     protected Map<String, Object> alwaysReadyInstances;
