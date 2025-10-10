@@ -39,25 +39,16 @@ jar {
 }
 
 gradlePlugin {
-    plugins {
-        "${project.pluginDisplayName}" {
-            id                  = project.pluginId
-            implementationClass = project.pluginImplementationClass
-        }
-    }
-}
-
-pluginBundle {
     website = 'https://github.com/microsoft/azure-gradle-plugins/wiki'
     vcsUrl = 'https://github.com/microsoft/azure-gradle-plugins'
 
     plugins {
         "${project.pluginDisplayName}" {
-            id = project.pluginId
-            displayName = 'Azure Webapp Plugin for Gradle'
-            version = project.version
-            description = 'Azure Webapp Plugin for gradle'
-            tags = ['microsoft', 'azure', 'webapp', 'cloud', 'appservice', 'deploy']
+            id                  = project.pluginId
+            displayName         = 'Azure Webapp Plugin for Gradle'
+            description         = 'Azure Webapp Plugin for gradle'
+            tags                = ['microsoft', 'azure', 'webapp', 'cloud', 'appservice', 'deploy']
+            implementationClass = project.pluginImplementationClass
         }
     }
 }

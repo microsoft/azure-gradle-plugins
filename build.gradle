@@ -1,16 +1,16 @@
 plugins {
     id "net.linguica.maven-settings" version "0.5" apply false
-    id "com.gradle.plugin-publish" version "0.15.0" apply false
+    id "com.gradle.plugin-publish" version "1.3.0" apply false
     id "nu.studer.credentials" version "3.0" apply false
     id "com.github.ben-manes.versions" version "0.39.0"  apply false
     id "io.freefair.aspectj.post-compile-weaving" version "9.0.0"
 }
 
 class PrepareResourceTask extends DefaultTask {
+    @Input
+    @Optional
     @Option(option = "release", description = "whether this build is a release build.")
     Boolean release;
-
-    Project currentProject
 
     @TaskAction
     void prepare() {
@@ -29,10 +29,10 @@ subprojects {
     apply plugin: 'checkstyle'
     apply plugin: 'project-report'
 
-    java {
-        toolchain {
-            version = 21
-        }
+
+    // Ensure strict Java 8 bytecode compatibility
+    tasks.withType(JavaCompile).configureEach {
+        options.release = 8
     }
 
     ext {
@@ -40,11 +40,9 @@ subprojects {
     }
 
     checkstyle {
-        version '8.36.1';
 
         // Whether or not to allow the build to continue if there are warnings.
         ignoreFailures = false
-
         // Whether or not rule violations are to be displayed on the console.
         showViolations = true
     }
@@ -65,10 +63,17 @@ subprojects {
         archiveClassifier = "sources"
     }
 
+    // Disable Gradle Module Metadata to avoid JVM version attribute conflicts
+    tasks.withType(GenerateModuleMetadata).configureEach {
+        enabled = false
+    }
+
     compileJava.doFirst {
-        if (targetCompatibility != '21') throw new RuntimeException("This project shall be compiled with targetCompatibility = 21 " +
-                "but targetCompatibility is actually "
-                + targetCompatibility)
+        if (targetCompatibility != '1.8') {
+            throw new RuntimeException("This project shall be compiled with targetCompatibility = 1.8 " +
+                    "but targetCompatibility is actually "
+                    + targetCompatibility)
+        }
     }
 }
 
@@ -78,11 +83,9 @@ configure(subprojects.findAll {it.name != 'azure-gradle-plugins-common'}) {
     apply plugin: "nu.studer.credentials"
 
     tasks.register('prepareResources', PrepareResourceTask) {
-        currentProject = project
     }
 
     tasks.register('prepareReleaseResources', PrepareResourceTask) {
-        currentProject = project
         release = true
     }
 

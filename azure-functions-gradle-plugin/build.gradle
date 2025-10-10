@@ -45,25 +45,16 @@ jar {
 }
 
 gradlePlugin {
-    plugins {
-        "${project.pluginDisplayName}" {
-            id                  = project.pluginId
-            implementationClass = project.pluginImplementationClass
-        }
-    }
-}
-
-pluginBundle {
     website = 'https://github.com/microsoft/azure-gradle-plugins/wiki'
     vcsUrl = 'https://github.com/microsoft/azure-gradle-plugins'
 
     plugins {
         "${project.pluginDisplayName}" {
-            id = project.pluginId
-            displayName = 'Azure Functions Plugin for Gradle'
-            version = project.version
-            description = 'Azure Functions Plugin for gradle'
-            tags = ['microsoft', 'azure', 'functions', 'cloud', 'serverless', 'deploy']
+            id                  = project.pluginId
+            displayName         = 'Azure Functions Plugin for Gradle'
+            description         = 'Azure Functions Plugin for gradle'
+            tags                = ['microsoft', 'azure', 'functions', 'cloud', 'serverless', 'deploy']
+            implementationClass = project.pluginImplementationClass
         }
     }
 }
