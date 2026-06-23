@@ -1,6 +1,7 @@
 # Change Log
 All notable changes to the "Azure Function Plugin for Gradle" will be documented in this file.
 - [Change Log](#change-log)
+  - [1.17.0](#1170)
   - [1.15.0](#1150)
   - [1.11.0](#1110)
   - [1.10.0](#1100)
@@ -14,6 +15,13 @@ All notable changes to the "Azure Function Plugin for Gradle" will be documented
   - [1.2.0](#120)
   - [1.1.0](#110)
   - [1.0.0](#100)
+
+## 1.17.0
+- Support Gradle 9 by removing deprecated Gradle API usage
+- Restore JDK 8 bytecode compatibility (`options.release = 8`); enables the plugin to run on JDK 8 build environments
+- Migrate to `plugin-publish` 1.x DSL (`pluginBundle` merged into `gradlePlugin`)
+- Fix `azureFunctionsRun` task so that `func host start` output streams live to the console instead of being captured silently
+- Upgrade `gson` to 2.8.9 (CVE-2022-25647) and `commons-io` to 2.14.0 (CVE-2024-47554)
 
 ## 1.15.0
 - Migrate to use `stacks` API to get and validate function app runtime stacks
