@@ -45,6 +45,12 @@ public abstract class LocalRunTask extends DefaultTask implements IFunctionTask 
     @Inject
     public abstract ExecOperations getExecOperations();
 
+    public LocalRunTask() {
+        // Run task should always execute and is not cacheable
+        getOutputs().upToDateWhen(task -> false);
+        getOutputs().cacheIf(task -> false);
+    }
+
     public IFunctionTask setFunctionsExtension(final AzureFunctionsExtension functionsExtension) {
         this.functionsExtension = functionsExtension;
         return this;
@@ -66,10 +72,17 @@ public abstract class LocalRunTask extends DefaultTask implements IFunctionTask 
         try {
             TelemetryAgent.getInstance().trackTaskStart(this.getClass());
             final GradleFunctionContext ctx = new GradleFunctionContext(getProject(), this.getFunctionsExtension());
-            final String cliExec = FunctionCliResolver.resolveFunc();
+            String cliExec = FunctionCliResolver.resolveFunc();
+            if (StringUtils.isEmpty(cliExec)) {
+                // Fallback: toolkit resolver requires func.dll co-located with func.exe,
+                // which is not the case for some installations (e.g. npm global symlinks,
+                // winget wrappers). Fall back to searching PATH for func directly.
+                cliExec = resolveFuncFromPath();
+            }
             if (StringUtils.isEmpty(cliExec)) {
                 throw new GradleException(FUNC_CORE_CLI_NOT_FOUND);
             }
+            final String funcCli = cliExec;
 
             final String stagingFolder = ctx.getDeploymentStagingDirectoryPath();
             FunctionUtils.checkStagingDirectory(stagingFolder);
@@ -77,14 +90,14 @@ public abstract class LocalRunTask extends DefaultTask implements IFunctionTask 
             final ExecResult execResult;
             if (BooleanUtils.isTrue(this.enableDebug) || StringUtils.isNotEmpty(ctx.getLocalDebugConfig())) {
                 execResult = getExecOperations().exec(spec -> {
-                    spec.commandLine(cliExec);
+                    spec.commandLine(funcCli);
                     spec.args("host", "start", "--language-worker", "--", getDebugJvmArgument(ctx.getLocalDebugConfig()));
                     spec.setWorkingDir(new File(stagingFolder));
                     spec.setIgnoreExitValue(true);
                 });
             } else {
                 execResult = getExecOperations().exec(spec -> {
-                    spec.commandLine(cliExec);
+                    spec.commandLine(funcCli);
                     spec.args("host", "start");
                     spec.setWorkingDir(new File(stagingFolder));
                     spec.setIgnoreExitValue(true);
@@ -113,5 +126,28 @@ public abstract class LocalRunTask extends DefaultTask implements IFunctionTask 
             return debugConfig;
         }
         return JDWP_DEBUG_PREFIX + debugConfig;
+    }
+
+    private static String resolveFuncFromPath() {
+        final String pathEnv = System.getenv("PATH");
+        if (StringUtils.isEmpty(pathEnv)) {
+            return null;
+        }
+        final boolean isWindows = System.getProperty("os.name", "").toLowerCase().contains("windows");
+        final String[] candidates = isWindows
+                ? new String[]{"func.exe", "func.cmd", "func.bat", "func"}
+                : new String[]{"func"};
+        for (final String dir : pathEnv.split(File.pathSeparator)) {
+            if (StringUtils.isEmpty(dir)) {
+                continue;
+            }
+            for (final String name : candidates) {
+                final File candidate = new File(dir, name);
+                if (candidate.isFile()) {
+                    return candidate.getAbsolutePath();
+                }
+            }
+        }
+        return null;
     }
 }
