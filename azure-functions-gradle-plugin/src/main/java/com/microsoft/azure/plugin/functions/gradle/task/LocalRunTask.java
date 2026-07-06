@@ -18,14 +18,15 @@ import org.gradle.api.GradleException;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
-import org.gradle.process.ExecOutput;
+import org.gradle.process.ExecOperations;
 import org.gradle.process.ExecResult;
 
 import javax.annotation.Nullable;
+import javax.inject.Inject;
 import java.io.File;
 import java.util.Optional;
 
-public class LocalRunTask extends DefaultTask implements IFunctionTask {
+public abstract class LocalRunTask extends DefaultTask implements IFunctionTask {
 
     private static final String FUNC_CORE_CLI_NOT_FOUND = "Cannot run functions locally due to error: Azure Functions Core Tools can not be found.";
 
@@ -40,6 +41,9 @@ public class LocalRunTask extends DefaultTask implements IFunctionTask {
 
     @Nullable
     private AzureFunctionsExtension functionsExtension;
+
+    @Inject
+    public abstract ExecOperations getExecOperations();
 
     public IFunctionTask setFunctionsExtension(final AzureFunctionsExtension functionsExtension) {
         this.functionsExtension = functionsExtension;
@@ -70,27 +74,23 @@ public class LocalRunTask extends DefaultTask implements IFunctionTask {
             final String stagingFolder = ctx.getDeploymentStagingDirectoryPath();
             FunctionUtils.checkStagingDirectory(stagingFolder);
 
-            final ExecOutput execResult;
+            final ExecResult execResult;
             if (BooleanUtils.isTrue(this.enableDebug) || StringUtils.isNotEmpty(ctx.getLocalDebugConfig())) {
-                execResult = this.getProject().getProviders().exec(spec -> {
+                execResult = getExecOperations().exec(spec -> {
                     spec.commandLine(cliExec);
                     spec.args("host", "start", "--language-worker", "--", getDebugJvmArgument(ctx.getLocalDebugConfig()));
                     spec.setWorkingDir(new File(stagingFolder));
                     spec.setIgnoreExitValue(true);
-                    spec.setStandardOutput(System.out);
-                    spec.setErrorOutput(System.err);
                 });
             } else {
-                execResult = this.getProject().getProviders().exec(spec -> {
+                execResult = getExecOperations().exec(spec -> {
                     spec.commandLine(cliExec);
                     spec.args("host", "start");
                     spec.setWorkingDir(new File(stagingFolder));
                     spec.setIgnoreExitValue(true);
-                    spec.setStandardOutput(System.out);
-                    spec.setErrorOutput(System.err);
                 });
             }
-            final int code = Optional.ofNullable(execResult.getResult().getOrNull()).map(ExecResult::getExitValue).orElse(-1);
+            final int code = Optional.ofNullable(execResult).map(ExecResult::getExitValue).orElse(-1);
             for (final Long validCode : CommandUtils.getValidReturnCodes()) {
                 if (validCode != null && validCode.intValue() == code) {
                     TelemetryAgent.getInstance().trackTaskSuccess(this.getClass());
