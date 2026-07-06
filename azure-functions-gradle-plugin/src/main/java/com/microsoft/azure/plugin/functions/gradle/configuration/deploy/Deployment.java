@@ -6,7 +6,10 @@ package com.microsoft.azure.plugin.functions.gradle.configuration.deploy;
 
 import org.gradle.api.tasks.Input;
 
-public class Deployment {
+import java.io.Serializable;
+
+public class Deployment implements Serializable {
+    private static final long serialVersionUID = 1L;
     private String type;
 
     @Input
