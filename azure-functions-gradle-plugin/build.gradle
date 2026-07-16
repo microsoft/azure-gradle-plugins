@@ -11,12 +11,12 @@ dependencies {
         }
     }
 
-    implementation 'commons-io:commons-io:2.10.0'
+    implementation 'commons-io:commons-io:2.14.0'
     implementation 'org.apache.commons:commons-exec:1.3'
     implementation 'org.apache.commons:commons-lang3:3.12.0'
     implementation 'org.reflections:reflections:0.9.12'
     implementation 'org.atteo.classindex:classindex:3.11'
-    implementation 'com.google.code.gson:gson:2.8.7'
+    implementation 'com.google.code.gson:gson:2.8.9'
     implementation 'com.google.guava:guava:33.5.0-jre'
     implementation 'org.apache.maven:maven-artifact:3.8.1'
     implementation 'org.fusesource.jansi:jansi:1.18'
@@ -45,25 +45,16 @@ jar {
 }
 
 gradlePlugin {
-    plugins {
-        "${project.pluginDisplayName}" {
-            id                  = project.pluginId
-            implementationClass = project.pluginImplementationClass
-        }
-    }
-}
-
-pluginBundle {
     website = 'https://github.com/microsoft/azure-gradle-plugins/wiki'
     vcsUrl = 'https://github.com/microsoft/azure-gradle-plugins'
 
     plugins {
         "${project.pluginDisplayName}" {
-            id = project.pluginId
-            displayName = 'Azure Functions Plugin for Gradle'
-            version = project.version
-            description = 'Azure Functions Plugin for gradle'
-            tags = ['microsoft', 'azure', 'functions', 'cloud', 'serverless', 'deploy']
+            id                  = project.pluginId
+            displayName         = 'Azure Functions Plugin for Gradle'
+            description         = 'Azure Functions Plugin for gradle'
+            tags                = ['microsoft', 'azure', 'functions', 'cloud', 'serverless', 'deploy']
+            implementationClass = project.pluginImplementationClass
         }
     }
 }

@@ -10,11 +10,14 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
+import java.io.Serializable;
+
 @Getter
 @Setter
 @Accessors(fluent = true)
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
-public class GradleRuntimeConfig {
+public class GradleRuntimeConfig implements Serializable {
+    private static final long serialVersionUID = 1L;
     private String os;
     private String javaVersion;
     private String webContainer;
