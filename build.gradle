@@ -89,8 +89,8 @@ configure(subprojects.findAll {it.name != 'azure-gradle-plugins-common'}) {
 
     tasks.register('setupPluginPublishSecret') {
         doLast {
-            def key = credentials['gradle.publish.key']
-            def secret = credentials['gradle.publish.secret']
+            def key = credentials.forKey('gradle.publish.key')
+            def secret = credentials.forKey('gradle.publish.secret')
             if (!key || !secret) {
                 throw new RuntimeException("gradlePublishKey and/or gradlePublishSecret are not defined")
             }
