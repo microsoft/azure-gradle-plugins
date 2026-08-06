@@ -20,12 +20,14 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 import org.gradle.process.ExecOperations;
 import org.gradle.process.ExecResult;
+import org.gradle.work.DisableCachingByDefault;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import java.io.File;
 import java.util.Optional;
 
+@DisableCachingByDefault(because = "Local run task should always execute and is therefore not cacheable; not running the task is never the intention of the user")
 public abstract class LocalRunTask extends DefaultTask implements IFunctionTask {
 
     private static final String FUNC_CORE_CLI_NOT_FOUND = "Cannot run functions locally due to error: Azure Functions Core Tools can not be found.";

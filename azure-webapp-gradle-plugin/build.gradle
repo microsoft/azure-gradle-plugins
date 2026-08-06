@@ -2,33 +2,35 @@
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  */
-apply plugin: "io.freefair.aspectj.post-compile-weaving"
+plugins {
+    alias(libs.plugins.freefair.aspectj.post.compile.weaving)
+}
 
 dependencies {
-    implementation 'commons-io:commons-io:2.14.0'
-    implementation 'org.apache.commons:commons-exec:1.3'
-    implementation 'org.apache.commons:commons-lang3:3.12.0'
-    implementation 'com.google.code.gson:gson:2.8.9'
-    implementation 'com.google.guava:guava:33.5.0-jre'
+    implementation libs.commons.io
+    implementation libs.apache.commons.exec
+    implementation libs.apache.commons.lang3
+    implementation libs.google.gson
+    implementation libs.google.guava
 
-    implementation 'org.fusesource.jansi:jansi:1.18'
-    implementation 'com.microsoft.azure:applicationinsights-core:2.6.3'
-    implementation 'org.apache.maven:maven-artifact:3.8.1'
-    implementation 'com.networknt:json-schema-validator:1.0.56'
-    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-properties:2.14.1'
+    implementation libs.fusesource.jansi
+    implementation libs.applicationinsights.core
+    implementation libs.apache.maven.artifact
+    implementation libs.json.schema.validator
+    implementation libs.jackson.dataformat.properties
 
-    implementation 'com.microsoft.azure:azure-toolkit-common-lib:' + azureToolkitVersion
-    aspect 'com.microsoft.azure:azure-toolkit-common-lib:' + azureToolkitVersion
-    implementation 'com.microsoft.azure:azure-toolkit-appservice-lib:'  + azureToolkitVersion
-    implementation 'com.microsoft.azure:azure-toolkit-applicationinsights-lib:'  + azureToolkitVersion
+    implementation libs.azure.toolkit.common.lib
+    aspect libs.azure.toolkit.common.lib
+    implementation libs.azure.toolkit.appservice.lib
+    implementation libs.azure.toolkit.applicationinsights.lib
 
-    compileOnly 'org.projectlombok:lombok:1.18.42'
-    annotationProcessor 'org.projectlombok:lombok:1.18.42'
+    compileOnly libs.project.lombok
+    annotationProcessor libs.project.lombok
 
     implementation project(':azure-gradle-plugins-common')
 
-    testImplementation "junit:junit:4.13.2"
-    testImplementation "org.mockito:mockito-core:3.11.2"
+    testImplementation libs.junit4
+    testImplementation libs.mockito.core
 }
 
 jar {
