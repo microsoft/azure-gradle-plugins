@@ -14,11 +14,13 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.work.DisableCachingByDefault;
 import org.zeroturnaround.zip.ZipUtil;
 
 import javax.annotation.Nullable;
 import java.io.File;
 
+@DisableCachingByDefault(because = "Packaging should be cacheable but needs to be reviewed.")
 public class PackageZipTask extends DefaultTask implements IFunctionTask {
     private static final String PACKAGE_ZIP_FAILURE = "Cannot build zip for azure functions due to error: ";
 

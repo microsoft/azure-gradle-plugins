@@ -17,9 +17,11 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.work.DisableCachingByDefault;
 
 import javax.annotation.Nullable;
 
+@DisableCachingByDefault(because = "Deploy task should always execute and is therefore not cacheable; not running the task is never the intention of the user")
 public class DeployTask extends DefaultTask implements IFunctionTask {
     private static final String PROXY = "proxy";
     private static final String DEPLOY_FAILURE = "Cannot deploy functions due to error: ";
