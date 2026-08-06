@@ -103,6 +103,20 @@ public class AzureFunctionsExtension {
     @Optional
     private Integer maximumInstances;
 
+    @Nullable
+    @Getter
+    @Setter
+    @Input
+    @Optional
+    private Map<String, Object> envVars;
+
+    @Nullable
+    @Getter
+    @Setter
+    @Input
+    @Optional
+    private Map<String, String> sysProps;
+
     /**
      * The storage account which is used to store deployment artifacts.
      * If not specified, will use account defined with 'storageAccountName' for deployment

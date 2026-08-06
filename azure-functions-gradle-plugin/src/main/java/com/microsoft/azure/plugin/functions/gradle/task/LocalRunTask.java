@@ -24,7 +24,14 @@ import org.gradle.process.ExecResult;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public abstract class LocalRunTask extends DefaultTask implements IFunctionTask {
 
@@ -87,22 +94,37 @@ public abstract class LocalRunTask extends DefaultTask implements IFunctionTask 
             final String stagingFolder = ctx.getDeploymentStagingDirectoryPath();
             FunctionUtils.checkStagingDirectory(stagingFolder);
 
-            final ExecResult execResult;
-            if (BooleanUtils.isTrue(this.enableDebug) || StringUtils.isNotEmpty(ctx.getLocalDebugConfig())) {
-                execResult = getExecOperations().exec(spec -> {
-                    spec.commandLine(funcCli);
-                    spec.args("host", "start", "--language-worker", "--", getDebugJvmArgument(ctx.getLocalDebugConfig()));
-                    spec.setWorkingDir(new File(stagingFolder));
-                    spec.setIgnoreExitValue(true);
-                });
-            } else {
-                execResult = getExecOperations().exec(spec -> {
-                    spec.commandLine(funcCli);
-                    spec.args("host", "start");
-                    spec.setWorkingDir(new File(stagingFolder));
-                    spec.setIgnoreExitValue(true);
-                });
-            }
+            final ExecResult execResult = getExecOperations().exec(spec -> {
+                spec.commandLine(funcCli);
+                final List<String> origArgs = Optional.ofNullable(spec.getArgs()).orElse(new ArrayList<>());
+                final List<String> defaultArgs = Arrays.asList("host", "start");
+                final List<String> debugArgs;
+                if (BooleanUtils.isTrue(this.enableDebug) || StringUtils.isNotEmpty(ctx.getLocalDebugConfig())) {
+                    debugArgs = Arrays.asList("--", getDebugJvmArgument(ctx.getLocalDebugConfig()));
+                } else {
+                    debugArgs = Collections.emptyList();
+                }
+                final List<String> sysPropArgs = Optional.ofNullable(ctx.getSysProps()).map(props -> {
+                    final List<String> sysArgs = new ArrayList<>();
+                    props.forEach((k, v) -> sysArgs.add(String.format("-D%s=%s", k, v)));
+                    return sysArgs;
+                }).orElse(Collections.emptyList());
+                spec.args(Stream.of(origArgs, defaultArgs, debugArgs, sysPropArgs).flatMap(Collection::stream).toArray(Object[]::new));
+                spec.setWorkingDir(new File(stagingFolder));
+                spec.setIgnoreExitValue(true);
+                if (ctx.getEnvVars() != null && !ctx.getEnvVars().isEmpty()) {
+                    final Map<String, Object> env =
+                            Optional.ofNullable(spec.getEnvironment())
+                                    .map(origEnv -> {
+                                        origEnv.putAll(ctx.getEnvVars());
+                                        return origEnv;
+                                    })
+                                    .orElse(ctx.getEnvVars());
+                    spec.environment(env);
+                }
+
+            });
+
             final int code = Optional.ofNullable(execResult).map(ExecResult::getExitValue).orElse(-1);
             for (final Long validCode : CommandUtils.getValidReturnCodes()) {
                 if (validCode != null && validCode.intValue() == code) {
