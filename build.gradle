@@ -1,9 +1,9 @@
 plugins {
-    id "net.linguica.maven-settings" version "0.5" apply false
-    id "com.gradle.plugin-publish" version "1.3.0" apply false
-    id "nu.studer.credentials" version "3.0" apply false
-    id "com.github.ben-manes.versions" version "0.39.0"  apply false
-    id "io.freefair.aspectj.post-compile-weaving" version "9.0.0"
+    alias(libs.plugins.maven.settings) apply false
+    alias(libs.plugins.gradle.plugin.publish) apply false
+    alias(libs.plugins.studer.credentials) apply false
+    alias(libs.plugins.ben.manes.versions) apply false
+    alias(libs.plugins.freefair.aspectj.post.compile.weaving)
 }
 
 class PrepareResourceTask extends DefaultTask {
@@ -34,10 +34,6 @@ subprojects {
         options.release = 8
     }
 
-    ext {
-        azureToolkitVersion = "0.54.0"
-    }
-
     checkstyle {
         // Whether or not to allow the build to continue if there are warnings.
         ignoreFailures = false
@@ -48,6 +44,11 @@ subprojects {
     repositories {
         mavenLocal()
         mavenCentral()
+    }
+
+    // Always use the Groovy version bundled with Gradle.
+    configurations.configureEach {
+        exclude group: 'org.codehaus.groovy'
     }
 
     tasks.register('javadocJar', Jar) {
@@ -77,8 +78,8 @@ subprojects {
 
 configure(subprojects.findAll {it.name != 'azure-gradle-plugins-common'}) {
     apply plugin: 'java-gradle-plugin'
-    apply plugin: 'com.gradle.plugin-publish'
-    apply plugin: "nu.studer.credentials"
+    apply plugin: libs.plugins.gradle.plugin.publish.get().pluginId
+    apply plugin: libs.plugins.studer.credentials.get().pluginId
 
     tasks.register('prepareResources', PrepareResourceTask) {
     }

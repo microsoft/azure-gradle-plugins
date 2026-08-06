@@ -16,6 +16,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.gradle.api.Project;
+import org.gradle.api.model.ReplacedBy;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Optional;
 
@@ -280,7 +281,15 @@ public class AzureFunctionsExtension {
 
     @Input
     @Optional
+    @Deprecated
+    @ReplacedBy("getDisableAppInsights")
     public Boolean isDisableAppInsights() {
+        return disableAppInsights;
+    }
+
+    @Input
+    @Optional
+    public Boolean getDisableAppInsights() {
         return disableAppInsights;
     }
 
