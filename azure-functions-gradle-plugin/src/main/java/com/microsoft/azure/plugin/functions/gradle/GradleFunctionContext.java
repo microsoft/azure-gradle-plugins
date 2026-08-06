@@ -184,6 +184,14 @@ public class GradleFunctionContext {
         return functionsExtension.getHttpInstanceConcurrency();
     }
 
+    public Map<String, Object> getEnvVars() {
+        return functionsExtension.getEnvVars();
+    }
+
+    public Map<String, String> getSysProps() {
+        return functionsExtension.getSysProps();
+    }
+
     public FlexConsumptionConfiguration getFlexConsumptionConfiguration() {
         final Map<String, String> alwaysReadyInstances = Optional.ofNullable(functionsExtension.getAlwaysReadyInstances())
                 .map(map -> map.entrySet().stream()
