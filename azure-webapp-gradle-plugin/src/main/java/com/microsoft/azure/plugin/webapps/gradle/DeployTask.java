@@ -43,6 +43,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.work.DisableCachingByDefault;
 
 import javax.annotation.Nonnull;
 import java.io.File;
@@ -57,6 +58,7 @@ import static com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigU
 import static com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigUtils.mergeAppServiceConfig;
 
 @Setter
+@DisableCachingByDefault(because = "Deploy task should always execute and is therefore not cacheable; not running the task is never the intention of the user")
 public class DeployTask extends DefaultTask {
     private static final String PROXY = "proxy";
     private static final String INVALID_PARAMETER_ERROR_MESSAGE = "Invalid values found in configuration, please correct the value with messages below:";
