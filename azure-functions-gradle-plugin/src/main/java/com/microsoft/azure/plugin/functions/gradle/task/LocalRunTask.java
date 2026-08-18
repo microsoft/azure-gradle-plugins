@@ -29,7 +29,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -101,13 +100,12 @@ public abstract class LocalRunTask extends DefaultTask implements IFunctionTask 
                 spec.commandLine(funcCli);
                 final List<String> origArgs = Optional.ofNullable(spec.getArgs()).orElse(new ArrayList<>());
                 final List<String> defaultArgs = Arrays.asList("host", "start");
-                final List<String> debugArgs = getDebugJvmArgument(this.enableDebug, ctx);
 
-                spec.args(Stream.of(origArgs, defaultArgs, debugArgs).flatMap(Collection::stream).toArray(Object[]::new));
+                spec.args(Stream.of(origArgs, defaultArgs).flatMap(Collection::stream).toArray(Object[]::new));
                 spec.setWorkingDir(new File(stagingFolder));
                 spec.setIgnoreExitValue(true);
 
-                spec.environment(mergeEnvVars(spec, ctx));
+                spec.environment(mergeEnvVars(spec, ctx, this.enableDebug));
             });
 
             final int code = Optional.ofNullable(execResult).map(ExecResult::getExitValue).orElse(-1);
@@ -135,16 +133,12 @@ public abstract class LocalRunTask extends DefaultTask implements IFunctionTask 
         return JDWP_DEBUG_PREFIX + debugConfig;
     }
 
-    private static List<String> getDebugJvmArgument(Boolean enableDebug, GradleFunctionContext ctx) {
-        final List<String> debugArgs;
-
+    private static String getDebugJvmArgument(Boolean enableDebug, GradleFunctionContext ctx) {
         if (BooleanUtils.isTrue(enableDebug) || StringUtils.isNotEmpty(ctx.getLocalDebugConfig())) {
-            debugArgs = Arrays.asList("--", getDebugJvmArgument(ctx.getLocalDebugConfig()));
+            return getDebugJvmArgument(ctx.getLocalDebugConfig());
         } else {
-            debugArgs = Collections.emptyList();
+            return null;
         }
-
-        return debugArgs;
     }
 
     private static String resolveFuncFromPath() {
@@ -172,14 +166,14 @@ public abstract class LocalRunTask extends DefaultTask implements IFunctionTask 
 
     /**
      * Merges the original environment variables inherited from the Gradle process, the Azure function environment variables,
-     * and the Azure function system properties into a single map of environment variables.
+     * and the Azure function system properties, transcribed to JAVA_OPTS, into a single map of environment variables.
      *
      * @param spec the azure function process spec, which contains original environment variables inherited from the Gradle process
      * @param ctx the context containing Azure function environment variables and system properties
      * @return merged environment variables, including original env vars, az func env vars,
      * and az func sys props consolidated into JAVA_OPTS environment variable
      */
-    private static Map<String, Object> mergeEnvVars(ExecSpec spec, GradleFunctionContext ctx) {
+    private static Map<String, Object> mergeEnvVars(ExecSpec spec, GradleFunctionContext ctx, Boolean enableDebug) {
         final Optional<Map<String, Object>> origEnvVars = Optional.ofNullable(spec.getEnvironment());
         final Optional<Map<String, Object>> azFuncEnvVars = Optional.ofNullable(ctx.getEnvVars());
         final Optional<String> azFuncSysProps = Optional.ofNullable(ctx.getSysProps())
@@ -188,21 +182,23 @@ public abstract class LocalRunTask extends DefaultTask implements IFunctionTask 
                         .stream()
                         .map(entry -> String.format("-D%s=%s", entry.getKey(), entry.getValue()))
                         .collect(Collectors.joining(" ")));
-
         final Map<String, Object> mergedEnvVars = origEnvVars
                 .map(origEnvMap -> {
                     origEnvMap.putAll(azFuncEnvVars.orElse(new HashedMap<>()));
                     return origEnvMap;
                 }).orElse(azFuncEnvVars.orElse(new HashedMap<>()));
+        final Optional<String> javaOptsEnvValue = Optional.ofNullable(mergedEnvVars.get("JAVA_OPTS"))
+                .map(Object::toString);
+        final Optional<String> debugArg = Optional.ofNullable(getDebugJvmArgument(enableDebug, ctx));
 
-        // the JAVA_OPTS environment variable might be defined in the original environment, in the az func env vars, or both;
-        // we need to merge them together and append the az func sys props to the end of the JAVA_OPTS value
-        final String javaOptsEnvValue = Optional.ofNullable(mergedEnvVars.get("JAVA_OPTS"))
-                .map(Object::toString)
-                .map(origJavaOpts -> origJavaOpts + " " + azFuncSysProps.orElse(""))
-                .orElse(azFuncSysProps.orElse(""));
-
-        mergedEnvVars.put("JAVA_OPTS", javaOptsEnvValue);
+        // merge JAVA_OPTs from environment, system properties, and the debug agent argument, and set the final JAVA_OPTS value in the merged environment
+        Stream.of(javaOptsEnvValue, azFuncSysProps, debugArg)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.collectingAndThen(
+                        Collectors.joining(" "),
+                        s -> s.isEmpty() ? Optional.empty() : Optional.of(s)))
+                .ifPresent(value -> mergedEnvVars.put("JAVA_OPTS", value));
 
         return mergedEnvVars;
     }
