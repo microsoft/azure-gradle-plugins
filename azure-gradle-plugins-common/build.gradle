@@ -13,6 +13,13 @@ dependencies {
     implementation 'org.slf4j:slf4j-api:1.7.36'
     implementation 'com.microsoft.azure:azure-toolkit-common-lib:' + azureToolkitVersion
     implementation 'com.microsoft.azure:azure-toolkit-appservice-lib:'  + azureToolkitVersion
+    // The version resolved today, 4.8.4, carries a critical severity vulnerability: below 4.10.6
+    // azure-security-keyvault-keys compares authentication tags incorrectly in its local cryptographic
+    // verification path, so crafted encrypted input can bypass integrity checks. It reaches us
+    // through azure-toolkit-appservice-lib -> azure-resourcemanager-appservice -> azure-resourcemanager-keyvault.
+    // Declared explicitly (not as a constraint) so the patched version also reaches consumers of the
+    // published POM, since Gradle Module Metadata is disabled for these modules.
+    implementation 'com.azure:azure-security-keyvault-keys:4.11.2'
     implementation 'com.microsoft.azure:azure-toolkit-applicationinsights-lib:'  + azureToolkitVersion
     testImplementation "junit:junit:4.13.2"
     testImplementation "org.mockito:mockito-core:3.11.2"
