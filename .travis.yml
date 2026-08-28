@@ -2,8 +2,8 @@ language: java
 install: true
 
 os: linux
-dist: trusty
-jdk: oraclejdk8
+dist: jammy
+jdk: openjdk17
 
 script:
   - ./gradlew build -q
