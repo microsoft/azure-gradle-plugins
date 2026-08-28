@@ -11,7 +11,6 @@ import com.microsoft.azure.plugin.functions.gradle.util.FunctionUtils;
 import com.microsoft.azure.toolkit.lib.appservice.utils.FunctionCliResolver;
 import com.microsoft.azure.toolkit.lib.common.operation.AzureOperation;
 import com.microsoft.azure.toolkit.lib.legacy.function.utils.CommandUtils;
-import org.apache.commons.collections4.map.HashedMap;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.DefaultTask;
@@ -29,6 +28,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -173,33 +174,62 @@ public abstract class LocalRunTask extends DefaultTask implements IFunctionTask 
      * @return merged environment variables, including original env vars, az func env vars,
      * and az func sys props consolidated into JAVA_OPTS environment variable
      */
-    private static Map<String, Object> mergeEnvVars(ExecSpec spec, GradleFunctionContext ctx, Boolean enableDebug) {
-        final Optional<Map<String, Object>> origEnvVars = Optional.ofNullable(spec.getEnvironment());
-        final Optional<Map<String, Object>> azFuncEnvVars = Optional.ofNullable(ctx.getEnvVars());
+    static Map<String, Object> mergeEnvVars(ExecSpec spec, GradleFunctionContext ctx, Boolean enableDebug) {
         final Optional<String> azFuncSysProps = Optional.ofNullable(ctx.getSysProps())
-                .map(props -> props
-                        .entrySet()
-                        .stream()
-                        .map(entry -> String.format("-D%s=%s", entry.getKey(), entry.getValue()))
-                        .collect(Collectors.joining(" ")));
-        final Map<String, Object> mergedEnvVars = origEnvVars
-                .map(origEnvMap -> {
-                    origEnvMap.putAll(azFuncEnvVars.orElse(new HashedMap<>()));
-                    return origEnvMap;
-                }).orElse(azFuncEnvVars.orElse(new HashedMap<>()));
+                .map(LocalRunTask::serializeSystemProperties);
+        final Map<String, Object> mergedEnvVars =
+                new HashMap<>(Optional.ofNullable(spec.getEnvironment()).orElse(Collections.emptyMap()));
+        mergedEnvVars.putAll(Optional.ofNullable(ctx.getEnvVars()).orElse(Collections.emptyMap()));
         final Optional<String> javaOptsEnvValue = Optional.ofNullable(mergedEnvVars.get("JAVA_OPTS"))
                 .map(Object::toString);
         final Optional<String> debugArg = Optional.ofNullable(getDebugJvmArgument(enableDebug, ctx));
 
-        // merge JAVA_OPTs from environment, system properties, and the debug agent argument, and set the final JAVA_OPTS value in the merged environment
         Stream.of(javaOptsEnvValue, azFuncSysProps, debugArg)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
+                .filter(StringUtils::isNotBlank)
                 .collect(Collectors.collectingAndThen(
                         Collectors.joining(" "),
                         s -> s.isEmpty() ? Optional.empty() : Optional.of(s)))
                 .ifPresent(value -> mergedEnvVars.put("JAVA_OPTS", value));
 
         return mergedEnvVars;
+    }
+
+    static String serializeSystemProperties(Map<String, String> systemProperties) {
+        return systemProperties.entrySet().stream()
+                .map(entry -> quoteJvmArgument(String.format("-D%s=%s", entry.getKey(), entry.getValue())))
+                .collect(Collectors.joining(" "));
+    }
+
+    private static String quoteJvmArgument(String argument) {
+        if (argument.chars().noneMatch(character -> Character.isWhitespace(character) || character == '"')) {
+            return argument;
+        }
+
+        final StringBuilder result = new StringBuilder("\"");
+        int backslashes = 0;
+        for (int i = 0; i < argument.length(); i++) {
+            final char character = argument.charAt(i);
+            if (character == '\\') {
+                backslashes++;
+            } else if (character == '"') {
+                appendBackslashes(result, backslashes * 2 + 1);
+                result.append(character);
+                backslashes = 0;
+            } else {
+                appendBackslashes(result, backslashes);
+                result.append(character);
+                backslashes = 0;
+            }
+        }
+        appendBackslashes(result, backslashes * 2);
+        return result.append('"').toString();
+    }
+
+    private static void appendBackslashes(StringBuilder builder, int count) {
+        for (int i = 0; i < count; i++) {
+            builder.append('\\');
+        }
     }
 }

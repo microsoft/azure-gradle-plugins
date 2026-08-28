@@ -44,6 +44,9 @@ azurefunctions {
     }
     // enable local debug
     // localDebug = "transport=dt_socket,server=y,suspend=n,address=5005"
+    // environment variables and JVM system properties used only when running locally
+    // envVars = [MY_SETTING: "value"]
+    // sysProps = [myProperty: "value"]
     deployment {
         type = 'run_from_blob'
     }
@@ -69,6 +72,9 @@ azurefunctions {
   })
   // enable local debug
   // localDebug = "transport=dt_socket,server=y,suspend=n,address=5005"
+  // environment variables and JVM system properties used only when running locally
+  // envVars = mapOf("MY_SETTING" to "value")
+  // sysProps = mapOf("myProperty" to "value")
   setDeployment(closureOf<com.microsoft.azure.plugin.functions.gradle.configuration.deploy.Deployment> {
     type = "run_from_blob"
   })
