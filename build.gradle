@@ -78,8 +78,11 @@ subprojects {
 
 configure(subprojects.findAll {it.name != 'azure-gradle-plugins-common'}) {
     apply plugin: 'java-gradle-plugin'
-    apply plugin: libs.plugins.gradle.plugin.publish.get().pluginId
-    apply plugin: libs.plugins.studer.credentials.get().pluginId
+    // Plugin ids as literals: the versions come from the root `plugins {}` block (apply false), and
+    // resolving `libs` from inside this closure is an implicit parent-project lookup, deprecated in
+    // Gradle 9 and an error in Gradle 10.
+    apply plugin: 'com.gradle.plugin-publish'
+    apply plugin: 'nu.studer.credentials'
 
     tasks.register('prepareResources', PrepareResourceTask) {
     }

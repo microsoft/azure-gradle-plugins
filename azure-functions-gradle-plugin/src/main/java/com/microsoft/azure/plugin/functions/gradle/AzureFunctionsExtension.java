@@ -279,8 +279,6 @@ public class AzureFunctionsExtension {
         return appInsightsKey;
     }
 
-    @Input
-    @Optional
     @Deprecated
     @ReplacedBy("getDisableAppInsights")
     public Boolean isDisableAppInsights() {
