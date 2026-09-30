@@ -1,6 +1,7 @@
 # Change Log
 All notable changes to the "Azure WebApp Plugin for Gradle" will be documented in this file.
 - [Change Log](#change-log)
+  - [1.12.0](#1120)
   - [1.11.0](#1110)
   - [1.10.0](#1100)
   - [1.6.0](#160)
@@ -10,6 +11,12 @@ All notable changes to the "Azure WebApp Plugin for Gradle" will be documented i
   - [1.2.0](#120)
   - [1.1.0](#110)
   - [1.0.0](#100)
+
+## 1.12.0
+- Build the plugin with Gradle 9.8; dependency versions moved to a version catalog (`gradle/libs.versions.toml`)
+- Declare caching behaviour on the deploy task (`@DisableCachingByDefault`), as required by Gradle 9
+- Upgrade `azure-security-keyvault-keys` to 4.11.2 (critical severity fix in the local cryptographic verification path)
+- Upgrade Azure toolkit libraries to 0.56.0 and all other dependencies to their latest release (`commons-io` 2.22.0, `commons-lang3` 3.21.0, `guava` 33.7.2, `gson` 2.14.0, `jackson` 2.22.3, `jansi` 2.4.3, `applicationinsights-core` 2.6.4, `json-schema-validator` 1.5.9, ...)
 
 ## 1.11.0
 - Support Gradle 9 by removing deprecated Gradle API usage
