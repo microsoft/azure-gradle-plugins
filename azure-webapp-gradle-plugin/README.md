@@ -8,8 +8,10 @@ This plugin helps Java developers to deploy Gradle projects to [Azure App Servic
 
 Tool | Required Version
 ---|---
-JDK | 1.8
-Gradle | 5.2 and above
+JDK | 1.8 or above, as supported by your Gradle version
+Gradle | 7.6.4 or above (Gradle 8.x: 8.4 or above)
+
+JDK 8 is supported with Gradle 7.6.4 and 8.x; Gradle 9 requires JDK 17 or above. See the [Gradle Java compatibility matrix](https://docs.gradle.org/current/userguide/compatibility.html#java) when choosing a JDK. Early Gradle 8 releases, including 8.0.2, can fail while loading plugin dependencies; use Gradle 8.4 or above for the 8.x line.
 
 
 ## Setup

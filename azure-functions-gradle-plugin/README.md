@@ -7,11 +7,13 @@ This plugin provides seamless integration into Gradle projects. You can package 
 
 Tool | Required Version
 ---|---
-JDK | 1.8
-Gradle | 5.2 and above
+JDK | 1.8 or above, as supported by your Gradle version
+Gradle | 7.6.4 or above (Gradle 8.x: 8.4 or above)
 [.Net Core SDK](https://www.microsoft.com/net/core) | Latest version
 [Azure Functions Core Tools](https://www.npmjs.com/package/azure-functions-core-tools) | 2.0 and above
 >Note: [See how to install Azure Functions Core Tools - 2.x](https://aka.ms/azfunc-install)
+
+JDK 8 is supported with Gradle 7.6.4 and 8.x; Gradle 9 requires JDK 17 or above. See the [Gradle Java compatibility matrix](https://docs.gradle.org/current/userguide/compatibility.html#java) when choosing a JDK. Early Gradle 8 releases, including 8.0.2, can fail while loading plugin dependencies; use Gradle 8.4 or above for the 8.x line.
 
 
 ## Setup
