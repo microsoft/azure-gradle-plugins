@@ -1,0 +1,53 @@
+[versions]
+commons-io = "2.22.0"
+commons-exec = "1.6.0"
+commons-lang3 = "3.21.0"
+guava = "33.7.2-jre"
+gson = "2.14.0"
+maven-artifact = "3.9.16"
+jansi = "2.4.3"
+jackson-dataformat-properties = "2.22.3"
+azure-toolkit = "0.56.0"
+azure-security-keyvault-keys = "4.11.2"
+lombok = "1.18.48"
+junit4 = "4.13.2"
+mockito-core = "5.24.0"
+reflections = "0.10.2"
+classindex = "3.13"
+applicationinsights-core = "2.6.4"
+json-schema-validator = "1.5.9"
+slf4j = "2.0.20"
+maven-settings-plugin = "0.5"
+gradle-plugin-publish-plugin = "2.2.1"
+credentials-plugin = "3.0"
+versions-plugin = "0.64.0"
+aspectj-plugin = "9.7.0"
+
+[libraries]
+commons-io = { module = "commons-io:commons-io", version.ref = "commons-io" }
+apache-commons-exec = { module = "org.apache.commons:commons-exec", version.ref = "commons-exec" }
+apache-commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commons-lang3" }
+google-gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+google-guava = { module = "com.google.guava:guava", version.ref = "guava" }
+apache-maven-artifact = { module = "org.apache.maven:maven-artifact", version.ref = "maven-artifact" }
+fusesource-jansi = { module = "org.fusesource.jansi:jansi", version.ref = "jansi" }
+jackson-dataformat-properties = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-properties", version.ref = "jackson-dataformat-properties" }
+azure-toolkit-common-lib = { module = "com.microsoft.azure:azure-toolkit-common-lib", version.ref = "azure-toolkit" }
+azure-toolkit-appservice-lib = { module = "com.microsoft.azure:azure-toolkit-appservice-lib", version.ref = "azure-toolkit" }
+azure-toolkit-applicationinsights-lib = { module = "com.microsoft.azure:azure-toolkit-applicationinsights-lib", version.ref = "azure-toolkit" }
+azure-security-keyvault-keys = { module = "com.azure:azure-security-keyvault-keys", version.ref = "azure-security-keyvault-keys" }
+project-lombok = { module = "org.projectlombok:lombok", version.ref = "lombok" }
+junit4 = { module = "junit:junit", version.ref = "junit4" }
+mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito-core" }
+reflections = { module = "org.reflections:reflections", version.ref = "reflections" }
+classindex = { module = "org.atteo.classindex:classindex", version.ref = "classindex" }
+applicationinsights-core = { module = "com.microsoft.azure:applicationinsights-core", version.ref = "applicationinsights-core" }
+json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "json-schema-validator" }
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+
+[plugins]
+maven-settings = { id = "net.linguica.maven-settings", version.ref = "maven-settings-plugin" }
+gradle-plugin-publish = { id = "com.gradle.plugin-publish", version.ref = "gradle-plugin-publish-plugin" }
+studer-credentials = { id = "nu.studer.credentials", version.ref = "credentials-plugin" }
+ben-manes-versions = { id = "com.github.ben-manes.versions", version.ref = "versions-plugin" }
+freefair-aspectj-post-compile-weaving = { id = "io.freefair.aspectj.post-compile-weaving", version.ref = "aspectj-plugin" }
