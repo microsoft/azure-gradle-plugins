@@ -9,6 +9,7 @@ import org.gradle.process.ExecSpec;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -31,6 +32,36 @@ public class LocalRunTaskTest {
     }
 
     @Test
+    public void serializeSystemPropertiesPreservesSimpleSpecialCharacters() {
+        final Map<String, String> properties = new LinkedHashMap<>();
+        properties.put("empty", "");
+        properties.put("equals", "a=b");
+        properties.put("singleQuote", "it's-fine");
+        properties.put("path", "C:\\temp\\file");
+
+        Assert.assertEquals("-Dempty= -Dequals=a=b -DsingleQuote=it's-fine -Dpath=C:\\temp\\file",
+                LocalRunTask.serializeSystemProperties(properties));
+    }
+
+    @Test
+    public void serializeSystemPropertiesEscapesTrailingBackslashesInQuotedArguments() {
+        Assert.assertEquals("\"-Dpath=C:\\path with spaces\\\\\"",
+                LocalRunTask.serializeSystemProperties(Collections.singletonMap("path", "C:\\path with spaces\\")));
+    }
+
+    @Test
+    public void serializeSystemPropertiesEscapesBackslashesBeforeQuotes() {
+        Assert.assertEquals("\"-Dquoted=backslash\\\\\\\"quote\"",
+                LocalRunTask.serializeSystemProperties(Collections.singletonMap("quoted", "backslash\\\"quote")));
+    }
+
+    @Test
+    public void serializeSystemPropertiesQuotesTabsAndNewlines() {
+        Assert.assertEquals("\"-Dmessage=hello\tworld\nagain\"",
+                LocalRunTask.serializeSystemProperties(Collections.singletonMap("message", "hello\tworld\nagain")));
+    }
+
+    @Test
     public void mergeEnvVarsDoesNotMutateConfiguredOrInheritedEnvironment() {
         final Map<String, Object> inheritedEnvironment = new HashMap<>();
         inheritedEnvironment.put("JAVA_OPTS", "-Xmx512m");
@@ -40,19 +71,103 @@ public class LocalRunTaskTest {
         final Map<String, String> systemProperties = new HashMap<>();
         systemProperties.put("message", "hello world");
 
-        final ExecSpec spec = mock(ExecSpec.class);
-        when(spec.getEnvironment()).thenReturn(inheritedEnvironment);
-        final GradleFunctionContext context = mock(GradleFunctionContext.class);
-        when(context.getEnvVars()).thenReturn(configuredEnvironment);
-        when(context.getSysProps()).thenReturn(systemProperties);
-        when(context.getLocalDebugConfig()).thenReturn(null);
-
-        final Map<String, Object> result = LocalRunTask.mergeEnvVars(spec, context, false);
+        final Map<String, Object> result = mergeEnvironment(Collections.unmodifiableMap(inheritedEnvironment),
+                Collections.unmodifiableMap(configuredEnvironment), Collections.unmodifiableMap(systemProperties), false, null);
 
         Assert.assertEquals("value", result.get("INHERITED"));
         Assert.assertEquals("value", result.get("CONFIGURED"));
         Assert.assertEquals("-Xmx512m \"-Dmessage=hello world\"", result.get("JAVA_OPTS"));
         Assert.assertEquals(2, inheritedEnvironment.size());
+        Assert.assertEquals("-Xmx512m", inheritedEnvironment.get("JAVA_OPTS"));
         Assert.assertEquals(1, configuredEnvironment.size());
+        Assert.assertEquals("hello world", systemProperties.get("message"));
+    }
+
+    @Test
+    public void mergeEnvVarsOverridesInheritedValuesBeforeAppendingSystemProperties() {
+        final Map<String, Object> inheritedEnvironment = new HashMap<>();
+        inheritedEnvironment.put("JAVA_OPTS", "-Xmx512m -Dmessage=inherited");
+        inheritedEnvironment.put("SETTING", "inherited");
+        final Map<String, Object> configuredEnvironment = new HashMap<>();
+        configuredEnvironment.put("JAVA_OPTS", "-Xmx256m -Dmessage=configured");
+        configuredEnvironment.put("SETTING", 42);
+
+        final Map<String, Object> result = mergeEnvironment(inheritedEnvironment, configuredEnvironment,
+                Collections.singletonMap("message", "property"), false, null);
+
+        Assert.assertEquals(42, result.get("SETTING"));
+        Assert.assertEquals("-Xmx256m -Dmessage=configured -Dmessage=property", result.get("JAVA_OPTS"));
+    }
+
+    @Test
+    public void mergeEnvVarsPreservesInheritedOptionsWhenConfigurationIsAbsent() {
+        final Map<String, Object> inheritedEnvironment = Collections.singletonMap("JAVA_OPTS", "-Xmx512m");
+        final Map<String, Object> result = mergeEnvironment(inheritedEnvironment, null, null, null, null);
+
+        Assert.assertEquals(inheritedEnvironment, result);
+        Assert.assertNotSame(inheritedEnvironment, result);
+    }
+
+    @Test
+    public void mergeEnvVarsDoesNotAddJavaOptsWhenOptionsAreAbsent() {
+        final Map<String, Object> result = mergeEnvironment(Collections.singletonMap("INHERITED", "value"),
+                Collections.singletonMap("SETTING", "value"), null, false, null);
+
+        Assert.assertEquals(2, result.size());
+        Assert.assertFalse(result.containsKey("JAVA_OPTS"));
+    }
+
+    @Test
+    public void mergeEnvVarsHandlesNullAndEmptyMaps() {
+        Assert.assertTrue(mergeEnvironment(null, null, null, null, null).isEmpty());
+        Assert.assertTrue(mergeEnvironment(Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(),
+                false, null).isEmpty());
+    }
+
+    @Test
+    public void mergeEnvVarsIgnoresBlankOptionsWhenAppendingProperties() {
+        final Map<String, Object> result = mergeEnvironment(Collections.singletonMap("JAVA_OPTS", "  "), null,
+                Collections.singletonMap("message", "value"), false, null);
+
+        Assert.assertEquals("-Dmessage=value", result.get("JAVA_OPTS"));
+    }
+
+    @Test
+    public void mergeEnvVarsAppendsDefaultDebugOptionsWhenEnabled() {
+        final Map<String, Object> result = mergeEnvironment(Collections.singletonMap("JAVA_OPTS", "-Xmx512m"),
+                null, Collections.singletonMap("message", "value"), true, null);
+
+        Assert.assertEquals("-Xmx512m -Dmessage=value -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005",
+                result.get("JAVA_OPTS"));
+    }
+
+    @Test
+    public void mergeEnvVarsEnablesConfiguredDebugWithoutFlag() {
+        final Map<String, Object> result = mergeEnvironment(null, null, null, false,
+                "transport=dt_socket,server=y,suspend=n,address=5006");
+
+        Assert.assertEquals("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5006", result.get("JAVA_OPTS"));
+    }
+
+    @Test
+    public void mergeEnvVarsDoesNotDuplicateDebugPrefix() {
+        final String debug = "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5006";
+        final Map<String, Object> result = mergeEnvironment(null, null, Collections.singletonMap("message", "value"),
+                true, debug);
+
+        Assert.assertEquals("-Dmessage=value " + debug, result.get("JAVA_OPTS"));
+    }
+
+    private static Map<String, Object> mergeEnvironment(Map<String, Object> inheritedEnvironment,
+                                                       Map<String, Object> configuredEnvironment,
+                                                       Map<String, String> systemProperties,
+                                                       Boolean enableDebug, String debugConfig) {
+        final ExecSpec spec = mock(ExecSpec.class);
+        when(spec.getEnvironment()).thenReturn(inheritedEnvironment);
+        final GradleFunctionContext context = mock(GradleFunctionContext.class);
+        when(context.getEnvVars()).thenReturn(configuredEnvironment);
+        when(context.getSysProps()).thenReturn(systemProperties);
+        when(context.getLocalDebugConfig()).thenReturn(debugConfig);
+        return LocalRunTask.mergeEnvVars(spec, context, enableDebug);
     }
 }

@@ -26,12 +26,8 @@ import org.gradle.work.DisableCachingByDefault;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -101,10 +97,7 @@ public abstract class LocalRunTask extends DefaultTask implements IFunctionTask 
 
             final ExecResult execResult = getExecOperations().exec(spec -> {
                 spec.commandLine(funcCli);
-                final List<String> origArgs = Optional.ofNullable(spec.getArgs()).orElse(new ArrayList<>());
-                final List<String> defaultArgs = Arrays.asList("host", "start");
-
-                spec.args(Stream.of(origArgs, defaultArgs).flatMap(Collection::stream).toArray(Object[]::new));
+                spec.args("host", "start");
                 spec.setWorkingDir(new File(stagingFolder));
                 spec.setIgnoreExitValue(true);
 
@@ -150,8 +143,8 @@ public abstract class LocalRunTask extends DefaultTask implements IFunctionTask 
             return null;
         }
         final boolean isWindows = System.getProperty("os.name", "").toLowerCase().contains("windows");
-        final String[] candidates = isWindows
-                ? new String[]{"func.exe", "func.cmd", "func.bat", "func"}
+        final String[] candidates = isWindows ?
+                new String[]{"func.exe", "func.cmd", "func.bat", "func"}
                 : new String[]{"func"};
         for (final String dir : pathEnv.split(File.pathSeparator)) {
             if (StringUtils.isEmpty(dir)) {
@@ -209,6 +202,7 @@ public abstract class LocalRunTask extends DefaultTask implements IFunctionTask 
             return argument;
         }
 
+        // Functions expands JAVA_OPTS into .NET ProcessStartInfo.Arguments, not a shell command.
         final StringBuilder result = new StringBuilder("\"");
         int backslashes = 0;
         for (int i = 0; i < argument.length(); i++) {

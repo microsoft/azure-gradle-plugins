@@ -102,6 +102,29 @@ Use the script below to run the function locally, if you want to debug your func
 ```shell
 gradle azureFunctionsRun
 ```
+
+#### Local environment variables and JVM system properties
+
+Use `envVars` to configure the environment of the locally started Functions host and its Java worker.
+Use `sysProps` to pass string-valued JVM system properties to the Java worker:
+
+```groovy
+azurefunctions {
+    envVars = [MY_SETTING: "value", JAVA_OPTS: "-Xmx512m"]
+    sysProps = [message: "hello world", quoted: 'say "hello"']
+}
+```
+
+Configured environment variables override inherited variables with the same name. If `envVars` sets
+`JAVA_OPTS`, it replaces the inherited `JAVA_OPTS`; otherwise the inherited value is preserved.
+The plugin appends the `sysProps` arguments and, when debugging is enabled, the debugger argument.
+Whitespace, double quotes, and backslashes in system-property values are escaped automatically;
+do not add shell quoting to the values yourself.
+
+These settings apply only to `azureFunctionsRun`. They do not change Azure app settings or deployment
+configuration; use `appSettings` for deployed settings. See the
+[manual-testing guide](docs/local-run-manual-testing.md) for a complete local test project and expected results.
+
 ### Deploy Azure Functions to Azure Cloud
 ```shell
 gradle azureFunctionsDeploy
