@@ -20,7 +20,7 @@ JDK 8 is supported with Gradle 7.6.4 and 8.x; Gradle 9 requires JDK 17 or above.
 In your Gradle Java project, add the plugin to your `build.gradle`:
 ```groovy
 plugins {
-  id "com.microsoft.azure.azurefunctions" version "1.8.0"
+  id "com.microsoft.azure.azurefunctions" version "1.19.0"
 }
 ```
 
