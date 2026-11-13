@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -101,7 +102,7 @@ public abstract class LocalRunTask extends DefaultTask implements IFunctionTask 
                 spec.setWorkingDir(new File(stagingFolder));
                 spec.setIgnoreExitValue(true);
 
-                spec.environment(mergeEnvVars(spec, ctx, this.enableDebug));
+                spec.setEnvironment(mergeEnvVars(spec, ctx, this.enableDebug));
             });
 
             final int code = Optional.ofNullable(execResult).map(ExecResult::getExitValue).orElse(-1);
@@ -170,10 +171,14 @@ public abstract class LocalRunTask extends DefaultTask implements IFunctionTask 
      * and az func sys props consolidated into JAVA_OPTS environment variable
      */
     static Map<String, Object> mergeEnvVars(ExecSpec spec, GradleFunctionContext ctx, Boolean enableDebug) {
+        return mergeEnvVars(spec, ctx, enableDebug, File.separatorChar == '\\');
+    }
+
+    static Map<String, Object> mergeEnvVars(ExecSpec spec, GradleFunctionContext ctx, Boolean enableDebug, boolean isWindows) {
         final Optional<String> azFuncSysProps = Optional.ofNullable(ctx.getSysProps())
                 .map(LocalRunTask::serializeSystemProperties);
-        final Map<String, Object> mergedEnvVars =
-                new HashMap<>(Optional.ofNullable(spec.getEnvironment()).orElse(Collections.emptyMap()));
+        final Map<String, Object> mergedEnvVars = isWindows ? new TreeMap<>(String.CASE_INSENSITIVE_ORDER) : new HashMap<>();
+        mergedEnvVars.putAll(Optional.ofNullable(spec.getEnvironment()).orElse(Collections.emptyMap()));
         mergedEnvVars.putAll(Optional.ofNullable(ctx.getEnvVars()).orElse(Collections.emptyMap()));
         final Optional<String> javaOptsEnvValue = Optional.ofNullable(mergedEnvVars.get("JAVA_OPTS"))
                 .map(Object::toString);

@@ -115,7 +115,8 @@ azurefunctions {
 }
 ```
 
-Configured environment variables override inherited variables with the same name. If `envVars` sets
+Configured environment variables override inherited variables with the same name (case-insensitive
+on Windows, case-sensitive on Unix). If `envVars` sets
 `JAVA_OPTS`, it replaces the inherited `JAVA_OPTS`; otherwise the inherited value is preserved.
 The plugin appends the `sysProps` arguments and, when debugging is enabled, the debugger argument.
 Whitespace, double quotes, and backslashes in system-property values are escaped automatically;

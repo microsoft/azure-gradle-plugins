@@ -158,16 +158,75 @@ public class LocalRunTaskTest {
         Assert.assertEquals("-Dmessage=value " + debug, result.get("JAVA_OPTS"));
     }
 
+    @Test
+    public void mergeEnvVarsOnWindowsAppendsToMixedCaseInheritedOptions() {
+        final Map<String, Object> inherited = Collections.singletonMap("java_opts", "-Xmx512m");
+        final Map<String, Object> result = mergeEnvironment(inherited, null,
+                Collections.singletonMap("message", "value"), true, null, true);
+
+        Assert.assertEquals("-Xmx512m -Dmessage=value -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005",
+                result.get("JAVA_OPTS"));
+        Assert.assertEquals(1, result.size());
+        Assert.assertEquals("-Xmx512m", inherited.get("java_opts"));
+    }
+
+    @Test
+    public void mergeEnvVarsOnWindowsOverridesNamesIgnoringCase() {
+        final Map<String, Object> inherited = new HashMap<>();
+        inherited.put("JAVA_OPTS", "-Xmx512m");
+        inherited.put("Setting", "inherited");
+        final Map<String, Object> configured = new HashMap<>();
+        configured.put("Java_Opts", "-Xmx256m");
+        configured.put("SETTING", "configured");
+
+        final Map<String, Object> result = mergeEnvironment(inherited, configured,
+                Collections.singletonMap("message", "value"), false, null, true);
+
+        Assert.assertEquals("-Xmx256m -Dmessage=value", result.get("JAVA_OPTS"));
+        Assert.assertEquals("configured", result.get("Setting"));
+        Assert.assertEquals(2, result.size());
+        Assert.assertEquals("-Xmx512m", inherited.get("JAVA_OPTS"));
+        Assert.assertEquals("-Xmx256m", configured.get("Java_Opts"));
+    }
+
+    @Test
+    public void mergeEnvVarsOnUnixKeepsDifferentlyCasedNamesSeparate() {
+        final Map<String, Object> inherited = new HashMap<>();
+        inherited.put("java_opts", "-Xmx512m");
+        inherited.put("Setting", "inherited");
+        final Map<String, Object> configured = new HashMap<>();
+        configured.put("Java_Opts", "-Xmx256m");
+        configured.put("SETTING", "configured");
+
+        final Map<String, Object> result = mergeEnvironment(inherited, configured,
+                Collections.singletonMap("message", "value"), false, null, false);
+
+        Assert.assertEquals("-Dmessage=value", result.get("JAVA_OPTS"));
+        Assert.assertEquals("-Xmx512m", result.get("java_opts"));
+        Assert.assertEquals("-Xmx256m", result.get("Java_Opts"));
+        Assert.assertEquals("inherited", result.get("Setting"));
+        Assert.assertEquals("configured", result.get("SETTING"));
+        Assert.assertEquals(5, result.size());
+    }
+
     private static Map<String, Object> mergeEnvironment(Map<String, Object> inheritedEnvironment,
                                                        Map<String, Object> configuredEnvironment,
                                                        Map<String, String> systemProperties,
                                                        Boolean enableDebug, String debugConfig) {
+        return mergeEnvironment(inheritedEnvironment, configuredEnvironment, systemProperties, enableDebug, debugConfig,
+                java.io.File.separatorChar == '\\');
+    }
+
+    private static Map<String, Object> mergeEnvironment(Map<String, Object> inheritedEnvironment,
+                                                       Map<String, Object> configuredEnvironment,
+                                                       Map<String, String> systemProperties,
+                                                       Boolean enableDebug, String debugConfig, boolean isWindows) {
         final ExecSpec spec = mock(ExecSpec.class);
         when(spec.getEnvironment()).thenReturn(inheritedEnvironment);
         final GradleFunctionContext context = mock(GradleFunctionContext.class);
         when(context.getEnvVars()).thenReturn(configuredEnvironment);
         when(context.getSysProps()).thenReturn(systemProperties);
         when(context.getLocalDebugConfig()).thenReturn(debugConfig);
-        return LocalRunTask.mergeEnvVars(spec, context, enableDebug);
+        return LocalRunTask.mergeEnvVars(spec, context, enableDebug, isWindows);
     }
 }
