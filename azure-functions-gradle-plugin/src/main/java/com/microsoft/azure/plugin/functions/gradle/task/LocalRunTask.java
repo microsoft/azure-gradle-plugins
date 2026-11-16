@@ -20,12 +20,19 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 import org.gradle.process.ExecOperations;
 import org.gradle.process.ExecResult;
+import org.gradle.process.ExecSpec;
 import org.gradle.work.DisableCachingByDefault;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import java.io.File;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @DisableCachingByDefault(because = "Local run task should always execute and is therefore not cacheable; not running the task is never the intention of the user")
 public abstract class LocalRunTask extends DefaultTask implements IFunctionTask {
@@ -89,22 +96,15 @@ public abstract class LocalRunTask extends DefaultTask implements IFunctionTask 
             final String stagingFolder = ctx.getDeploymentStagingDirectoryPath();
             FunctionUtils.checkStagingDirectory(stagingFolder);
 
-            final ExecResult execResult;
-            if (BooleanUtils.isTrue(this.enableDebug) || StringUtils.isNotEmpty(ctx.getLocalDebugConfig())) {
-                execResult = getExecOperations().exec(spec -> {
-                    spec.commandLine(funcCli);
-                    spec.args("host", "start", "--language-worker", "--", getDebugJvmArgument(ctx.getLocalDebugConfig()));
-                    spec.setWorkingDir(new File(stagingFolder));
-                    spec.setIgnoreExitValue(true);
-                });
-            } else {
-                execResult = getExecOperations().exec(spec -> {
-                    spec.commandLine(funcCli);
-                    spec.args("host", "start");
-                    spec.setWorkingDir(new File(stagingFolder));
-                    spec.setIgnoreExitValue(true);
-                });
-            }
+            final ExecResult execResult = getExecOperations().exec(spec -> {
+                spec.commandLine(funcCli);
+                spec.args("host", "start");
+                spec.setWorkingDir(new File(stagingFolder));
+                spec.setIgnoreExitValue(true);
+
+                spec.setEnvironment(mergeEnvVars(spec, ctx, this.enableDebug));
+            });
+
             final int code = Optional.ofNullable(execResult).map(ExecResult::getExitValue).orElse(-1);
             for (final Long validCode : CommandUtils.getValidReturnCodes()) {
                 if (validCode != null && validCode.intValue() == code) {
@@ -130,14 +130,22 @@ public abstract class LocalRunTask extends DefaultTask implements IFunctionTask 
         return JDWP_DEBUG_PREFIX + debugConfig;
     }
 
+    private static String getDebugJvmArgument(Boolean enableDebug, GradleFunctionContext ctx) {
+        if (BooleanUtils.isTrue(enableDebug) || StringUtils.isNotEmpty(ctx.getLocalDebugConfig())) {
+            return getDebugJvmArgument(ctx.getLocalDebugConfig());
+        } else {
+            return null;
+        }
+    }
+
     private static String resolveFuncFromPath() {
         final String pathEnv = System.getenv("PATH");
         if (StringUtils.isEmpty(pathEnv)) {
             return null;
         }
         final boolean isWindows = System.getProperty("os.name", "").toLowerCase().contains("windows");
-        final String[] candidates = isWindows
-                ? new String[]{"func.exe", "func.cmd", "func.bat", "func"}
+        final String[] candidates = isWindows ?
+                new String[]{"func.exe", "func.cmd", "func.bat", "func"}
                 : new String[]{"func"};
         for (final String dir : pathEnv.split(File.pathSeparator)) {
             if (StringUtils.isEmpty(dir)) {
@@ -151,5 +159,78 @@ public abstract class LocalRunTask extends DefaultTask implements IFunctionTask 
             }
         }
         return null;
+    }
+
+    /**
+     * Merges the original environment variables inherited from the Gradle process, the Azure function environment variables,
+     * and the Azure function system properties, transcribed to JAVA_OPTS, into a single map of environment variables.
+     *
+     * @param spec the azure function process spec, which contains original environment variables inherited from the Gradle process
+     * @param ctx the context containing Azure function environment variables and system properties
+     * @return merged environment variables, including original env vars, az func env vars,
+     * and az func sys props consolidated into JAVA_OPTS environment variable
+     */
+    static Map<String, Object> mergeEnvVars(ExecSpec spec, GradleFunctionContext ctx, Boolean enableDebug) {
+        return mergeEnvVars(spec, ctx, enableDebug, File.separatorChar == '\\');
+    }
+
+    static Map<String, Object> mergeEnvVars(ExecSpec spec, GradleFunctionContext ctx, Boolean enableDebug, boolean isWindows) {
+        final Optional<String> azFuncSysProps = Optional.ofNullable(ctx.getSysProps())
+                .map(LocalRunTask::serializeSystemProperties);
+        final Map<String, Object> mergedEnvVars = isWindows ? new TreeMap<>(String.CASE_INSENSITIVE_ORDER) : new HashMap<>();
+        mergedEnvVars.putAll(Optional.ofNullable(spec.getEnvironment()).orElse(Collections.emptyMap()));
+        mergedEnvVars.putAll(Optional.ofNullable(ctx.getEnvVars()).orElse(Collections.emptyMap()));
+        final Optional<String> javaOptsEnvValue = Optional.ofNullable(mergedEnvVars.get("JAVA_OPTS"))
+                .map(Object::toString);
+        final Optional<String> debugArg = Optional.ofNullable(getDebugJvmArgument(enableDebug, ctx));
+
+        Stream.of(javaOptsEnvValue, azFuncSysProps, debugArg)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .filter(StringUtils::isNotBlank)
+                .collect(Collectors.collectingAndThen(
+                        Collectors.joining(" "),
+                        s -> s.isEmpty() ? Optional.empty() : Optional.of(s)))
+                .ifPresent(value -> mergedEnvVars.put("JAVA_OPTS", value));
+
+        return mergedEnvVars;
+    }
+
+    static String serializeSystemProperties(Map<String, String> systemProperties) {
+        return systemProperties.entrySet().stream()
+                .map(entry -> quoteJvmArgument(String.format("-D%s=%s", entry.getKey(), entry.getValue())))
+                .collect(Collectors.joining(" "));
+    }
+
+    private static String quoteJvmArgument(String argument) {
+        if (argument.chars().noneMatch(character -> Character.isWhitespace(character) || character == '"')) {
+            return argument;
+        }
+
+        // Functions expands JAVA_OPTS into .NET ProcessStartInfo.Arguments, not a shell command.
+        final StringBuilder result = new StringBuilder("\"");
+        int backslashes = 0;
+        for (int i = 0; i < argument.length(); i++) {
+            final char character = argument.charAt(i);
+            if (character == '\\') {
+                backslashes++;
+            } else if (character == '"') {
+                appendBackslashes(result, backslashes * 2 + 1);
+                result.append(character);
+                backslashes = 0;
+            } else {
+                appendBackslashes(result, backslashes);
+                result.append(character);
+                backslashes = 0;
+            }
+        }
+        appendBackslashes(result, backslashes * 2);
+        return result.append('"').toString();
+    }
+
+    private static void appendBackslashes(StringBuilder builder, int count) {
+        for (int i = 0; i < count; i++) {
+            builder.append('\\');
+        }
     }
 }

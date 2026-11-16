@@ -1,6 +1,7 @@
 # Change Log
 All notable changes to the "Azure Function Plugin for Gradle" will be documented in this file.
 - [Change Log](#change-log)
+  - [1.19.0](#1190)
   - [1.18.0](#1180)
   - [1.17.0](#1170)
   - [1.15.0](#1150)
@@ -16,6 +17,13 @@ All notable changes to the "Azure Function Plugin for Gradle" will be documented
   - [1.2.0](#120)
   - [1.1.0](#110)
   - [1.0.0](#100)
+
+## 1.19.0
+- Add local-only `envVars` and `sysProps` configuration for `azureFunctionsRun`.
+- Preserve inherited environment variables, apply configured overrides, and append JVM system properties and debugger options to `JAVA_OPTS`.
+- Escape JVM system-property arguments containing whitespace, double quotes, and backslashes.
+- Merge environment variable names case-insensitively on Windows while preserving case-sensitive behavior on Unix.
+- Document configuration examples and a step-by-step manual-testing guide.
 
 ## 1.18.0
 - Build the plugin with Gradle 9.8; dependency versions moved to a version catalog (`gradle/libs.versions.toml`)
